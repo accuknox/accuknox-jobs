@@ -2,7 +2,7 @@
 
 Set of jobs that integrate with AccuKnox SaaS to provide reporting/assessment.
 
-<img src="res/arch.png" width="100">
+<img src="res/arch.png" width="256">
 
 ## K8s CIS Scanning job
 
