@@ -32,7 +32,7 @@ subjects:
   namespace: k8tls
 ---
 apiVersion: batch/v1
-kind: Job
+kind: CronJob
 metadata:
   name: accuknox-k8tls-job
   namespace: k8tls
@@ -67,3 +67,6 @@ spec:
           volumes:
             - name: datapath
               emptyDir: {}
+
+  schedule: {{ .Values.accuknox.cronTab }}
+status: {}

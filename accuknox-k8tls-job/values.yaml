@@ -4,3 +4,4 @@
 
 accuknox:
   authToken: ""
+  cronTab: "1 0,8,12 * * *"
