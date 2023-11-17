@@ -102,5 +102,5 @@ spec:
                 path: /opt/cni/bin/
               name: opt-cni-bin
 
-  schedule: {{ .Values.accuknox.cronTab }}
+  schedule: "{{ .Values.accuknox.cronTab }}"
 status: {}
