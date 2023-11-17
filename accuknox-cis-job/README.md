@@ -3,11 +3,11 @@
 ## Helm install
 
 ```
-helm upgrade --install accuknox-cis-job . --set accuknox.authToken="TOKEN"
+helm upgrade --install accuknox-cis-job . --set accuknox.authToken="TOKEN" --namespace accuknox-jobs --create-namespace
 ```
 where TOKEN is issued from AccuKnox SaaS.
 
 | Helm key | Default Value |
 |----------|---------------|
-| accuknox.authToken | "" |
-| accuknox.cronTab | "1 0,8,12 * * *" |
+| accuknox.authToken | "NO-TOKEN-SET" |
+| accuknox.cronTab | "0 */4 * * *" |

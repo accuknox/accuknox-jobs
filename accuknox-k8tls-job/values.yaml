@@ -3,5 +3,5 @@
 # Declare variables to be passed into your templates.
 
 accuknox:
-  authToken: ""
-  cronTab: "1 0,8,12 * * *"
+  authToken: "NO-TOKEN-SET"
+  cronTab: "0 */4 * * *"

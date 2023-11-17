@@ -2,10 +2,13 @@ apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: accuknox-cis-cronjob
+  namespace: {{ .Release.Namespace }}
 spec:
+  jobTemplate:
+    metadata:
+      name: accuknox-cis-cronjob
+    spec:
       template:
-        metadata:
-          creationTimestamp: null
         spec:
           containers:
           - image: nginx
