@@ -103,4 +103,7 @@ spec:
               name: opt-cni-bin
 
   schedule: "{{ .Values.accuknox.cronTab }}"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+
 status: {}

@@ -68,3 +68,5 @@ spec:
               emptyDir: {}
 
   schedule: "{{ .Values.accuknox.cronTab }}"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
