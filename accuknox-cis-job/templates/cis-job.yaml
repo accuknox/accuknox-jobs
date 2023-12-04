@@ -19,6 +19,10 @@ spec:
             env:
               - name: AUTH_TOKEN
                 value: {{ .Values.accuknox.authToken }}
+              - name: CLUSTER_NAME
+                value: {{ .Values.accuknox.clusterName }}
+              - name: LABEL_NAME
+                value: {{ .Values.accuknox.label }}
             volumeMounts:
               - mountPath: /data
                 name: datapath
