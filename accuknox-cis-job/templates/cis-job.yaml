@@ -11,14 +11,18 @@ spec:
       template:
         spec:
           containers:
-          - image: nginx
+          - image: accuknox/accuknox-job:latest
             command: ["/bin/sh", "-c"]
-            args: ["apt update && apt install -y curl && curl www.google.com && echo $AUTH_TOKEN"]
+            args: ["curl www.google.com && echo $AUTH_TOKEN"]
             name: accuknox-cis-cronjob
             resources: {}
             env:
               - name: AUTH_TOKEN
                 value: {{ .Values.accuknox.authToken }}
+              - name: CLUSTER_NAME
+                value: {{ .Values.accuknox.clusterName }}
+              - name: LABEL_NAME
+                value: {{ .Values.accuknox.label }}
             volumeMounts:
               - mountPath: /data
                 name: datapath
