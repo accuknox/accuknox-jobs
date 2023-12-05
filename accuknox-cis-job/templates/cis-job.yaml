@@ -11,9 +11,9 @@ spec:
       template:
         spec:
           containers:
-          - image: nginx
+          - image: accuknox/accuknox-job:latest
             command: ["/bin/sh", "-c"]
-            args: ["apt update && apt install -y curl && curl www.google.com && echo $AUTH_TOKEN"]
+            args: ["curl www.google.com && echo $AUTH_TOKEN"]
             name: accuknox-cis-cronjob
             resources: {}
             env:
