@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: accuknox-kiem-job
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: "{{ .Values.accuknox.cronTab }}"  
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+
+  jobTemplate:
+    metadata:
+      labels:
+        app: accuknox-kiem-job
+    spec:
+      template:
+        spec:
+          initContainers:
+            - name: kiem-init
+              image: accuknox/kiem:latest
+              args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
+              env:
+                - name: CLUSTER_NAME
+                  value: {{ .Values.accuknox.clusterName }}
+              volumeMounts:
+                - name: datapath
+                  mountPath: /data
+          containers:
+            - image: accuknox/accuknox-job:latest
+              command: ["/bin/sh", "-c"]
+              args: ["curl www.google.com && echo $AUTH_TOKEN"]
+              name: accuknox-kiem-cronjob
+              resources: {}
+              env:
+                - name: AUTH_TOKEN
+                  value: {{ .Values.accuknox.authToken }}
+                - name: CLUSTER_NAME
+                  value: {{ .Values.accuknox.clusterName }}
+                - name: LABEL_NAME
+                  value: {{ .Values.accuknox.label }}
+              volumeMounts:
+                - mountPath: /data
+                  name: datapath      
+          volumes:
+            - name: datapath
+              emptyDir: {}
+          restartPolicy: OnFailure
+          serviceAccount: kiem-service-account
+
+

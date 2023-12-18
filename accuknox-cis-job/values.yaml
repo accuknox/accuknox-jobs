@@ -5,3 +5,5 @@
 accuknox:
   authToken: "NO-TOKEN-SET"
   cronTab: "0 */4 * * *"
+  clusterName: ""
+  label: ""
