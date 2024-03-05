@@ -66,3 +66,4 @@ jobs:
         tag: ${{ github.ref_name }}
         args: --build-arg VERSION=${{ github.ref_name }}
         type: public
+        
