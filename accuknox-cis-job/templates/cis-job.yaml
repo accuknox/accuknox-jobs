@@ -27,10 +27,8 @@ spec:
                 value: {{ .Values.accuknox.clusterId }}
               - name: TENANT_ID
                 value: {{ .Values.accuknox.tenantId }}
-              - name: ENV_PATH
-                value: {{ .Values.accuknox.envPath }}
-              - name: CSPM_URL
-                value: {{ .Values.accuknox.cspmURL }}
+              - name: ENV_URL
+                value: {{ .Values.accuknox.envURL }}
             volumeMounts:
               - mountPath: /data
                 name: datapath

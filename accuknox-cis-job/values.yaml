@@ -10,4 +10,4 @@ accuknox:
   clusterId: ""
   tenantId: ""
   envPath: ""
-  cspmURL:
+  cspmURL: ""
