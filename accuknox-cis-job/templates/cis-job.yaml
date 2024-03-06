@@ -23,8 +23,6 @@ spec:
                 value: {{ .Values.accuknox.clusterName }}
               - name: LABEL_NAME
                 value: {{ .Values.accuknox.label }}
-              - name: CRONJOB
-                value: {{ .Values.accuknox.cronTab }}
               - name: CLUSTER_ID
                 value: {{ .Values.accuknox.clusterId }}
               - name: TENANT_ID
