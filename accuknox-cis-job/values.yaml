@@ -7,3 +7,6 @@ accuknox:
   cronTab: "0 */4 * * *"
   clusterName: ""
   label: ""
+  clusterId: ""
+  tenantId: ""
+  envPath: ""
