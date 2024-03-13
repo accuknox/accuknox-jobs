@@ -6,7 +6,7 @@ replicaCount: 1
 
 accuknox:
   authToken: "NO-TOKEN-SET"
-  tenantId: ""
+  tenantID: ""
   cronTab: "0 */6 * * *"
   clusterName: ""
   label: ""
