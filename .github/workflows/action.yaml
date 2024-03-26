@@ -20,6 +20,6 @@
           - name: Authenticate ECR public authenticate
             shell: bash
             run: |
-              aws ecr-public get-login-password --region  ${{ env.ECR_REGION }} | helm registry login --username AWS --password-stdin  ${{ inputs.ECR_REPO }}
+              aws ecr-public get-login-password --region  ${{ env.ECR_REGION }} | helm registry login --username AWS --password-stdin  ${{ env.ECR_REPO }}
               helm package accuknox-*
               helm push accuknox-* oci://${{ env.ECR_REPO }}
