@@ -28,5 +28,6 @@
             shell: bash
             run: |
               aws ecr-public get-login-password --region  ${{ env.ECR_REGION }} | helm registry login --username AWS --password-stdin  ${{ env.ECR_REPO }}
+              helm template accuknox-*
               helm package accuknox-*
-              helm push accuknox-* oci://${{ env.ECR_REPO }}
+              helm push accuknox-* 'oci://${{ env.ECR_REPO }}'
