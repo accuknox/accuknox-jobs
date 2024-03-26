@@ -12,7 +12,7 @@
         env:
           ECR_REGION: us-east-1
           ECR_REPO: public.ecr.aws/k9v9d5v2
-          CHART_NAME: kube-prometheus-stack
+          # CHART_NAME: kube-prometheus-stack
 
         steps:
           - uses: actions/checkout@v2
@@ -20,7 +20,7 @@
           - name: AWS Credentials
             uses: aws-actions/configure-aws-credentials@v1
             with:
-              aws-region: ${{ env.AWS_REGION }}
+              aws-region: ${{ env.ECR_REGION }}
               aws-access-key-id: ${{ secrets.AWS_DEV_ACCESS_ID }}
               aws-secret-access-key: ${{ secrets.AWS_DEV_SECRET_ID }}
 
