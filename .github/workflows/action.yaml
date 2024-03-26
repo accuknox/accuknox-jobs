@@ -1,0 +1,25 @@
+    on:
+      push:
+        branches:         
+        - '*' 
+
+    name: Monitoring Pipeline
+
+    jobs:
+      deploy:
+        runs-on: ubuntu-latest
+
+        env:
+          ECR_REGION: us-east-2
+          ECR_REPO: 956994857092.dkr.ecr.us-east-2.amazonaws.com
+          CHART_NAME: kube-prometheus-stack
+
+        steps:
+          - uses: actions/checkout@v2
+
+          - name: Authenticate ECR public authenticate
+            shell: bash
+            run: |
+              aws ecr-public get-login-password --region  ${{ env.ECR_REGION }} | helm registry login --username AWS --password-stdin  ${{ inputs.ECR_REPO }}
+              helm package accuknox-*
+              helm push accuknox-* oci://${{ env.ECR_REPO }}
