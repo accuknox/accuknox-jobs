@@ -9,4 +9,4 @@ accuknox:
   label: ""
   clusterId: ""
   tenantId: ""
-  envURL: ""
+  URL: "dev"

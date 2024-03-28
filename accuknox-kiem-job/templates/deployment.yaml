@@ -27,12 +27,12 @@ spec:
                   mountPath: /data
           containers:
             - image: accuknox/accuknox-job:latest
-              command: ['sh', '-c', 'curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KIEM&save_to_s3=false" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"/data/report.json\""']
+              command: ['sh', '-c', 'curl --location --request POST "https://cspm.${URL}.accuknox.com/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KIEM&save_to_s3=false" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"/data/report.json\""']
               name: accuknox-kiem-cronjob
               resources: {}
               env:
                 - name: URL
-                  value: {{ .Values.accuknox.url }}
+                  value: {{ .Values.accuknox.URL }}
                 - name: TENANT_ID
                   value: {{ .Values.accuknox.tenantID | quote }}
                 - name: AUTH_TOKEN

@@ -7,3 +7,4 @@ accuknox:
   cronTab: "0 */4 * * *"
   clusterName: ""
   label: ""
+  URL: "dev"
