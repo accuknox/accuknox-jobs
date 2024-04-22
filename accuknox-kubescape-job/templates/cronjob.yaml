@@ -1,0 +1,57 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: accuknox-kubescape-job
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: "{{ .Values.accuknox.cronTab }}"
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+
+  jobTemplate:
+    metadata:
+      labels:
+        app: accuknox-kubescape-job
+    spec:
+      template:
+        spec:
+          initContainers:
+            - name: kubescape-init
+              image: "{{ .Values.kubescape.image.repository }}:{{ if ne .Values.kubescape.image.tag "" }}{{ .Values.kubescape.image.tag }}{{ else }}v{{ .Chart.AppVersion }}{{ end }}"
+              args: ["scan", "--format", "json", "--output", "/data/report.json", "--cluster-name=$(CLUSTER_NAME)"]
+              env:
+                - name: CLUSTER_NAME
+                  value: {{ if ne .Values.accuknox.clusterName "" }}{{ .Values.accuknox.clusterName }}{{ else }}{{ "default" }}{{ end }}
+              volumeMounts:
+                - name: datapath
+                  mountPath: /data
+          containers:
+            - image: accuknox/accuknox-job:latest
+              name: accuknox-kubescape-cronjob
+              command:
+                - '/bin/bash'
+                - '/script/augment-and-push-results.sh'
+              env:
+                - name: URL
+                  value: {{ .Values.accuknox.URL }}
+                - name: TENANT_ID
+                  value: {{ .Values.accuknox.tenantID | quote }}
+                - name: AUTH_TOKEN
+                  value: {{ .Values.accuknox.authToken }}
+                - name: CLUSTER_NAME
+                  value: {{ if ne .Values.accuknox.clusterName "" }}{{ .Values.accuknox.clusterName }}{{ else }}{{ "default" }}{{ end }}
+                - name: LABEL_NAME
+                  value: {{ if ne .Values.accuknox.label "" }}{{ .Values.accuknox.label }}{{ else }}{{ "default" }}{{ end }}
+              volumeMounts:
+                - mountPath: /data
+                  name: datapath
+                - mountPath: /script
+                  name: scriptpath
+          volumes:
+            - name: datapath
+              emptyDir: {}
+            - name: scriptpath
+              configMap:
+                name: accuknox-kubescape-cronjob-script-configmap
+          restartPolicy: OnFailure
+          serviceAccount: kubescape-service-account
