@@ -7,14 +7,27 @@ data:
   augment-and-push-results.sh: |
     #! /bin/env bash
 
+    # get all controls
+    jq -s 'map(.controls[]) | unique_by(.controlID) | .[]' /data/kubescape-cache/allcontrols.json \
+      /data/kubescape-cache/clusterscan.json \
+      /data/kubescape-cache/mitre.json /data/kubescape-cache/nsa.json > /data/controllist.json
+
+    export GENERATION_TIME=`date --utc --iso-8601=s`
+
+    # augment result
     cat <<< $(jq ". +=
       {
+        "generationTime": "'$ENV.GENERATION_TIME'",
+        "summary": {
+          "controls": "'$controllist'"
+        },
         "accuknox_metadata": {
-          "cluster_name":"'$ENV.CLUSTER_NAME'",
-          "label_name":"'$ENV.LABEL_NAME'"
+          "cluster_name": "'$ENV.CLUSTER_NAME'",
+          "label_name": "'$ENV.LABEL_NAME'"
         }
-      }" /data/report.json) > /data/report.json
+      }" /data/report.json --slurpfile controllist /data/controllist.json) > /data/report.json
 
+    # push
     curl --location --request POST \
     --header "Authorization: Bearer ${AUTH_TOKEN}" \
     --header "Tenant-Id: ${TENANT_ID}" \
