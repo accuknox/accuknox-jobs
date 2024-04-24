@@ -18,7 +18,7 @@ spec:
           initContainers:
             - name: kubescape-init
               image: "{{ .Values.kubescape.image.repository }}:{{ if ne .Values.kubescape.image.tag "" }}{{ .Values.kubescape.image.tag }}{{ else }}v{{ .Chart.AppVersion }}{{ end }}"
-              args: ["scan", "--format", "json", "--output", "/data/report.json", "--cluster-name=$(CLUSTER_NAME)"]
+              args: ["scan", "framework", "allcontrols,clusterscan,mitre,nsa", "--format", "json", "--cache-dir", "/data/kubescape-cache", "--output", "/data/report.json", "--cluster-name=$(CLUSTER_NAME)"]
               env:
                 - name: CLUSTER_NAME
                   value: {{ if ne .Values.accuknox.clusterName "" }}{{ .Values.accuknox.clusterName }}{{ else }}{{ "default" }}{{ end }}
