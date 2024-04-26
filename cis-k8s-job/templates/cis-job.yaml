@@ -1,12 +1,12 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: accuknox-cis-cronjob
+  name: cis-k8s-cronjob
   namespace: {{ .Release.Namespace }}
 spec:
   jobTemplate:
     metadata:
-      name: accuknox-cis-cronjob
+      name: cis-k8s-cronjob
     spec:
       template:
         spec:
@@ -14,7 +14,7 @@ spec:
           - image: accuknox/accuknox-job:latest
             command: ["/bin/sh", "-c"]
             args: ['curl --location --request POST "https://cspm.$ENV_URL.accuknox.com/api/v1/artifact/?tenant_id=$TENANT_ID&data_type=KB&save_to_s3=true" --header "Authorization: Bearer $AUTH_TOKEN" --form "file=@\"./data/report.json\""']
-            name: accuknox-cis-cronjob
+            name: cis-k8s-cronjob
             resources: {}
             env:
               - name: AUTH_TOKEN

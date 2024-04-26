@@ -1,9 +1,9 @@
-# AccuKnox CIS Job
+# AccuKnox CIS K8s Job
 
 ## Helm install
 
 ```
-helm upgrade --install accuknox-cis-job . --set accuknox.authToken="TOKEN"
+helm upgrade --install cis-k8s-job . --set accuknox.authToken="TOKEN"
 ```
 where TOKEN is issued from AccuKnox SaaS.
 
