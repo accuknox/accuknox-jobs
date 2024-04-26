@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: accuknox-kiem-job
+  name: kiem-job
   namespace: {{ .Release.Namespace }}
 spec:
   schedule: "{{ .Values.accuknox.cronTab }}"  
@@ -11,7 +11,7 @@ spec:
   jobTemplate:
     metadata:
       labels:
-        app: accuknox-kiem-job
+        app: kiem-job
     spec:
       template:
         spec:
