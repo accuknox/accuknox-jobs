@@ -6,10 +6,8 @@ replicaCount: 1
 
 accuknox:
   authToken: "NO-TOKEN-SET"
-  URL: "dev"
+  URL: "cspm.demo.accuknox.com"
   tenantID: ""
-  cronTab: "0 */6 * * *"
+  cronTab: "30 9 * * *"
   clusterName: ""
   label: ""
-
-  

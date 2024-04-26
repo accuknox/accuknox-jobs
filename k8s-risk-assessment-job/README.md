@@ -1,4 +1,4 @@
-# AccuKnox k8s-risk-asessment Job
+# AccuKnox k8s-risk-assessment Job
 
 A job for scanning cluster misconfiguration through kubescape
 
@@ -13,7 +13,7 @@ helm upgrade --install k8s-risk-assessment-job -n k8s-risk-assessment --create-n
 ### Published
 
 ```
-helm upgrade --install k8s-risk-assessment-job oci://public.ecr.aws/k9v9d5v2/k8s-risk-assessment-job -n k8s-risk-assessment --create-namespace --set accuknox.authToken="TOKEN" .
+helm upgrade --install k8s-risk-assessment-job oci://public.ecr.aws/k9v9d5v2/k8s-risk-assessment-job -n k8s-risk-assessment --create-namespace --set accuknox.authToken="TOKEN"
 ```
 
 where TOKEN is issued from AccuKnox SaaS.
@@ -22,8 +22,8 @@ where TOKEN is issued from AccuKnox SaaS.
 
 | Helm key | Default Value | Description | Required |
 |----------|---------------|-------------| -------- |
-| accuknox.authToken | "NO-TOKEN-SET" | Auth token from AccuKnox SaaS | YES |
-| accuknox.URL | "cspm.dev.accuknox.com" | URL of the environment | YES |
+| accuknox.authToken | "NO-TOKEN-SET" | Auth token from AccuKnox SaaS | YES (auto-populated by SaaS) |
+| accuknox.URL | "cspm.dev.accuknox.com" | URL of the environment | YES (auto-populated by SaaS) |
 | accuknox.clusterName | "default" | name of the cluster | YES (auto-populated by SaaS) |
 | accuknox.tenantID | "" | ID of AccuKnox tenant | YES (auto-populated by SaaS) |
 | accuknox.cronTab | "0 */6 * * *" | cron tab for the job - timezone: UTC | NO |

@@ -1,10 +1,11 @@
-# Default values for AccuKnox k8tls-job.
+# Default values for k8tls-job.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
 accuknox:
   authToken: "NO-TOKEN-SET"
-  cronTab: "0 */4 * * *"
+  cronTab: "30 9 * * *"
+  tenantID: ""
   clusterName: ""
   label: ""
-  URL: "dev"
+  URL: "cspm.demo.accuknox.com"

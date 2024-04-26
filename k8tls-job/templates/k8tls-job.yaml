@@ -42,12 +42,20 @@ spec:
           containers:
           - image: accuknox/accuknox-job:latest
             command: ["/bin/sh", "-c"]
-            args: ["curl www.google.com && echo $AUTH_TOKEN && cat /data/report.json"]
+            args: ['curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=K8TLS&save_to_s3=false" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"/data/report.json\"" && cat /data/report.json']
             name: k8tls-job
             resources: {}
             env:
+              - name: URL
+                value: {{ .Values.accuknox.URL }}
+              - name: TENANT_ID
+                value: {{ .Values.accuknox.tenantID | quote }}
               - name: AUTH_TOKEN
                 value: {{ .Values.accuknox.authToken }}
+              - name: CLUSTER_NAME
+                value: {{ if ne .Values.accuknox.clusterName "" }}{{ .Values.accuknox.clusterName }}{{ else }}{{ "default" }}{{ end }}
+              - name: LABEL_NAME
+                value: {{ if ne .Values.accuknox.label "" }}{{ .Values.accuknox.label }}{{ else }}{{ "default" }}{{ end }}
             volumeMounts:
               - mountPath: /data
                 name: datapath
