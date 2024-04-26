@@ -29,12 +29,12 @@ subjects:
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: accuknox-k8tls-job
+  name: k8tls-job
   namespace: {{ .Release.Namespace }}
 spec:
   jobTemplate:
     metadata:
-      name: accuknox-k8tls-job
+      name: k8tls-job
     spec:
       template:
         spec:
@@ -43,7 +43,7 @@ spec:
           - image: accuknox/accuknox-job:latest
             command: ["/bin/sh", "-c"]
             args: ["curl www.google.com && echo $AUTH_TOKEN && cat /data/report.json"]
-            name: accuknox-k8tls-job
+            name: k8tls-job
             resources: {}
             env:
               - name: AUTH_TOKEN

@@ -3,7 +3,7 @@
 ## Helm install
 
 ```
-helm upgrade --install accuknox-k8tls-job . --set accuknox.authToken="TOKEN"
+helm upgrade --install k8tls-job . --set accuknox.authToken="TOKEN"
 ```
 where TOKEN is issued from AccuKnox SaaS.
 
