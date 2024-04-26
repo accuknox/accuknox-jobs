@@ -1,4 +1,4 @@
-# Default values for accuknox-kubescape-job.
+# Default values for k8s-risk-assessment-job.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 

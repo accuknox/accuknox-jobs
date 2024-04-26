@@ -1,6 +1,6 @@
 apiVersion: v2
-name: accuknox-kubescape-job
-description: A Helm chart for creating AccuKnox kubescape job
+name: k8s-risk-assesment-job
+description: A Helm chart for creating AccuKnox k8s-risk-assessment job
 type: application
 version: 0.1.0
 
