@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: accuknox-kubescape-job
+  name: k8s-risk-assessment-job
   namespace: {{ .Release.Namespace }}
 spec:
   schedule: "{{ .Values.accuknox.cronTab }}"
@@ -11,12 +11,12 @@ spec:
   jobTemplate:
     metadata:
       labels:
-        app: accuknox-kubescape-job
+        app: k8s-risk-assessment-job
     spec:
       template:
         spec:
           initContainers:
-            - name: kubescape-init
+            - name: job-init-container
               image: "{{ .Values.kubescape.image.repository }}:{{ if ne .Values.kubescape.image.tag "" }}{{ .Values.kubescape.image.tag }}{{ else }}v{{ .Chart.AppVersion }}{{ end }}"
               args: ["scan", "framework", "allcontrols,clusterscan,mitre,nsa", "--format", "json", "--cache-dir", "/data/kubescape-cache", "--output", "/data/report.json", "--cluster-name=$(CLUSTER_NAME)"]
               env:
@@ -27,7 +27,7 @@ spec:
                   mountPath: /data
           containers:
             - image: accuknox/accuknox-job:latest
-              name: accuknox-kubescape-cronjob
+              name: artifact-api-container
               command:
                 - '/bin/bash'
                 - '/script/augment-and-push-results.sh'
@@ -52,6 +52,6 @@ spec:
               emptyDir: {}
             - name: scriptpath
               configMap:
-                name: accuknox-kubescape-cronjob-script-configmap
+                name: k8s-risk-assessment-job-script-configmap
           restartPolicy: OnFailure
-          serviceAccount: kubescape-service-account
+          serviceAccount: k8s-risk-assessment-job-service-account

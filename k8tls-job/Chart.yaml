@@ -1,6 +1,6 @@
 apiVersion: v2
-name: accuknox-k8tls-job
-description: A Helm chart for Kubernetes
+name: k8tls-job
+description: A Helm chart for running k8tls
 
 # A chart can be either an 'application' or a 'library' chart.
 #

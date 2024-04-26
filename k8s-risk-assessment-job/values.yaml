@@ -1,4 +1,4 @@
-# Default values for accuknox-kubescape-job.
+# Default values for k8s-risk-assessment-job.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
@@ -12,8 +12,8 @@ replicaCount: 1
 
 accuknox:
   authToken: "NO-TOKEN-SET"
-  URL: "cspm.dev.accuknox.com"
+  URL: "cspm.demo.accuknox.com"
   tenantID: ""
-  cronTab: "0 */6 * * *"
+  cronTab: "30 9 * * *"
   clusterName: ""
   label: ""
