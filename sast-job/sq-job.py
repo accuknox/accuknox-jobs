@@ -1,5 +1,6 @@
 # from bs4 import BeautifulSoup
 import json
+import re
 import logging
 import os
 import shutil
@@ -403,8 +404,15 @@ def get_all_results(
     global keys
     keys = []
 
+    log.info("projects regex {}".format(sq_projects))
     for component in components:
-        keys.append(component["key"])
+        key = component["key"]
+        x = re.search(sq_projects, key)
+        if x == None:
+            log.info("ignoring project {}".format(key))
+            continue
+        log.info("adding project: {}".format(key))
+        keys.append(key)
 
     if total > 500:
         while True:
@@ -627,4 +635,11 @@ def get_all_results_main_branch(
     return "Success! Data written to {}".format(file_list)
 
 if __name__ == '__main__':
-    get_all_results('squ_9b9dda208ed21bca25b89db2bcb7ccf19b27a2d5', 'http://35.188.10.229:9000')
+    sq_url = os.environ.get("SQ_URL", "")
+    sq_auth_token = os.environ.get('SQ_AUTH_TOKEN', "")
+    sq_projects = os.environ.get('SQ_PROJECTS', ".*")
+    
+    if sq_url == "" or sq_auth_token == "":
+        log.error("SQ_URL or SQ_AUTH_TOKEN env var not specified")
+        exit(1)
+    get_all_results(sq_auth_token, sq_url)
