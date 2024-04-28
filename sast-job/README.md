@@ -1,6 +1,7 @@
 # 
 
 ```bash
+rm -f SQ-*.json # Remove existing reports
 docker run --rm -it \
 	-e SQ_URL=http://35.188.10.229:9000 \
 	-e SQ_AUTH_TOKEN=<AUTH-TOKEN> \
@@ -9,6 +10,8 @@ docker run --rm -it \
 	-v $PWD:/app/data/ \
 	accuknox/sastjob:latest
 ```
+
+This will create a bunch of SQ-*.json files, one for every project/component found.
 
 ## Configuration
 
@@ -29,8 +32,10 @@ LABEL=SAST
 AK_URL="cspm.demo.accuknox.com"
 AK_TOK=<artifact token received from accuknox management plane>
 
-curl --location "https://$AK_URL/api/v1/artifact/?tenant_id=$TENANT_ID&data_type=SQ&save_to_s3=True&label_id=$LABEL" \
-	 --header "Tenant-Id: $TENANT_ID" \
-	 --header "Authorization: Bearer $AK_TOK" \
-	 --form 'file=@"SQ-nimbus.json"'
+for file in `ls -1 SQ-*.json`; do
+	curl --location "https://$AK_URL/api/v1/artifact/?tenant_id=$TENANT_ID&data_type=SQ&save_to_s3=True&label_id=$LABEL" \
+		 --header "Tenant-Id: $TENANT_ID" \
+		 --header "Authorization: Bearer $AK_TOK" \
+		 --form "file=@"$file""
+done
 ```
