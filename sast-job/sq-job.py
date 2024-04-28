@@ -24,7 +24,7 @@ def prereq():
     Install NodeJS which is needed to run SonarQube.
     """
     try:
-        return ""
+        return "" # Everything installed using Dockerfile
         subprocess.run(
             "curl -sL https://s3.amazonaws.com/scripts.accuknox.com/nodesource_setup.sh -o /tmp/nodesource_setup.sh",
             shell=True,
@@ -199,7 +199,8 @@ def _get_results(key, auth_token=None, sonar_url=None, branch=None):
         results += "]}"
 
     # Write results to file
-    issues_file = os.path.join(f"{SCANNED_FILE_DIR}", "SQ-{}.json".format(time.time()))
+    issues_file = os.path.join(f"{SCANNED_FILE_DIR}", "SQ-{}.json".format(key))
+    #issues_file = os.path.join(f"{SCANNED_FILE_DIR}", "SQ-{}.json".format(time.time()))
     with open(issues_file, "w") as f:
         f.write(results)
 
@@ -638,6 +639,7 @@ if __name__ == '__main__':
     sq_url = os.environ.get("SQ_URL", "")
     sq_auth_token = os.environ.get('SQ_AUTH_TOKEN', "")
     sq_projects = os.environ.get('SQ_PROJECTS', ".*")
+    SCANNED_FILE_DIR = os.environ.get('REPORT_PATH', "./")
     
     if sq_url == "" or sq_auth_token == "":
         log.error("SQ_URL or SQ_AUTH_TOKEN env var not specified")
