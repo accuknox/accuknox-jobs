@@ -231,7 +231,6 @@ def _build_issues_string(issues, auth_token, results, sonar_url, hotspots=False)
                     success = True
                 except Exception as e:
                     time.sleep(5)
-            data = data.json()
             if "rule" in data:
                 rule = data["rule"]
                 if "name" in rule:
