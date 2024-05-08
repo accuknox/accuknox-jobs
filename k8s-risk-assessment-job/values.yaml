@@ -5,8 +5,7 @@
 kubescape:
   image:
     repository: quay.io/kubescape/kubescape-cli
-    # if empty, take from appVersion
-    tag: ""
+    tag: "v3.0.8"
 
 replicaCount: 1
 
@@ -16,4 +15,5 @@ accuknox:
   tenantID: ""
   cronTab: "30 9 * * *"
   clusterName: ""
+  clusterID: 0
   label: ""
