@@ -23,6 +23,7 @@ data:
         },
         "accuknox_metadata": {
           "cluster_name": "'$ENV.CLUSTER_NAME'",
+          "cluster_id": "'$ENV.CLUSTER_ID'",
           "label_name": "'$ENV.LABEL_NAME'"
         }
       }" /data/report.json --slurpfile controllist /data/controllist.json) > /data/report.json
