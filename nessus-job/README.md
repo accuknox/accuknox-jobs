@@ -10,10 +10,10 @@ Instruction to export Nessus Data to AccuKnox SaaS
 ### Parameters:
 | Variable             | Sample Value                   | Description                            |
 | -------------------- | ------------------------------ | -------------------------------------- |
-| nessus_url           | https://cloud.tenable.com      | Nessus Server URL                      |
+| nessus_url           | https://cloud.tenable.com      | Tenable Nessus Server URL              |
 | folder_id            | 4                              | Nessus Folder ID                       |
 | nessus_access_key    | $access_key                    | Nessus Access Key                      |
-| nessus_secret_key    | #secret_key                    | Nessus Secret Key                      |
+| nessus_secret_key    | $secret_key                    | Nessus Secret Key                      |
 | k8s_job              | false                          | This is required when ran outside SaaS |
 | IS_ONPREM_DEPLOYMENT | true                           | This is required when run outside SaaS |
 | CSPM_BASE_URL        | https://cspm.demo.accuknox.com | AccuKnox CSPM API Endpoint             |
@@ -35,7 +35,7 @@ docker run --rm -it \
     -e nessus_url=https://cloud.tenable.com \
     -e folder_id=4 \
     -e nessus_access_key=$access_key  \
-    -e nessus_secret_key=#secret_key \
+    -e nessus_secret_key=$secret_key \
     -e k8s_job=false \
     -e IS_ONPREM_DEPLOYMENT=true \
     -e CSPM_BASE_URL=https://cspm.demo.accuknox.com \
