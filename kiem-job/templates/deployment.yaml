@@ -7,7 +7,6 @@ spec:
   schedule: "{{ .Values.accuknox.cronTab }}"  
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
-
   jobTemplate:
     metadata:
       labels:
