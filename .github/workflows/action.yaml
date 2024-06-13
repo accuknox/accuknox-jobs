@@ -44,7 +44,11 @@ jobs:
     needs: [tag-validate]
     steps:
     - name: Checkout source
-      uses: accuknox/common-gh-actions/actions/checkout-source@main 
+      uses: accuknox/common-gh-actions/actions/checkout-source@main
+    - name: name
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
     - name: Validate helm chart 
       uses: accuknox/common-gh-actions/actions/helm-check@main
       with:
