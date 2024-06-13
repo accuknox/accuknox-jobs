@@ -26,7 +26,7 @@ env:
   AWS_ACCESS_KEY_ID: ${{ secrets.AWS_DEV_ACCESS_ID }}
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_DEV_SECRET_ID }} 
   AWS_REGION: us-east-1
-
+  TOKEN: ${{ secrets.GH_PAT }}
 
 jobs:
   tag-validate:
@@ -46,7 +46,7 @@ jobs:
     - name: Checkout source
       uses: accuknox/common-gh-actions/actions/checkout-source@main 
       with:
-        token: ${{ secrets.GH_PAT }}
+        token: ${{ env.TOKEN }}
     - name: Validate helm chart 
       uses: accuknox/common-gh-actions/actions/helm-check@main
       with:
