@@ -28,18 +28,11 @@ env:
   AWS_REGION: us-east-1
 
 jobs:
-  # tag-validate:
-  #   runs-on: ubuntu-latest
-  #   if: startsWith(github.ref, 'refs/tags/v')
-  #   steps:
-  #   - uses: rubenesp87/semver-validation-action@0.1.0
-  #     with:
-  #      version: ${{ github.ref_name }}
-    
+  
     
   chart-validate-k8s:
     runs-on: ubuntu-latest
-    if: always() && !contains(needs.tag-validate.result, 'failure')
+    # if: always() && !contains(needs.tag-validate.result, 'failure')
     # needs: [tag-validate]
     steps:
     - name: Checkout source
@@ -52,7 +45,7 @@ jobs:
         
   chart-validate-k8tls:
     runs-on: ubuntu-latest
-    if: always() && !contains(needs.tag-validate.result, 'failure')
+    # if: always() && !contains(needs.tag-validate.result, 'failure')
     # needs: [tag-validate]
     steps:
     - name: Checkout source
@@ -65,7 +58,7 @@ jobs:
 
   chart-validate-kiem:
     runs-on: ubuntu-latest
-    if: always() && !contains(needs.tag-validate.result, 'failure')
+    # if: always() && !contains(needs.tag-validate.result, 'failure')
     # needs: [tag-validate]
     steps:
     - name: Checkout source
@@ -78,7 +71,7 @@ jobs:
 
   chart-validate-k8s-risk-assessment:
     runs-on: ubuntu-latest
-    if: always() && !contains(needs.tag-validate.result, 'failure')
+    # if: always() && !contains(needs.tag-validate.result, 'failure')
     # needs: [tag-validate]
     steps:
     - name: Checkout source
