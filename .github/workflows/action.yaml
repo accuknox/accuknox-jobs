@@ -45,6 +45,8 @@ jobs:
     steps:
     - name: Checkout source
       uses: accuknox/common-gh-actions/actions/checkout-source@main 
+      with:
+        token: ${{ secrets.GH_PAT }}
     - name: Validate helm chart 
       uses: accuknox/common-gh-actions/actions/helm-check@main
       with:
