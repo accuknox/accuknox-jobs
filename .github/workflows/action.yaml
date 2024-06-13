@@ -48,7 +48,7 @@ jobs:
       with:
         repository: accuknox/common-gh-actions
         token: ${{ env.TOKEN }}
-        github-server-url: https://github.com/accuknox
+        github-server-url: 'https://github.com/accuknox'
     - name: Checkout source
       uses: accuknox/common-gh-actions/actions/checkout-source@main 
     - name: Validate helm chart 
