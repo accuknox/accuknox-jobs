@@ -47,7 +47,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         repository: accuknox/common-gh-actions
-        token: ${{ env.GH_PAT }}
+        token: ${{ env.TOKEN }}
     - name: Checkout source
       uses: accuknox/common-gh-actions/actions/checkout-source@main 
     - name: Validate helm chart 
