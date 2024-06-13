@@ -43,10 +43,12 @@ jobs:
     if: always() && !contains(needs.tag-validate.result, 'failure')
     needs: [tag-validate]
     steps:
-    - name: Checkout source
-      uses: accuknox/common-gh-actions/actions/checkout-source@main 
+    - name: Authenticate with repository A
+      uses: octokit/request-action@v3
       with:
         token: ${{ env.TOKEN }}
+    - name: Checkout source
+      uses: accuknox/common-gh-actions/actions/checkout-source@main 
     - name: Validate helm chart 
       uses: accuknox/common-gh-actions/actions/helm-check@main
       with:
