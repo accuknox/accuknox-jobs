@@ -43,6 +43,12 @@ jobs:
     if: always() && !contains(needs.tag-validate.result, 'failure')
     needs: [tag-validate]
     steps:
+    - name: Checkout private tools
+      uses: actions/checkout@v4
+      with:
+        repository: accuknox/common-gh-actions
+        token: ${{ secrets.TOKEN }}  # Ensure TOKEN is correctly defined in your secrets
+        github-server-url: https://github.com/accuknox
     - name: Checkout repository
       uses: actions/checkout@v2
       with:
