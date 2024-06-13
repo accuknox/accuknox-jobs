@@ -152,3 +152,4 @@ jobs:
         ecr-region: ${{ env.AWS_REGION }}
         ecr-repo: ${{ env.REPO }}
         type: public
+
