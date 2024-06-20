@@ -21,6 +21,11 @@ jobs:
           chmod 700 get_helm.sh
           ./get_helm.sh
 
+      - name: Validate cis-k8s-job
+        run: |
+          helm lint cis-k8s-job
+          helm template cis-k8s-job --dry-run > /dev/null
+          
       - name: Validate k8s-risk-assessment-job
         run: |
           helm lint k8s-risk-assessment-job
@@ -62,7 +67,7 @@ jobs:
 
       - name: Package and Push Helm Charts
         run: |
-          for CHART_DIR in k8s-risk-assessment-job k8tls-job kiem-job; do
+          for CHART_DIR in cis-k8s-job k8s-risk-assessment-job k8tls-job kiem-job; do
             helm package $CHART_DIR
             HELM_PACKAGE=$(ls $CHART_DIR-*.tgz)
             helm push $HELM_PACKAGE oci://${{ secrets.REPO }}
