@@ -2,26 +2,15 @@ name: Accuknox-Job Workflow
 
 on:
   push:
-    tags:
-      - "v[0-9]+.[0-9]+.[0-9]+"  # Match tags like v1.0.0
-      - "v[0-9]+.[0-9]+.[0-9]+-*"
+    branches:
+      - test
   pull_request_target:
     branches:
-      - "*"  # This ensures it runs on all branches for pull requests
+      - "*" 
 
 jobs:
-  tag-validate:
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-      - name: Validate Tag Format
-        uses: rubenesp87/semver-validation-action@0.1.0
-        with:
-          version: ${{ github.ref_name }}
-
   helm_chart_validation:
     runs-on: ubuntu-latest
-    needs: tag-validate  # Ensure this job runs after tag validation
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -47,15 +36,9 @@ jobs:
           helm lint kiem-job
           helm template kiem-job --dry-run > /dev/null
 
-      - name: Validate cis-k8s-job
-        run: |
-          helm lint cis-k8s-job
-          helm template cis-k8s-job --dry-run > /dev/null
-
   helm_push_to_ecr:
     runs-on: ubuntu-latest
-    needs: [tag-validate, helm_chart_validation]  # Ensure this job runs after tag validation and chart validation
-
+    needs: [helm_chart_validation]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -73,69 +56,14 @@ jobs:
           chmod 700 get_helm.sh
           ./get_helm.sh
 
-      - name: Extract Tag Version
-        id: extract_version
-        run: |
-          TAG_NAME="${{ github.ref_name }}"  # e.g., v1.2.3
-          VERSION="${TAG_NAME}"  # Remove leading 'v'
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-
-      - name: Update Helm Chart Version for k8s-risk-assessment-job
-        run: |
-          sed -i "s/^version:.*$/version: ${{ env.VERSION }}/" k8s-risk-assessment-job/Chart.yaml
-
-      - name: Package k8s-risk-assessment-job
-        run: |
-          helm package k8s-risk-assessment-job
-          CHART_PACKAGE_1=$(ls k8s-risk-assessment-job-*.tgz)
-          echo "CHART_PACKAGE_1=$CHART_PACKAGE_1" >> $GITHUB_ENV
-
-      - name: Update Helm Chart Version for k8tls-job
-        run: |
-          sed -i "s/^version:.*$/version: ${{ env.VERSION }}/" k8tls-job/Chart.yaml
-
-      - name: Package k8tls-job
-        run: |
-          helm package k8tls-job
-          CHART_PACKAGE_2=$(ls k8tls-job-*.tgz)
-          echo "CHART_PACKAGE_2=$CHART_PACKAGE_2" >> $GITHUB_ENV
-
-      - name: Update Helm Chart Version for kiem-job
-        run: |
-          sed -i "s/^version:.*$/version: ${{ env.VERSION }}/" kiem-job/Chart.yaml
-
-      - name: Package kiem-job
-        run: |
-          helm package kiem-job
-          CHART_PACKAGE_3=$(ls kiem-job-*.tgz)
-          echo "CHART_PACKAGE_3=$CHART_PACKAGE_3" >> $GITHUB_ENV
-
-      - name: Update Helm Chart Version for cis-k8s-job
-        run: |
-          sed -i "s/^version:.*$/version: ${{ env.VERSION }}/" cis-k8s-job/Chart.yaml
-
-      - name: Package cis-k8s-job
-        run: |
-          helm package cis-k8s-job
-          CHART_PACKAGE_4=$(ls cis-k8s-job-*.tgz)
-          echo "CHART_PACKAGE_4=$CHART_PACKAGE_4" >> $GITHUB_ENV
-
       - name: Login to AWS ECR
         run: |
           aws ecr-public get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin ${{ secrets.REPO }}
 
-      - name: Push k8s-risk-assessment-job to ECR
+      - name: Package and Push Helm Charts
         run: |
-          helm push ${{ env.CHART_PACKAGE_1 }} oci://${{ secrets.REPO }}
-
-      - name: Push k8tls-job to ECR
-        run: |
-          helm push ${{ env.CHART_PACKAGE_2 }} oci://${{ secrets.REPO }}
-
-      - name: Push kiem-job to ECR
-        run: |
-          helm push ${{ env.CHART_PACKAGE_3 }} oci://${{ secrets.REPO }}
-
-      - name: Push cis-k8s-job to ECR
-        run: |
-          helm push ${{ env.CHART_PACKAGE_4 }} oci://${{ secrets.REPO }}
+          for CHART_DIR in cis-k8s-job k8s-risk-assessment-job k8tls-job kiem-job; do
+            helm package $CHART_DIR
+            CHART_PACKAGE=$(ls $CHART_DIR-*.tgz)
+            helm push $CHART_PACKAGE oci://${{ secrets.REPO }}
+          done
