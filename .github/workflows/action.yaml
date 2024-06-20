@@ -3,7 +3,7 @@ name: Accuknox-Job Workflow
 on:
   push:
     branches:
-      - test
+      - main
   pull_request_target:
     branches:
       - "*" 
