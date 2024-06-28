@@ -9,4 +9,4 @@ accuknox:
   label: ""
   clusterId: ""
   tenantId: ""
-  URL: "cspm.demo.accuknox.com"
+  url: "cspm.demo.accuknox.com"
