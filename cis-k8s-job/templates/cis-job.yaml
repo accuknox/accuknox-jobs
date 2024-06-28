@@ -13,7 +13,7 @@ spec:
           containers:
           - image: accuknox/accuknox-job:latest
             command: ["/bin/sh", "-c"]
-            args: ['curl --location --request POST "https://$ENV_URL/api/v1/artifact/?tenant_id=$TENANT_ID&data_type=KB&save_to_s3=true" --header "Authorization: Bearer $AUTH_TOKEN" --form "file=@\"./data/report.json\""']
+            args: ['/bin/bash entrypoint.sh && curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KB&save_to_s3=true" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"./data/report.json\"" && cat /data/report.json']
             name: cis-k8s-cronjob
             resources: {}
             env:
@@ -27,15 +27,15 @@ spec:
                 value: {{ .Values.accuknox.clusterId }}
               - name: TENANT_ID
                 value: {{ .Values.accuknox.tenantId | quote}}
-              - name: ENV_URL
-                value: {{ .Values.accuknox.URL }}
+              - name: URL
+                value: {{ .Values.accuknox.url }}
             volumeMounts:
-              - mountPath: /data
-                name: datapath
+            - mountPath: /data
+              name: datapath
           initContainers:
-          - command: ["/bin/sh", "-c"]
+          - image: docker.io/aquasec/kube-bench:v0.6.19
+            command: ["/bin/sh", "-c"]
             args: ["kube-bench run --json > /data/report.json"]
-            image: docker.io/aquasec/kube-bench:v0.6.19
             name: kube-bench
             volumeMounts:
             - mountPath: /data
