@@ -15,9 +15,15 @@ Instruction to perform CIS Benchmark on Cluster via AccuKnox CIS K8s Job
 | accuknox.clusterName | $clusterName           | Cluster Name               |
 | accuknox.cronTab     | 30 9 * * *             | CronJob (UTC)              |
 
-## Helm Command to deploy AccuKnox CIS K8s Job locally:
+## Schedule CIS Job on cluster
+#### Clone GitHub and switch to CIS K8s Job folder
 ```sh
-helm upgrade --install accuknox-cis-k8 . \
+git clone https://github.com/accuknox/accuknox-jobs.git && cd accuknox-jobs/cis-k8s-job
+```
+
+#### Helm Command to deploy AccuKnox CIS K8s Job locally:
+```sh
+helm upgrade --install accuknox-cis-k8s . \
     --set accuknox.url="cspm.demo.accuknox.com" \
     --set accuknox.tenantId="$tenantId" \
     --set accuknox.label="$label" \
