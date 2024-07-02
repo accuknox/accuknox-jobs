@@ -1,9 +1,6 @@
-FROM ubuntu:latest
+FROM alpine:latest
 
-RUN apt update -y \
-    && apt upgrade -y \
-    && apt install -y curl jq
-
+RUN apk --update add jq curl
 COPY entrypoint.sh .
 
-ENTRYPOINT ["/bin/bash", "entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "entrypoint.sh"]
