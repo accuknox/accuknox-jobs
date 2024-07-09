@@ -29,7 +29,7 @@ spec:
             - image: accuknox/accuknox-job:latest
               name: artifact-api-container
               command:
-                - '/bin/bash'
+                - '/bin/sh'
                 - '/script/augment-and-push-results.sh'
               env:
                 - name: URL
