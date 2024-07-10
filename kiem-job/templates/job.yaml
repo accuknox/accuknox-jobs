@@ -1,0 +1,45 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: kiem-job
+  namespace: {{ .Release.Namespace }}
+spec:
+  template:
+    metadata:
+      labels:
+        app: kiem-job
+    spec:
+      initContainers:
+        - name: kiem-init
+          image: accuknox/kiem:latest
+          args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
+          env:
+            - name: CLUSTER_NAME
+              value: {{ .Values.accuknox.clusterName }}
+          volumeMounts:
+            - name: datapath
+              mountPath: /data
+      containers:
+        - image: accuknox/accuknox-job:latest
+          command: ['sh', '-c', 'curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KIEM&save_to_s3=false&label_id=${LABEL_NAME}" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"/data/report.json\""']
+          name: accuknox-kiem-job
+          resources: {}
+          env:
+            - name: URL
+              value: {{ .Values.accuknox.URL }}
+            - name: TENANT_ID
+              value: {{ .Values.accuknox.tenantID | quote }}
+            - name: AUTH_TOKEN
+              value: {{ .Values.accuknox.authToken }}
+            - name: CLUSTER_NAME
+              value: {{ .Values.accuknox.clusterName }}
+            - name: LABEL_NAME
+              value: {{ .Values.accuknox.label | quote}}
+          volumeMounts:
+            - mountPath: /data
+              name: datapath      
+      volumes:
+        - name: datapath
+          emptyDir: {}
+      restartPolicy: OnFailure
+      serviceAccount: kiem-service-account
