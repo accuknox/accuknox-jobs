@@ -26,7 +26,7 @@ spec:
                   mountPath: /data
           containers:
             - image: accuknox/accuknox-job:latest
-              command: ['sh', '-c', 'curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KIEM&save_to_s3=false" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"/data/report.json\""']
+              command: ['sh', '-c', 'curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KIEM&save_to_s3=false&label_id=${LABEL_NAME}" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"/data/report.json\""']
               name: accuknox-kiem-cronjob
               resources: {}
               env:
@@ -39,7 +39,7 @@ spec:
                 - name: CLUSTER_NAME
                   value: {{ .Values.accuknox.clusterName }}
                 - name: LABEL_NAME
-                  value: {{ .Values.accuknox.label }}
+                  value: {{ .Values.accuknox.label | quote}}
               volumeMounts:
                 - mountPath: /data
                   name: datapath      
