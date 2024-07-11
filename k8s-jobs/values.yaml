@@ -1,0 +1,24 @@
+# Global parameters applicable to all jobs
+global:
+  url: "cspm.demo.accuknox.com"
+  tenantId: ""
+  authToken: "NO-TOKEN-SET"
+  cronTab: "30 9 * * *"  
+  clusterName: ""
+  clusterId: ""
+  label: ""  
+
+# Job-specific configurations
+accuknox:
+  cis:
+    enabled: false
+    # Add specific configurations for CIS job if needed
+  riskassessment:
+    enabled: false
+    # Add specific configurations for risk assessment job if needed
+  k8tls:
+    enabled: false
+    # Add specific configurations for k8tls job if needed
+  kiem:
+    enabled: false
+    # Add specific configurations for kiem job if needed
