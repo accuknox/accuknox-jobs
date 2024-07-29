@@ -26,12 +26,19 @@ spec:
             - '/bin/sh'
             - '/script/augment-and-push-results.sh'
           env:
+            - name: AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  key: AUTH_TOKEN
+                  {{- if (.Values.accuknox.secretName | empty) }}
+                  name: k8s-risk-assessment-job-auth-token
+                  {{- else }}
+                  name: {{ .Values.accuknox.secretName }}
+                  {{- end }}
             - name: URL
               value: {{ .Values.accuknox.URL }}
             - name: TENANT_ID
               value: {{ .Values.accuknox.tenantID | quote }}
-            - name: AUTH_TOKEN
-              value: {{ .Values.accuknox.authToken }}
             - name: CLUSTER_NAME
               value: {{ .Values.accuknox.clusterName }}
             - name: CLUSTER_ID
