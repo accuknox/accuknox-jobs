@@ -6,6 +6,7 @@ docker run --rm -it \
 	-e SQ_URL=http://35.188.10.229:9000 \
 	-e SQ_AUTH_TOKEN=<AUTH-TOKEN> \
 	-e SQ_PROJECTS="^nimbus$" \
+	-e SQ_ORG="accuknox" /* needed for sonarcloud.io */ \
 	-e REPORT_PATH=/app/data/ \
 	-v $PWD:/app/data/ \
 	accuknox/sastjob:latest
@@ -17,9 +18,10 @@ This will create a bunch of SQ-*.json files, one for every project/component fou
 
 |      Var       | Sample Value              | Description                        |
 |----------------|---------------------------|------------------------------------|
-| SQ_URL*        | http://35.188.10.229:9000 | SonarQube server URL               |
+| SQ_URL*        | http://35.188.10.229:9000, https://sonarcloud.io/ | SonarQube server URL               |
 | SQ_AUTH_TOKEN* | squ_token                 | SonarQube user authn token         |
 | SQ_PROJECTS    | "^nimbus$"                | Scan the given projects/components |
+| SQ_ORG    | "accuknox"                | Required in case of sonarcloud enterprise. |
 | REPORT_PATH    | /app/data/                | Path to keep the report json files |
 
 > variables marked with '*' are mandatory configuration options

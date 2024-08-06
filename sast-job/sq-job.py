@@ -264,6 +264,9 @@ def _build_issues_string(issues, auth_token, results, sonar_url, hotspots=False)
         else:
             rule = issue["rule"]
             params = {"key": rule}
+            if sq_org != "":
+                params["organization"] = sq_org
+
             success = False
             while not success:
                 try:
@@ -389,6 +392,8 @@ def get_all_results(
     api = urllib.parse.urljoin(sonar_url, "api/components/search")
 
     params = {"qualifiers": "TRK", "ps": 500, "p": 1}
+    if sq_org != "":
+        params["organization"] = sq_org
 
     log.info("sonarqube: initiating components search ...")
     try:
@@ -638,9 +643,11 @@ if __name__ == '__main__':
     sq_url = os.environ.get("SQ_URL", "")
     sq_auth_token = os.environ.get('SQ_AUTH_TOKEN', "")
     sq_projects = os.environ.get('SQ_PROJECTS', ".*")
+    sq_org = os.environ.get('SQ_ORG', "")
     SCANNED_FILE_DIR = os.environ.get('REPORT_PATH', "./")
     
     if sq_url == "" or sq_auth_token == "":
         log.error("SQ_URL or SQ_AUTH_TOKEN env var not specified")
         exit(1)
+    log.info(f"SQ_ORG={sq_org}")
     get_all_results(sq_auth_token, sq_url)
