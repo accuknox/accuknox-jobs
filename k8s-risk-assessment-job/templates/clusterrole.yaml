@@ -4,16 +4,169 @@ metadata:
   name: k8s-risk-assessment-job-clusterrole
 rules:
   - apiGroups:
-    - ""
-    - extensions
-    - apps
-    - batch
-    - rbac.authorization.k8s.io
-    - roles.rbac.authorization.k8s.io
-    - authorization.k8s.io
-    - certificates.k8s.io
-    - apiextensions.k8s.io
-    - admissionregistration.k8s.io
-    - networking.k8s.io
-    resources: ["*"]
-    verbs:  ["*"]
+      - ''
+    resources:
+      - pods
+      - pods/proxy
+      - namespaces
+      - secrets
+      - nodes
+      - configmaps
+      - services
+      - serviceaccounts
+      - endpoints
+      - persistentvolumeclaims
+      - persistentvolumes
+      - limitranges
+      - replicationcontrollers
+      - podtemplates
+      - resourcequotas
+      - events
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - admissionregistration.k8s.io
+    resources:
+      - mutatingwebhookconfigurations
+      - validatingwebhookconfigurations
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - apiregistration.k8s.io
+    resources:
+      - apiservices
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - apps
+    resources:
+      - deployments
+      - statefulsets
+      - daemonsets
+      - replicasets
+      - controllerrevisions
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - autoscaling
+    resources:
+      - horizontalpodautoscalers
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - batch
+    resources:
+      - jobs
+      - cronjobs
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - coordination.k8s.io
+    resources:
+      - leases
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - discovery.k8s.io
+    resources:
+      - endpointslices
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - events.k8s.io
+    resources:
+      - events
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - networkpolicies
+      - Ingress
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - policy
+    resources:
+      - poddisruptionbudgets
+      - podsecuritypolicies
+      - PodSecurityPolicy
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - rbac.authorization.k8s.io
+    resources:
+      - clusterroles
+      - clusterrolebindings
+      - roles
+      - rolebindings
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - storage.k8s.io
+    resources:
+      - csistoragecapacities
+      - storageclasses
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - extensions
+    resources:
+      - Ingress
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - httproutes
+      - gateways
+      - gatewayclasses
+      - tcproutes
+      - tlsroutes
+      - udproutes
+    verbs:
+      - get
+      - watch
+      - list
+  - apiGroups:
+      - ''
+    resources:
+      - namespaces
+    verbs:
+      - update
