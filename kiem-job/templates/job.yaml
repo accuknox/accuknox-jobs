@@ -25,12 +25,19 @@ spec:
           name: accuknox-kiem-job
           resources: {}
           env:
+            - name: AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  key: AUTH_TOKEN
+                  {{- if (.Values.accuknox.secretName | empty) }}
+                  name: kiem-job-auth-token
+                  {{- else }}
+                  name: {{ .Values.accuknox.secretName }}
+                  {{- end }}
             - name: URL
               value: {{ .Values.accuknox.URL }}
             - name: TENANT_ID
               value: {{ .Values.accuknox.tenantID | quote }}
-            - name: AUTH_TOKEN
-              value: {{ .Values.accuknox.authToken }}
             - name: CLUSTER_NAME
               value: {{ .Values.accuknox.clusterName }}
             - name: LABEL_NAME
