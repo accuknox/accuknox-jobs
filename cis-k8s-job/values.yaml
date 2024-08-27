@@ -10,3 +10,4 @@ accuknox:
   clusterId: ""
   tenantId: ""
   url: "cspm.demo.accuknox.com"
+  secretName: ""

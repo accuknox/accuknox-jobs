@@ -18,7 +18,14 @@ spec:
         resources: {}
         env:
           - name: AUTH_TOKEN
-            value: {{ .Values.accuknox.authToken }}
+            valueFrom:
+              secretKeyRef:
+                key: AUTH_TOKEN
+                {{- if (.Values.accuknox.secretName | empty) }}
+                name: cis-k8s-job-auth-token
+                {{- else }}
+                name: {{ .Values.accuknox.secretName }}
+                {{- end }}
           - name: CLUSTER_NAME
             value: {{ .Values.accuknox.clusterName }}
           - name: LABEL_NAME
