@@ -1,3 +1,4 @@
+{{- if .Values.accuknox.riskassessment.enabled }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -170,3 +171,5 @@ rules:
       - namespaces
     verbs:
       - update
+
+{{- end }}  

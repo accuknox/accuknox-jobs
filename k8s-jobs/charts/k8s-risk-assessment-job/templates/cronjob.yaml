@@ -1,10 +1,11 @@
+{{- if .Values.accuknox.riskassessment.enabled }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: k8s-risk-assessment-job
   namespace: {{ .Release.Namespace }}
 spec:
-  schedule: "{{ .Values.accuknox.cronTab }}"
+  schedule: "{{ .Values.global.cronTab }}"
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
 
@@ -21,7 +22,7 @@ spec:
               args: ["scan", "framework", "allcontrols,clusterscan,mitre,nsa", "--format", "json", "--cache-dir", "/data/kubescape-cache", "--output", "/data/report.json", "--cluster-name=$(CLUSTER_NAME)"]
               env:
                 - name: CLUSTER_NAME
-                  value: {{ .Values.accuknox.clusterName }}
+                  value: {{ .Values.global.clusterName }}
               volumeMounts:
                 - name: datapath
                   mountPath: /data
@@ -42,15 +43,15 @@ spec:
                       name: {{ .Values.accuknox.secretName }}
                       {{- end }}
                 - name: URL
-                  value: {{ .Values.accuknox.URL }}
+                  value: {{ .Values.global.url }}
                 - name: TENANT_ID
-                  value: {{ .Values.accuknox.tenantID | quote }}
+                  value: {{ .Values.global.tenantId | quote }}
                 - name: CLUSTER_NAME
-                  value: {{ .Values.accuknox.clusterName }}
+                  value: {{ .Values.global.clusterName }}
                 - name: CLUSTER_ID
-                  value: {{ .Values.accuknox.clusterID | quote }}
+                  value: {{ .Values.global.clusterId | quote }}
                 - name: LABEL_NAME
-                  value: {{ .Values.accuknox.label }}
+                  value: {{ .Values.global.label }}
               volumeMounts:
                 - mountPath: /data
                   name: datapath
@@ -64,3 +65,5 @@ spec:
                 name: k8s-risk-assessment-job-script-configmap
           restartPolicy: OnFailure
           serviceAccount: k8s-risk-assessment-job-service-account
+
+{{- end }}  
