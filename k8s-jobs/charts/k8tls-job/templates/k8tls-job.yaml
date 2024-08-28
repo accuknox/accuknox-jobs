@@ -1,3 +1,4 @@
+{{- if .Values.accuknox.k8tls.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -17,15 +18,15 @@ spec:
         resources: {}
         env:
           - name: URL
-            value: {{ .Values.accuknox.URL }}
+            value: {{ .Values.global.url }}
           - name: TENANT_ID
-            value: {{ .Values.accuknox.tenantID | quote }}
+            value: {{ .Values.global.tenantId | quote }}
           - name: AUTH_TOKEN
-            value: {{ .Values.accuknox.authToken }}
+            value: {{ .Values.global.authToken }}
           - name: CLUSTER_NAME
-            value: {{ if ne .Values.accuknox.clusterName "" }}{{ .Values.accuknox.clusterName }}{{ else }}{{ "default" }}{{ end }}
+            value: {{ if ne .Values.global.clusterName "" }}{{ .Values.global.clusterName }}{{ else }}{{ "default" }}{{ end }}
           - name: LABEL_NAME
-            value: {{ if ne .Values.accuknox.label "" }}{{ .Values.accuknox.label }}{{ else }}{{ "default" }}{{ end }}
+            value: {{ if ne .Values.global.label "" }}{{ .Values.global.label }}{{ else }}{{ "default" }}{{ end }}
         volumeMounts:
           - mountPath: /data
             name: datapath
@@ -45,3 +46,4 @@ spec:
         - name: datapath
           emptyDir: {}
 
+{{- end }}  

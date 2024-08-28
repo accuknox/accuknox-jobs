@@ -1,3 +1,4 @@
+{{- if .Values.accuknox.kiem.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -15,7 +16,7 @@ spec:
           args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
           env:
             - name: CLUSTER_NAME
-              value: {{ .Values.accuknox.clusterName }}
+              value: {{ .Values.global.clusterName }}
           volumeMounts:
             - name: datapath
               mountPath: /data
@@ -26,15 +27,15 @@ spec:
           resources: {}
           env:
             - name: URL
-              value: {{ .Values.accuknox.URL }}
+              value: {{ .Values.global.url }}
             - name: TENANT_ID
-              value: {{ .Values.accuknox.tenantID | quote }}
+              value: {{ .Values.global.tenantId | quote }}
             - name: AUTH_TOKEN
-              value: {{ .Values.accuknox.authToken }}
+              value: {{ .Values.global.authToken }}
             - name: CLUSTER_NAME
-              value: {{ .Values.accuknox.clusterName }}
+              value: {{ .Values.global.clusterName }}
             - name: LABEL_NAME
-              value: {{ .Values.accuknox.label | quote}}
+              value: {{ .Values.global.label | quote}}
           volumeMounts:
             - mountPath: /data
               name: datapath      
@@ -43,3 +44,4 @@ spec:
           emptyDir: {}
       restartPolicy: OnFailure
       serviceAccount: kiem-service-account
+{{- end }}  

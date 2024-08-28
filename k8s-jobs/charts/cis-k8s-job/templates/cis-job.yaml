@@ -1,3 +1,4 @@
+{{- if .Values.accuknox.cis.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -18,17 +19,17 @@ spec:
         resources: {}
         env:
           - name: AUTH_TOKEN
-            value: {{ .Values.accuknox.authToken }}
+            value: {{ .Values.global.authToken }}
           - name: CLUSTER_NAME
-            value: {{ .Values.accuknox.clusterName }}
+            value: {{ .Values.global.clusterName }}
           - name: LABEL_NAME
-            value: {{ .Values.accuknox.label }}
+            value: {{ .Values.global.label }}
           - name: CLUSTER_ID
-            value: {{ .Values.accuknox.clusterId }}
+            value: {{ .Values.global.clusterId }}
           - name: TENANT_ID
-            value: {{ .Values.accuknox.tenantId | quote}}
+            value: {{ .Values.global.tenantId | quote}}
           - name: URL
-            value: {{ .Values.accuknox.url }}
+            value: {{ .Values.global.url }}
         volumeMounts:
         - mountPath: /data
           name: datapath
@@ -111,3 +112,4 @@ spec:
         - hostPath:
             path: /opt/cni/bin/
           name: opt-cni-bin
+{{- end }}  
