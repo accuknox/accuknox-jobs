@@ -2,6 +2,25 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+
+kiem:
+  image:
+    repository: accuknox/kiem
+    tag: "latest"
+
+accuknoxJob:
+  image:
+    repository: accuknox/accuknox-job
+    tag: "latest"
+
+# To use existing secret, updated {imagePullSecrets.name} with your secret name.
+imagePullSecrets:
+  name: ""
+  registry: ""
+  username: ""
+  password: ""
+
+
 replicaCount: 1
 
 accuknox:

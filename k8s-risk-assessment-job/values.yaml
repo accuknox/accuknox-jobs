@@ -7,6 +7,19 @@ kubescape:
     repository: quay.io/kubescape/kubescape-cli
     tag: "v3.0.8"
 
+accuknoxJob:
+  image:
+    repository: accuknox/accuknox-job
+    tag: "latest"
+
+
+# To use existing secret updated {imagePullSecrets.name} with your secret name.
+imagePullSecrets:
+  name: ""
+  registry: ""
+  username: ""
+  password: ""
+
 replicaCount: 1
 
 accuknox:
