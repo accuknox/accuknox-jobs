@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 
-cis:
+accuknoxJob:
   image:
     repository: accuknox/accuknox-job
     tag: "latest"

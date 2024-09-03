@@ -15,7 +15,7 @@ spec:
           - name: {{ .Values.imagePullSecrets.name }}
         {{- end }}
           containers:
-          - image: "{{ .Values.cis.image.repository }}:{{ .Values.cis.image.tag }}" 
+          - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}" 
             command: ["/bin/sh", "-c"]
             args: ['/bin/sh entrypoint.sh && curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KB&label_id=${LABEL_NAME}&save_to_s3=true" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"./data/report.json\"" && cat /data/report.json']
             name: cis-k8s-cronjob
