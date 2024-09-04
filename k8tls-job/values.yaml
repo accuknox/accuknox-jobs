@@ -9,3 +9,5 @@ accuknox:
   clusterName: ""
   label: ""
   URL: "cspm.demo.accuknox.com"
+  certBundleURL: ""  # Set this for cert URL if needed
+  useInsecureConnection: false  # Set to true if insecure connection is needed

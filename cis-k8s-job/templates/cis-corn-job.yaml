@@ -29,6 +29,10 @@ spec:
                 value: {{ .Values.accuknox.tenantId | quote}}
               - name: URL
                 value: {{ .Values.accuknox.url }}
+              - name: CERT_BUNDLE_URL
+                value: {{ .Values.accuknox.certBundleURL }}
+              - name: USE_INSECURE_CONNECTION
+                value: {{ .Values.accuknox.useInsecureConnection | quote }}
             volumeMounts:
             - mountPath: /data
               name: datapath
