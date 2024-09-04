@@ -35,3 +35,37 @@ helm upgrade --install accuknox-cis-k8s . \
 ### Note:
 - You can get AccuKnox Token & Tenant ID from AccuKnox SaaS under navigation `Settings > Tokens`
 - You can get AccuKnox Label from AccuKNox SaaS under navigation `Settings > Labels`
+
+---
+## Manual Procedure
+Instruction to perform CIS Benchmark manually using [kube-bench](https://github.com/aquasecurity/kube-bench) binary
+
+### Prerequisites:
+- [Kube-Bench](https://github.com/aquasecurity/kube-bench)
+- [jq](https://jqlang.github.io/jq/download/)
+- [Cluster Context](https://kubernetes.io/docs/reference/kubectl/generated/kubectl_config/kubectl_config_use-context/)
+
+### Steps to follow:
+ - Getting output file as `results.json` on current-context of selected cluster
+```sh
+kube-bench run --config-dir ~/test/KubeBench/cfg/ --json --outputfile results.json
+```
+> Make sure you provide correct `--config-dir`.
+
+ - Adding **Metadata** to above output file
+```sh
+cat <<<$(jq '. += {
+    "Metadata": {
+        "cluster_name":"$cluster",
+        "label_name":"$label"}}
+    ' results.json) >results.json
+```
+> Replace value of `$cluster` with cluster name & `$label` with AccuKnox Label
+
+ - Sending output file to AccuKnox SaaS
+```sh
+curl --location --request POST 'https://cspm.demo.accuknox.com/api/v1/artifact/?tenant_id=$tenantId&data_type=KB&save_to_s3=false' --header 'Tenant-Id: $tenantId' --header "Authorization: Bearer $token" --form 'file=@"./results.json"'
+```
+> Replace value of `$tenantId` from AccuKnox Tenant ID & `$token` from AccuKnox Token
+
+ - You should be able to see a successful message as **{"detail":"File received successfully"}**
