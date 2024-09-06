@@ -9,6 +9,10 @@ spec:
       labels:
         app: kiem-job
     spec:
+    {{- if .Values.imagePullSecrets.name }}
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets.name }}
+    {{- end }}    
       initContainers:
         - name: kiem-init
           image: accuknox/kiem:latest

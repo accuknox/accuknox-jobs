@@ -9,6 +9,10 @@ spec:
       labels:
         app: k8s-risk-assessment-job
     spec:
+    {{- if .Values.imagePullSecrets.name }}
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets.name }}
+    {{- end }}    
       initContainers:
         - name: job-init-container
           image: "{{ .Values.kubescape.image.repository }}:{{ .Values.kubescape.image.tag }}"
@@ -20,7 +24,7 @@ spec:
             - name: datapath
               mountPath: /data
       containers:
-        - image: accuknox/accuknox-job:latest
+        - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}"
           name: artifact-api-container
           command:
             - '/bin/sh'
