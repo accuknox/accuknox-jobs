@@ -3,9 +3,5 @@
 # Declare variables to be passed into your templates.
 
 accuknox:
-  authToken: "NO-TOKEN-SET"
-  cronTab: "30 9 * * *"
-  tenantID: ""
-  clusterName: ""
-  label: ""
-  URL: "cspm.demo.accuknox.com"
+  k8tls:
+    enabled: "false"

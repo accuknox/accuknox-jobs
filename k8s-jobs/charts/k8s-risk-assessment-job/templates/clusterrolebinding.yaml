@@ -1,3 +1,4 @@
+{{- if .Values.accuknox.riskassessment.enabled }}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
@@ -10,3 +11,5 @@ roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
   name: k8s-risk-assessment-job-clusterrole
+
+{{- end }}  
