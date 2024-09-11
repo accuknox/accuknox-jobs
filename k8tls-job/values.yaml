@@ -9,3 +9,4 @@ accuknox:
   clusterName: ""
   label: ""
   URL: "cspm.demo.accuknox.com"
+  secretName: ""

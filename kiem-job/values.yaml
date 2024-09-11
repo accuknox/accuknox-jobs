@@ -11,3 +11,4 @@ accuknox:
   cronTab: "30 9 * * *"
   clusterName: ""
   label: ""
+  secretName: ""
