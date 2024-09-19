@@ -7,7 +7,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: k8tls-cr
+  name: {{ .Release.Namespace }}-k8tls-cr
 rules:
 - apiGroups: [""]
   resources: ["services"]
@@ -16,11 +16,11 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: k8tls-crb
+  name: {{ .Release.Namespace }}-k8tls-crb
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: k8tls-cr
+  name: {{ .Release.Namespace }}-k8tls-cr
 subjects:
 - kind: ServiceAccount
   name: k8tls-serviceact
@@ -42,7 +42,7 @@ spec:
           containers:
           - image: accuknox/accuknox-job:latest
             command: ["/bin/sh", "-c"]
-            args: ['curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=K8TLS&save_to_s3=false" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"/data/report.json\"" && cat /data/report.json']
+            args: ['curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=K8TLS&save_to_s3=true" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"/data/report.json\"" && cat /data/report.json']
             name: k8tls-job
             resources: {}
             env:

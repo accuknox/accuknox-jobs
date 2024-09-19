@@ -64,7 +64,7 @@ cat <<<$(jq '. += {
 
  - Sending output file to AccuKnox SaaS
 ```sh
-curl --location --request POST 'https://cspm.demo.accuknox.com/api/v1/artifact/?tenant_id=$tenantId&data_type=KB&save_to_s3=false' --header 'Tenant-Id: $tenantId' --header "Authorization: Bearer $token" --form 'file=@"./results.json"'
+curl --location --request POST 'https://cspm.demo.accuknox.com/api/v1/artifact/?tenant_id=$tenantId&data_type=KB&save_to_s3=true' --header 'Tenant-Id: $tenantId' --header "Authorization: Bearer $token" --form 'file=@"./results.json"'
 ```
 > Replace value of `$tenantId` from AccuKnox Tenant ID & `$token` from AccuKnox Token
 
