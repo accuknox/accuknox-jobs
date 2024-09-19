@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kiem-cluster-role
+  name: {{ .Release.Namespace }}-kiem-cluster-role
 rules:
   - apiGroups:
         - ""
