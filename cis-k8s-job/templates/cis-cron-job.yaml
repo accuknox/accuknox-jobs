@@ -10,8 +10,12 @@ spec:
     spec:
       template:
         spec:
+        {{- if .Values.imagePullSecrets.name }}
+          imagePullSecrets:
+          - name: {{ .Values.imagePullSecrets.name }}
+        {{- end }}
           containers:
-          - image: accuknox/accuknox-job:latest
+          - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}" 
             command: ["/bin/sh", "-c"]
             args: ['/bin/sh entrypoint.sh && curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KB&label_id=${LABEL_NAME}&save_to_s3=true" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"./data/report.json\"" && cat /data/report.json']
             name: cis-k8s-cronjob
@@ -40,7 +44,7 @@ spec:
             - mountPath: /data
               name: datapath
           initContainers:
-          - image: docker.io/aquasec/kube-bench:v0.6.19
+          - image: "{{ .Values.kubeBench.image.repository }}:{{ .Values.kubeBench.image.tag }}" 
             command: ["/bin/sh", "-c"]
             args: ["kube-bench run --json > /data/report.json"]
             name: kube-bench
