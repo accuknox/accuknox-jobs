@@ -27,17 +27,17 @@ appVersion: "1.16.0"
 dependencies:
   - name: cis-k8s-job
     version: "0.1.0"
-    repository: "file://charts/cis-k8s-job"
+    repository: "file:/./charts/cis-k8s-job"
     condition: accuknox.cis.enabled 
   - name: k8s-risk-assessment-job
     version: "0.1.0"
-    repository: "file://charts/k8s-risk-assessment-job"
+    repository: "file:/./charts/k8s-risk-assessment-job"
     condition: accuknox.riskassessment.enabled
   - name: k8tls-job
     version: "0.1.0"
-    repository: "file://charts/k8tls-job"
+    repository: "file:/./charts/k8tls-job"
     condition: accuknox.k8tls.enabled
   - name: kiem-job
     version: "0.1.0"
-    repository: "file://charts/kiem-job"
+    repository: "file:/./charts/kiem-job"
     condition: accuknox.kiem.enabled
