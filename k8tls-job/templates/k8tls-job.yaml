@@ -8,9 +8,13 @@ spec:
     metadata:
       name: k8tls-job
     spec:
+    {{- if .Values.imagePullSecrets.name }}
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets.name }}
+    {{- end }}    
       serviceAccountName: k8tls-serviceact
       containers:
-      - image: accuknox/accuknox-job:latest
+      - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}"
         command: ["/bin/sh", "-c"]
         args: ['curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=K8TLS&save_to_s3=true" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"/data/report.json\"" && cat /data/report.json']
         name: k8tls-job
@@ -39,7 +43,7 @@ spec:
       initContainers:
       - command: ["/bin/sh", "-c"]
         args: ["./k8s_tlsscan"]
-        image: kubearmor/k8tls:latest
+        image: "{{ .Values.k8tls.image.repository }}:{{ .Values.k8tls.image.tag }}"
         name: k8tls
         env:
           - name: JSON

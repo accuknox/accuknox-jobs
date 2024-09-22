@@ -14,9 +14,13 @@ spec:
     spec:
       template:
         spec:
+        {{- if .Values.imagePullSecrets.name }}
+          imagePullSecrets:
+          - name: {{ .Values.imagePullSecrets.name }}
+        {{- end }}        
           initContainers:
             - name: kiem-init
-              image: accuknox/kiem:latest
+              image: "{{ .Values.kiem.image.repository }}:{{ .Values.kiem.image.tag }}"
               args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
               env:
                 - name: CLUSTER_NAME
@@ -25,7 +29,7 @@ spec:
                 - name: datapath
                   mountPath: /data
           containers:
-            - image: accuknox/accuknox-job:latest
+            - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}"
               command: ['sh', '-c', 'curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KIEM&save_to_s3=true&label_id=${LABEL_NAME}" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"/data/report.json\""']
               name: accuknox-kiem-cronjob
               resources: {}
