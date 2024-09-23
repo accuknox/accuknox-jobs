@@ -10,11 +10,5 @@ kubescape:
 replicaCount: 1
 
 accuknox:
-  authToken: "NO-TOKEN-SET"
-  URL: "cspm.demo.accuknox.com"
-  tenantID: ""
-  cronTab: "30 9 * * *"
-  clusterName: ""
-  clusterID: 0
-  label: ""
-  secretName: ""
+  riskassessment:
+    enabled: "false"
