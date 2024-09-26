@@ -16,7 +16,7 @@ else
 fi
 
 # main curl command
-curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KB&label_id=${LABEL_NAME}&save_to_s3=true" \
+curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=${DATA_TYPE}&label_id=${LABEL_NAME}&save_to_s3=true" \
     --header "Tenant-Id: ${TENANT_ID}" \
     --header "Authorization: Bearer ${AUTH_TOKEN}" \
     $CURL_FLAGS \

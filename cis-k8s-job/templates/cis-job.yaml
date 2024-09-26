@@ -33,6 +33,8 @@ spec:
             value: {{ .Values.accuknox.certBundleURL }}
           - name: USE_INSECURE_CONNECTION
             value: {{ .Values.accuknox.useInsecureConnection | quote }}
+          - name: DATA_TYPE
+            value: "KB"
         volumeMounts:
         - mountPath: /data
           name: datapath
