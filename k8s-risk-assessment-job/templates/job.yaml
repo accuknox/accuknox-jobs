@@ -45,6 +45,8 @@ spec:
               value: {{ .Values.accuknox.clusterID | quote }}
             - name: LABEL_NAME
               value: {{ .Values.accuknox.label }}
+            - name: DATA_TYPE
+              value: "KS"
           volumeMounts:
             - mountPath: /data
               name: datapath
