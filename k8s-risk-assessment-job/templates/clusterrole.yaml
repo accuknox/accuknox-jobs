@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: test-k8s-risk-assessment-job-clusterrole
+  name: k8s-risk-assessment-job-clusterrole
 rules:
   - apiGroups:
       - ''

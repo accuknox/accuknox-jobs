@@ -51,6 +51,10 @@ spec:
                   value: {{ .Values.accuknox.clusterID | quote }}
                 - name: LABEL_NAME
                   value: {{ .Values.accuknox.label }}
+                - name: CERT_BUNDLE_URL
+                  value: {{ .Values.accuknox.certBundleURL }}
+                - name: USE_INSECURE_CONNECTION
+                  value: {{ .Values.accuknox.useInsecureConnection | quote }}
                 - name: DATA_TYPE
                   value: "KS"
               volumeMounts:
@@ -65,4 +69,4 @@ spec:
               configMap:
                 name: k8s-risk-assessment-job-script-configmap
           restartPolicy: OnFailure
-          serviceAccount: test-k8s-risk-assessment-job-service-account
+          serviceAccount: k8s-risk-assessment-job-service-account
