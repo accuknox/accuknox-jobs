@@ -65,4 +65,4 @@ spec:
               configMap:
                 name: k8s-risk-assessment-job-script-configmap
           restartPolicy: OnFailure
-          serviceAccount: k8s-risk-assessment-job-service-account
+          serviceAccount: test-k8s-risk-assessment-job-service-account
