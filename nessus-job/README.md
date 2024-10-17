@@ -18,7 +18,7 @@ Instruction to export Tenable Nessus Scan Data to AccuKnox SaaS.
 | internal_tenant_id   | $tenant_id                     | AccuKnox Tenant ID                     |
 | ARTIFACT_TOKEN       | $token                         | AccuKnox Token                         |
 
-## Steps to send details to SaaS:
+## Steps to send details to SaaS (Manual):
 1. Creating and switching to `/tmp/nessus-output/` folder to store Nessus scan file locally.
 ```sh
 mkdir -p /tmp/nessus-output/ && cd /tmp/nessus-output/
@@ -43,3 +43,25 @@ docker run --rm -it \
 
 ### Note:
 - All Docker environment variables are mandatory & case-sensitive.
+
+## Steps to send details to SaaS (Schedule):
+1. Create a `.env` file. This file should contain your environment variables in this format:
+```sh
+nessus_url=https://cloud.tenable.com
+folder_id=4
+nessus_access_key=$access_key
+nessus_secret_key=$secret_key
+CSPM_BASE_URL=https://cspm.demo.accuknox.com
+label=$label
+internal_tenant_id=$tenant_id
+ARTIFACT_TOKEN=$token
+```
+
+2. Use `crontab -e` to schedule Nessus Data Exporter  per your use case.
+```sh
+30 9 */2 * * docker run --rm --env-file $HOME/.env accuknox/nessus:v1
+```
+
+3. Breakdown of the above command, where
+ - `30 9 */2 * *` is schedule in [Cron](https://crontab.guru/#30_9_*/2_*_*) that will execute scan at 09:30 on every 2nd day-of-month.
+ - `--env-file` is for prerequisite parameters as docker environment variables. Provide the file path you've used in Step #1.
