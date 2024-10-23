@@ -26,6 +26,8 @@ spec:
             value: {{ if ne .Values.accuknox.clusterName "" }}{{ .Values.accuknox.clusterName }}{{ else }}{{ "default" }}{{ end }}
           - name: LABEL_NAME
             value: {{ if ne .Values.accuknox.label "" }}{{ .Values.accuknox.label }}{{ else }}{{ "default" }}{{ end }}
+          - name: CERT_BUNDLE_PATH
+            value: {{ .Values.accuknox.certBundlePath }}   
           - name: CERT_BUNDLE_URL
             value: {{ .Values.accuknox.certBundleURL }}
           - name: USE_INSECURE_CONNECTION

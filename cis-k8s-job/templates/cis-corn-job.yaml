@@ -29,6 +29,8 @@ spec:
                 value: {{ .Values.accuknox.tenantId | quote}}
               - name: URL
                 value: {{ .Values.accuknox.url }}
+              - name: CERT_BUNDLE_PATH
+                value: {{ .Values.accuknox.certBundlePath }}
               - name: CERT_BUNDLE_URL
                 value: {{ .Values.accuknox.certBundleURL }}
               - name: USE_INSECURE_CONNECTION

@@ -1,18 +1,28 @@
 #!/bin/sh
 
-# Handling certificate download
-if [ -n "$CERT_BUNDLE_URL" ]; then
+# Initialize CURL_FLAGS to handle both insecure and certificate usage
+CURL_FLAGS=""
+
+# Always add --insecure if USE_INSECURE_CONNECTION is true
+if [ "$USE_INSECURE_CONNECTION" = "true" ]; then
+    CURL_FLAGS="$CURL_FLAGS --insecure"
+fi
+
+# Add certificate flags if a certBundlePath or certBundleURL is provided
+if [ -n "$CERT_BUNDLE_PATH" ]; then
+    echo "Using certificate from local path $CERT_BUNDLE_PATH..."
+    if [ -f "$CERT_BUNDLE_PATH" ]; then
+        CURL_FLAGS="$CURL_FLAGS --cacert $CERT_BUNDLE_PATH"
+    else
+        echo "Certificate not found at $CERT_BUNDLE_PATH."
+    fi
+elif [ -n "$CERT_BUNDLE_URL" ]; then
     echo "Attempting to download certificate from $CERT_BUNDLE_URL..."
     if curl -o /tmp/cert.pem "$CERT_BUNDLE_URL"; then
-        CURL_FLAGS="--cacert /tmp/cert.pem"
+        CURL_FLAGS="$CURL_FLAGS --cacert /tmp/cert.pem"
     else
         echo "Certificate not available or failed to download."
-        CURL_FLAGS=""
     fi
-elif [ "$USE_INSECURE_CONNECTION" = "true" ]; then
-    CURL_FLAGS="--insecure"
-else
-    CURL_FLAGS=""
 fi
 
 # main curl command
