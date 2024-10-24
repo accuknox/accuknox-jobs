@@ -11,7 +11,7 @@ accuknoxJob:
 kubeBench:
   image:
     repository: docker.io/aquasec/kube-bench
-    tag: "v0.6.19" 
+    tag: "v0.9.1"
 
 # To use existing secret updated {imagePullSecrets.name} with your secret name.
 imagePullSecrets:
@@ -20,6 +20,13 @@ imagePullSecrets:
   username: ""
   password: ""
 
+toolConfig:
+  platform: ""
+  nodeType: "worker"
+  targets: ""
+  benchmark: ""
+  check: ""
+  skip: ""
 
 accuknox:
   authToken: "NO-TOKEN-SET"
