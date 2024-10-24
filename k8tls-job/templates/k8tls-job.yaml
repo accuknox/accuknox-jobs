@@ -4,6 +4,8 @@ metadata:
   name: k8tls-job
   namespace: {{ .Release.Namespace }}
 spec:
+  # keep the job for 2 hours after successful completion
+  ttlSecondsAfterFinished: 7200
   template:
     metadata:
       name: k8tls-job
