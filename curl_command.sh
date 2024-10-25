@@ -8,14 +8,11 @@ if [ "$USE_INSECURE_CONNECTION" = "true" ]; then
     CURL_FLAGS="$CURL_FLAGS --insecure"
 fi
 
-# Add certificate flags if a certBundlePath or certBundleURL is provided
-if [ -n "$CERT_BUNDLE_PATH" ]; then
-    echo "Using certificate from local path $CERT_BUNDLE_PATH..."
-    if [ -f "$CERT_BUNDLE_PATH" ]; then
-        CURL_FLAGS="$CURL_FLAGS --cacert $CERT_BUNDLE_PATH"
-    else
-        echo "Certificate not found at $CERT_BUNDLE_PATH."
-    fi
+# Add certificate flags if CERT_BUNDLE_CONTENT is provided
+if [ -n "$CERT_BUNDLE_CONTENT" ]; then
+    echo "Using in-line certificate content from CERT_BUNDLE_CONTENT..."
+    echo "$CERT_BUNDLE_CONTENT" > /tmp/cert.pem
+    CURL_FLAGS="$CURL_FLAGS --cacert /tmp/cert.pem"
 elif [ -n "$CERT_BUNDLE_URL" ]; then
     echo "Attempting to download certificate from $CERT_BUNDLE_URL..."
     if curl -o /tmp/cert.pem "$CERT_BUNDLE_URL"; then
@@ -34,3 +31,4 @@ curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENA
 
 # Print the report
 cat /data/report.json
+
