@@ -8,10 +8,10 @@ if [ "$USE_INSECURE_CONNECTION" = "true" ]; then
     CURL_FLAGS="$CURL_FLAGS --insecure"
 fi
 
-# Add certificate flags if CERT_BUNDLE_CONTENT is provided
-if [ -n "$CERT_BUNDLE_CONTENT" ]; then
-    echo "Using in-line certificate content from CERT_BUNDLE_CONTENT..."
-    echo "$CERT_BUNDLE_CONTENT" > /tmp/cert.pem
+# Add certificate flags if CERT_BUNDLE_PATH is provided
+if [ -n "$CERT_BUNDLE_PATH" ]; then
+    echo "Using in-line certificate content from CERT_BUNDLE_PATH..."
+    echo "$CERT_BUNDLE_PATH" > /tmp/cert.pem
     CURL_FLAGS="$CURL_FLAGS --cacert /tmp/cert.pem"
 elif [ -n "$CERT_BUNDLE_URL" ]; then
     echo "Attempting to download certificate from $CERT_BUNDLE_URL..."
