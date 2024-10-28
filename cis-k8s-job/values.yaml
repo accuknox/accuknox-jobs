@@ -7,8 +7,8 @@ accuknox:
   cronTab: "30 9 * * *"
   clusterName: ""
   label: ""
-  clusterId: ""
-  tenantId: ""
+  clusterID: ""
+  tenantID: ""
   url: "cspm.demo.accuknox.com"
   certBundlePath: ""  # Set this for cert local path if needed .
   certBundleURL: ""  # Set this for cert URL if needed (if certBundlePath is set as well certBundlePath will take precedent)

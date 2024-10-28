@@ -24,13 +24,13 @@ spec:
               - name: LABEL_NAME
                 value: {{ .Values.accuknox.label }}
               - name: CLUSTER_ID
-                value: {{ .Values.accuknox.clusterId }}
+                value: {{ .Values.accuknox.clusterID }}
               - name: TENANT_ID
-                value: {{ .Values.accuknox.tenantId | quote}}
+                value: {{ .Values.accuknox.tenantID | quote}}
               - name: URL
                 value: {{ .Values.accuknox.url }}
               - name: CERT_BUNDLE_PATH
-                value: {{ .Values.accuknox.certBundlePath }}
+                value: {{ .Values.accuknox.certBundlePath | quote }}
               - name: CERT_BUNDLE_URL
                 value: {{ .Values.accuknox.certBundleURL }}
               - name: USE_INSECURE_CONNECTION
