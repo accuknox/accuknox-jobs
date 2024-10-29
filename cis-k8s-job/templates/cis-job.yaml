@@ -28,7 +28,7 @@ spec:
           - name: TENANT_ID
             value: {{ .Values.accuknox.tenantID | quote}}
           - name: URL
-            value: {{ .Values.accuknox.url }}
+            value: {{ .Values.accuknox.URL }}
           - name: CERT_BUNDLE_PATH
             value: {{ .Values.accuknox.certBundlePath | quote }}
           - name: CERT_BUNDLE_URL

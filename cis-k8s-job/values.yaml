@@ -9,7 +9,7 @@ accuknox:
   label: ""
   clusterID: ""
   tenantID: ""
-  url: "cspm.demo.accuknox.com"
+  URL: "cspm.demo.accuknox.com"
   certBundlePath: ""  # Set this for cert local path if needed .
   certBundleURL: ""  # Set this for cert URL if needed (if certBundlePath is set as well certBundlePath will take precedent)
   useInsecureConnection: false  # Set to true if insecure connection is needed
