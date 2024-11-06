@@ -14,9 +14,13 @@ spec:
     spec:
       template:
         spec:
+        {{- if .Values.imagePullSecrets.name }}
+          imagePullSecrets:
+          - name: {{ .Values.imagePullSecrets.name }}
+        {{- end }}        
           initContainers:
             - name: kiem-init
-              image: accuknox/kiem:latest
+              image: "{{ .Values.kiem.image.repository }}:{{ .Values.kiem.image.tag }}"
               args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
               env:
                 - name: CLUSTER_NAME
@@ -25,18 +29,27 @@ spec:
                 - name: datapath
                   mountPath: /data
           containers:
+
             - image: accuknox/accuknox-job:latest
               command: ["/bin/sh", "-c"]
               args: ['./curl_command.sh']
+
               name: accuknox-kiem-cronjob
               resources: {}
               env:
+                - name: AUTH_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      key: AUTH_TOKEN
+                      {{- if (.Values.accuknox.secretName | empty) }}
+                      name: kiem-job-auth-token
+                      {{- else }}
+                      name: {{ .Values.accuknox.secretName }}
+                      {{- end }}
                 - name: URL
                   value: {{ .Values.accuknox.URL }}
                 - name: TENANT_ID
                   value: {{ .Values.accuknox.tenantID | quote }}
-                - name: AUTH_TOKEN
-                  value: {{ .Values.accuknox.authToken }}
                 - name: CLUSTER_NAME
                   value: {{ .Values.accuknox.clusterName }}
                 - name: LABEL_NAME

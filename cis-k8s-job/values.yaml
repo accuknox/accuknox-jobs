@@ -2,15 +2,38 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+
+accuknoxJob:
+  image:
+    repository: accuknox/accuknox-job
+    tag: "latest"
+
+kubeBench:
+  image:
+    repository: docker.io/aquasec/kube-bench
+    tag: "v0.9.1"
+
+# To use existing secret updated {imagePullSecrets.name} with your secret name.
+imagePullSecrets:
+  name: ""
+  registry: ""
+  username: ""
+  password: ""
+
+toolConfig:
+  platform: ""
+  nodeType: "worker"
+  targets: ""
+  benchmark: ""
+  check: ""
+  skip: ""
+
 accuknox:
   authToken: "NO-TOKEN-SET"
   cronTab: "30 9 * * *"
   clusterName: ""
   label: ""
-  clusterID: ""
-  tenantID: ""
-  URL: "cspm.demo.accuknox.com"
-  certBundlePath: ""  # Set this for cert local path if needed .
-  certBundleURL: ""  # Set this for cert URL if needed (if certBundlePath is set as well certBundlePath will take precedent)
-  useInsecureConnection: false  # Set to true if insecure connection is needed
-
+  clusterId: ""
+  tenantId: ""
+  url: "cspm.demo.accuknox.com"
+  secretName: ""

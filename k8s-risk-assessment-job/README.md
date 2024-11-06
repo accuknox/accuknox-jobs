@@ -43,3 +43,18 @@ Where `version` can be taken from the [releases](https://github.com/accuknox/acc
 | accunkox.label | "" | label of the cluster | NO |
 | kubescape.image.repository | "quay.io/kubescape/kubescape-cli" | kubescape image repo | NO |
 | kubescape.image.tag | v3.0.8 | kubescape version - taken from appVersion by default | NO |
+
+---
+
+## Manual Procedure
+
+```bash
+export URL=cspm.demo.accuknox.com
+export TENANT_ID=3730
+export LABEL_NAME=STAGEENV
+export AUTH_TOKEN=XXXXXXXXXXXXXXXXXXXXX # Get the Token from AccuKnox Management Console
+export CLUSTER_NAME=docluster
+export CLUSTER_ID=0
+
+curl -s https://raw.githubusercontent.com/accuknox/tools/main/ks/k8srisk.sh | bash
+```

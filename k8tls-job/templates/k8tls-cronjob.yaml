@@ -7,7 +7,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: k8tls-cr
+  name: {{ .Release.Namespace }}-k8tls-cr
 rules:
 - apiGroups: [""]
   resources: ["services"]
@@ -16,11 +16,11 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: k8tls-crb
+  name: {{ .Release.Namespace }}-k8tls-crb
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: k8tls-cr
+  name: {{ .Release.Namespace }}-k8tls-cr
 subjects:
 - kind: ServiceAccount
   name: k8tls-serviceact
@@ -38,20 +38,32 @@ spec:
     spec:
       template:
         spec:
+        {{- if .Values.imagePullSecrets.name }}
+          imagePullSecrets:
+          - name: {{ .Values.imagePullSecrets.name }}
+        {{- end }}
           serviceAccountName: k8tls-serviceact
           containers:
-          - image: accuknox/accuknox-job:latest
+          - image:  "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}"
             command: ["/bin/sh", "-c"]
             args: ['./curl_command.sh']
+
             name: k8tls-job
             resources: {}
             env:
+              - name: AUTH_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    key: AUTH_TOKEN
+                    {{- if (.Values.accuknox.secretName | empty) }}
+                    name: k8tls-job-auth-token
+                    {{- else }}
+                    name: {{ .Values.accuknox.secretName }}
+                    {{- end }}
               - name: URL
                 value: {{ .Values.accuknox.URL }}
               - name: TENANT_ID
                 value: {{ .Values.accuknox.tenantID | quote }}
-              - name: AUTH_TOKEN
-                value: {{ .Values.accuknox.authToken }}
               - name: CLUSTER_NAME
                 value: {{ if ne .Values.accuknox.clusterName "" }}{{ .Values.accuknox.clusterName }}{{ else }}{{ "default" }}{{ end }}
               - name: LABEL_NAME
@@ -70,7 +82,7 @@ spec:
           initContainers:
           - command: ["/bin/sh", "-c"]
             args: ["./k8s_tlsscan"]
-            image: kubearmor/k8tls:latest
+            image: "{{ .Values.k8tls.image.repository }}:{{ .Values.k8tls.image.tag }}"
             name: k8tls
             env:
               - name: JSON
