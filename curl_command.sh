@@ -27,7 +27,7 @@ curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENA
     --header "Tenant-Id: ${TENANT_ID}" \
     --header "Authorization: Bearer ${AUTH_TOKEN}" \
     $CURL_FLAGS \
-    --form "file=@/data/report.json"
+    --form "file=@/data/report.json" || exit 1
 
 # Print the report
 cat /data/report.json
