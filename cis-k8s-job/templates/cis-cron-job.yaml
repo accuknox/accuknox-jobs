@@ -10,53 +10,115 @@ spec:
     spec:
       template:
         spec:
-        {{- if or (or (contains "master" .Values.toolConfig.nodeType) (contains "controlplane" .Values.toolConfig.nodeType)) (or (contains "master" .Values.toolConfig.targets) (contains "controlplane" .Values.toolConfig.targets)) }}
-          {{- include "masterConfig" .Values.toolConfig | trim | nindent 10 }}
-        {{- end }}
-        {{- if .Values.imagePullSecrets.name }}
-          imagePullSecrets:
-          - name: {{ .Values.imagePullSecrets.name }}
-        {{- end }}
           containers:
-          - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}" 
+          - image: accuknox/accuknox-job:latest
             command: ["/bin/sh", "-c"]
-            args: ['/bin/sh entrypoint.sh && curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KB&label_id=${LABEL_NAME}&save_to_s3=true" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"./data/report.json\"" && cat /data/report.json']
+            args: ['/bin/sh entrypoint.sh && ./curl_command.sh']
             name: cis-k8s-cronjob
             resources: {}
             env:
               - name: AUTH_TOKEN
-                valueFrom:
-                  secretKeyRef:
-                    key: AUTH_TOKEN
-                    {{- if (.Values.accuknox.secretName | empty) }}
-                    name: cis-k8s-job-auth-token
-                    {{- else }}
-                    name: {{ .Values.accuknox.secretName }}
-                    {{- end }}
+                value: {{ .Values.accuknox.authToken }}
               - name: CLUSTER_NAME
                 value: {{ .Values.accuknox.clusterName }}
               - name: LABEL_NAME
                 value: {{ .Values.accuknox.label }}
               - name: CLUSTER_ID
-                value: {{ .Values.accuknox.clusterId }}
+                value: {{ .Values.accuknox.clusterID }}
               - name: TENANT_ID
-                value: {{ .Values.accuknox.tenantId | quote}}
+                value: {{ .Values.accuknox.tenantID | quote}}
               - name: URL
-                value: {{ .Values.accuknox.url }}
+                value: {{ .Values.accuknox.URL }}
+              - name: CERT_BUNDLE_PATH
+                value: {{ .Values.accuknox.certBundlePath | quote }}
+              - name: CERT_BUNDLE_URL
+                value: {{ .Values.accuknox.certBundleURL }}
+              - name: USE_INSECURE_CONNECTION
+                value: {{ .Values.accuknox.useInsecureConnection | quote }}
+              - name: DATA_TYPE
+                value: "KB"
             volumeMounts:
             - mountPath: /data
               name: datapath
           initContainers:
-          - image: "{{ .Values.kubeBench.image.repository }}:{{ .Values.kubeBench.image.tag }}" 
-            command:
-            {{- include "cmd" .Values.toolConfig | trim | nindent 13 }}
+          - image: docker.io/aquasec/kube-bench:v0.6.19
+            command: ["/bin/sh", "-c"]
+            args: ["kube-bench run --json > /data/report.json"]
             name: kube-bench
             volumeMounts:
-            {{- include "volumeMounts" .Values.toolConfig | trim | nindent 13 }}
+            - mountPath: /data
+              name: datapath
+            - mountPath: /var/lib/etcd
+              name: var-lib-etcd
+              readOnly: true
+            - mountPath: /var/lib/kubelet
+              name: var-lib-kubelet
+              readOnly: true
+            - mountPath: /var/lib/kube-scheduler
+              name: var-lib-kube-scheduler
+              readOnly: true
+            - mountPath: /var/lib/kube-controller-manager
+              name: var-lib-kube-controller-manager
+              readOnly: true
+            - mountPath: /etc/systemd
+              name: etc-systemd
+              readOnly: true
+            - mountPath: /lib/systemd/
+              name: lib-systemd
+              readOnly: true
+            - mountPath: /srv/kubernetes/
+              name: srv-kubernetes
+              readOnly: true
+            - mountPath: /etc/kubernetes
+              name: etc-kubernetes
+              readOnly: true
+            - mountPath: /usr/local/mount-from-host/bin
+              name: usr-bin
+              readOnly: true
+            - mountPath: /etc/cni/net.d/
+              name: etc-cni-netd
+              readOnly: true
+            - mountPath: /opt/cni/bin/
+              name: opt-cni-bin
+              readOnly: true
           hostPID: true
           restartPolicy: Never
           volumes:
-          {{- include "volumes" .Values.toolConfig | trim | nindent 11 }}
+            - name: datapath
+              emptyDir: {}
+            - hostPath:
+                path: /var/lib/etcd
+              name: var-lib-etcd
+            - hostPath:
+                path: /var/lib/kubelet
+              name: var-lib-kubelet
+            - hostPath:
+                path: /var/lib/kube-scheduler
+              name: var-lib-kube-scheduler
+            - hostPath:
+                path: /var/lib/kube-controller-manager
+              name: var-lib-kube-controller-manager
+            - hostPath:
+                path: /etc/systemd
+              name: etc-systemd
+            - hostPath:
+                path: /lib/systemd
+              name: lib-systemd
+            - hostPath:
+                path: /srv/kubernetes
+              name: srv-kubernetes
+            - hostPath:
+                path: /etc/kubernetes
+              name: etc-kubernetes
+            - hostPath:
+                path: /usr/bin
+              name: usr-bin
+            - hostPath:
+                path: /etc/cni/net.d/
+              name: etc-cni-netd
+            - hostPath:
+                path: /opt/cni/bin/
+              name: opt-cni-bin
 
   schedule: "{{ .Values.accuknox.cronTab }}"
   successfulJobsHistoryLimit: 1

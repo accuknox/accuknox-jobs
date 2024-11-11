@@ -55,6 +55,14 @@ spec:
                   value: {{ .Values.accuknox.clusterID | quote }}
                 - name: LABEL_NAME
                   value: {{ .Values.accuknox.label }}
+                - name: CERT_BUNDLE_PATH
+                  value: {{ .Values.accuknox.certBundlePath | quote }}
+                - name: CERT_BUNDLE_URL
+                  value: {{ .Values.accuknox.certBundleURL }}
+                - name: USE_INSECURE_CONNECTION
+                  value: {{ .Values.accuknox.useInsecureConnection | quote }}
+                - name: DATA_TYPE
+                  value: "KS"
               volumeMounts:
                 - mountPath: /data
                   name: datapath
