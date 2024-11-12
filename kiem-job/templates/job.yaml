@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: kiem-job
+  name: kiem-job-{{ now | unixEpoch }}
   namespace: {{ .Release.Namespace }}
 spec:
   # keep the job for 2 hours after successful completion
@@ -9,7 +9,7 @@ spec:
   template:
     metadata:
       labels:
-        app: kiem-job
+        app: kiem-job-{{ now | unixEpoch }}
     spec:
     {{- if .Values.imagePullSecrets.name }}
       imagePullSecrets:

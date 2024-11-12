@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: k8s-risk-assessment-job
+  name: k8s-risk-assessment-job-{{ now | unixEpoch }}
   namespace: {{ .Release.Namespace }}
 spec:
   # keep the job for 2 hours after successful completion
@@ -9,7 +9,7 @@ spec:
   template:
     metadata:
       labels:
-        app: k8s-risk-assessment-job
+        app: k8s-risk-assessment-job-{{ now | unixEpoch }}
     spec:
     {{- if .Values.imagePullSecrets.name }}
       imagePullSecrets:
