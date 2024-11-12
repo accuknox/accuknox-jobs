@@ -1,16 +1,16 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: cis-k8s-job
+  name: cis-k8s-job-{{ now | unixEpoch }}
   namespace: {{ .Release.Namespace }}
 spec:
   # keep the job for 2 hours after successful completion
   ttlSecondsAfterFinished: 7200
   template:
     metadata:
-      name: cis-k8s-job
+      name: cis-k8s-job-{{ now | unixEpoch }}
       labels:
-        app: cis-k8s-job
+        app: cis-k8s-job-{{ now | unixEpoch }}
     spec:
     {{- if or (or (contains "master" .Values.toolConfig.nodeType) (contains "controlplane" .Values.toolConfig.nodeType)) (or (contains "master" .Values.toolConfig.targets) (contains "controlplane" .Values.toolConfig.targets)) }}
       {{- include "masterConfig" .Values.toolConfig | trim | nindent 6 }}
