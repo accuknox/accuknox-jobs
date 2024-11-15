@@ -23,7 +23,7 @@ spec:
       containers:
       - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}"
         command: ["/bin/sh", "-c"]
-        args: ['/bin/sh entrypoint.sh && ./curl_command.sh']
+        args: ['/bin/sh entrypoint.sh && curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KB&label_id=${LABEL_NAME}&save_to_s3=true" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"./data/report.json\"" && cat /data/report.json']
         name: cis-k8s-cronjob
         resources: {}
         env:
@@ -41,19 +41,11 @@ spec:
           - name: LABEL_NAME
             value: {{ .Values.accuknox.label }}
           - name: CLUSTER_ID
-            value: {{ .Values.accuknox.clusterID }}
+            value: {{ .Values.accuknox.clusterId }}
           - name: TENANT_ID
-            value: {{ .Values.accuknox.tenantID | quote}}
+            value: {{ .Values.accuknox.tenantId | quote}}
           - name: URL
-            value: {{ .Values.accuknox.URL }}
-          - name: CERT_BUNDLE_PATH
-            value: {{ .Values.accuknox.certBundlePath | quote }}
-          - name: CERT_BUNDLE_URL
-            value: {{ .Values.accuknox.certBundleURL }}
-          - name: USE_INSECURE_CONNECTION
-            value: {{ .Values.accuknox.useInsecureConnection | quote }}
-          - name: DATA_TYPE
-            value: "KB"
+            value: {{ .Values.accuknox.url }}
         volumeMounts:
         - mountPath: /data
           name: datapath
