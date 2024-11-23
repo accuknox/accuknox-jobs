@@ -33,10 +33,10 @@ dependencies:
     version: "0.1.0"
     repository: "file:/./charts/k8s-risk-assessment-job"
     condition: accuknox.riskassessment.enabled
-  - name: k8tls-job
-    version: "0.1.0"
-    repository: "file:/./charts/k8tls-job"
-    condition: accuknox.k8tls.enabled
+  # - name: k8tls-job
+  #   version: "0.1.0"
+  #   repository: "file:/./charts/k8tls-job"
+  #   condition: accuknox.k8tls.enabled
   - name: kiem-job
     version: "0.1.0"
     repository: "file:/./charts/kiem-job"

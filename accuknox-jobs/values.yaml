@@ -14,7 +14,7 @@ accuknox:
     enabled: "false"
   riskassessment:
     enabled: "false"
-  k8tls:
-    enabled: "false"
+  # k8tls:
+  #   enabled: "false"
   kiem:
     enabled: "false"
