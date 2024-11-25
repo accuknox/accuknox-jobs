@@ -37,3 +37,8 @@ accuknox:
   tenantId: ""
   url: "cspm.demo.accuknox.com"
   secretName: ""
+  cis:
+    enabled: ""  
+    promptForPlatform: ""  
+    toolConfig:
+      platform: ""  

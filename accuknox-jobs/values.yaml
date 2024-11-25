@@ -11,10 +11,13 @@ global:
 # Job-specific configurations
 accuknox:
   cis:
-    enabled: "false"
+    enabled: "false"  # Default: CIS job is disabled
+    promptForPlatform: "false"  # By default, platform selection is not prompted
+    toolConfig:
+      platform: ""  # Default platform value (empty unless set)      
   riskassessment:
     enabled: "false"
   # k8tls:
   #   enabled: "false"
   kiem:
-    enabled: "false"
+    enabled: "false"   
