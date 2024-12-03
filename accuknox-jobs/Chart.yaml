@@ -16,7 +16,7 @@ type: application
 # This is the chart version. This version number should be incremented each time you make changes
 # to the chart and its templates, including the app version.
 # Versions are expected to follow Semantic Versioning (https://semver.org/)
-version: 0.1.2
+version: 0.1.0
 
 # This is the version number of the application being deployed. This version number should be
 # incremented each time you make changes to the application. Versions are not expected to
@@ -28,16 +28,16 @@ dependencies:
   - name: cis-k8s-job
     version: "0.1.0"
     repository: "file:/./charts/cis-k8s-job"
-    condition: accuknox.cis.enabled 
+    condition: accuknox-jobs.cis.enabled  
   - name: k8s-risk-assessment-job
     version: "0.1.0"
     repository: "file:/./charts/k8s-risk-assessment-job"
-    condition: accuknox.riskassessment.enabled
+    condition: accuknox-jobs.riskassessment.enabled  
   # - name: k8tls-job
   #   version: "0.1.0"
   #   repository: "file:/./charts/k8tls-job"
-  #   condition: accuknox.k8tls.enabled
+  #   condition: accuknox-jobs.k8tls.enabled  # Updated if needed (currently commented)
   - name: kiem-job
     version: "0.1.0"
     repository: "file:/./charts/kiem-job"
-    condition: accuknox.kiem.enabled
+    condition: accuknox-jobs.kiem.enabled  

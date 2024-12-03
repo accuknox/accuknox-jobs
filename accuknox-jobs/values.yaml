@@ -9,7 +9,8 @@ global:
   label: ""   
 
 # Job-specific configurations
-accuknox:
+accuknox-jobs:
+  enabled: false
   cis:
     enabled: false  # Default: CIS job is disabled
     promptForPlatform: false  # By default, platform selection is not prompted
@@ -20,4 +21,4 @@ accuknox:
   # k8tls:
   #   enabled: false
   kiem:
-    enabled: false   
+    enabled: false 
