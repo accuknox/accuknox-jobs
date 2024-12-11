@@ -1,0 +1,63 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: kiem-job
+  namespace: {{ .Release.Namespace }}
+spec:
+  schedule: "{{ .Values.global.accuknox.cronTab }}"  
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    metadata:
+      labels:
+        app: kiem-job
+    spec:
+      template:
+        spec:
+        {{- if .Values.imagePullSecrets.name }}
+          imagePullSecrets:
+          - name: {{ .Values.imagePullSecrets.name }}
+        {{- end }}        
+          initContainers:
+            - name: kiem-init
+              image: "{{ .Values.kiem.image.repository }}:{{ .Values.kiem.image.tag }}"
+              args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
+              env:
+                - name: CLUSTER_NAME
+                  value: {{ .Values.global.accuknox.clusterName }}
+              volumeMounts:
+                - name: datapath
+                  mountPath: /data
+          containers:
+            - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}"
+              command: ['sh', '-c', 'curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KIEM&save_to_s3=true&label_id=${LABEL_NAME}" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"/data/report.json\""']
+              name: accuknox-kiem-cronjob
+              resources: {}
+              env:
+                - name: AUTH_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      key: AUTH_TOKEN
+                      {{- if (.Values.global.accuknox.secretName | empty) }}
+                      name: kiem-job-auth-token
+                      {{- else }}
+                      name: {{ .Values.global.accuknox.secretName }}
+                      {{- end }}
+                - name: URL
+                  value: {{ .Values.global.accuknox.url }}
+                - name: TENANT_ID
+                  value: {{ .Values.global.accuknox.tenantId | quote }}
+                - name: CLUSTER_NAME
+                  value: {{ .Values.global.accuknox.clusterName }}
+                - name: LABEL_NAME
+                  value: {{ .Values.global.accuknox.label | quote}}
+              volumeMounts:
+                - mountPath: /data
+                  name: datapath      
+          volumes:
+            - name: datapath
+              emptyDir: {}
+          restartPolicy: OnFailure
+          serviceAccount: kiem-service-account
+
+

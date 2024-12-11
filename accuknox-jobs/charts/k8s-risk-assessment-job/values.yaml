@@ -1,0 +1,32 @@
+# Default values for k8s-risk-assessment-job.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+kubescape:
+  image:
+    repository: quay.io/kubescape/kubescape-cli
+    tag: "v3.0.8"
+
+accuknoxJob:
+  image:
+    repository: accuknox/accuknox-job
+    tag: "latest"
+
+
+# To use existing secret updated {imagePullSecrets.name} with your secret name.
+imagePullSecrets:
+  name: ""
+  registry: ""
+  username: ""
+  password: ""
+
+replicaCount: 1
+
+accuknox:
+  authToken: "{{ .Values.global.accuknox.authToken }}"
+  URL: "{{ .Values.global.accuknox.url }}"
+  tenantID: "{{ .Values.global.accuknox.tenantId }}"
+  cronTab: "{{ .Values.global.accuknox.cronTab }}"
+  clusterName: "{{ .Values.global.accuknox.clusterName }}"
+  label: "{{ .Values.global.accuknox.label }}"
+  secretName: "{{ .Values.global.accuknox.secretName }}"

@@ -1,0 +1,8 @@
+apiVersion: v2
+name: k8s-risk-assessment-job
+description: A Helm chart for creating AccuKnox k8s-risk-assessment job
+type: application
+version: 0.1.0
+
+# version of kubescape that is referred in the CronJob
+appVersion: 3.0.8

@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k8s-risk-assessment-job-script-configmap
+  namespace: {{ .Release.Namespace }}
+data:
+  augment-and-push-results.sh: |
+    #! /bin/sh
+
+    # get all controls
+    jq -s 'map(.controls[]) | unique_by(.controlID) | .[]' /data/kubescape-cache/allcontrols.json \
+      /data/kubescape-cache/clusterscan.json \
+      /data/kubescape-cache/mitre.json /data/kubescape-cache/nsa.json > /data/controllist.json
+
+    export GENERATION_TIME=`date --utc -Isecond`
+
+    # augment result
+    jq ". +=
+      {
+        "generationTime": "'$ENV.GENERATION_TIME'",
+        "summary": {
+          "controls": "'$controllist'"
+        },
+        "accuknox_metadata": {
+          "cluster_name": "'$ENV.CLUSTER_NAME'",
+          "cluster_id": "'$ENV.CLUSTER_ID'",
+          "label_name": "'$ENV.LABEL_NAME'"
+        }
+      }" /data/report.json --slurpfile controllist /data/controllist.json > /data/report_tmp.json
+
+    mv /data/report_tmp.json /data/report.json
+
+    cat /data/report.json
+
+    # push
+    curl --location --request POST \
+    --header "Authorization: Bearer ${AUTH_TOKEN}" \
+    --header "Tenant-Id: ${TENANT_ID}" \
+    --form "file=@\"/data/report.json\"" \
+    "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KS&save_to_s3=true&label_id=${LABEL_NAME}"
