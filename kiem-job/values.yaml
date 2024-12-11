@@ -20,14 +20,13 @@ imagePullSecrets:
   username: ""
   password: ""
 
-
 replicaCount: 1
 
 accuknox:
-  authToken: "NO-TOKEN-SET"
-  URL: "cspm.demo.accuknox.com"
-  tenantID: ""
-  cronTab: "30 9 * * *"
-  clusterName: ""
-  label: ""
-  secretName: ""
+  authToken: "{{ .Values.global.accuknox.authToken }}"
+  URL: "{{ .Values.global.accuknox.url }}"
+  tenantID: "{{ .Values.global.accuknox.tenantId }}"
+  cronTab: "{{ .Values.global.accuknox.cronTab }}"
+  clusterName: "{{ .Values.global.accuknox.clusterName }}"
+  label: "{{ .Values.global.accuknox.label }}"
+  secretName: "{{ .Values.global.accuknox.secretName }}"

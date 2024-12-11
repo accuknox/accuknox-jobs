@@ -31,21 +31,21 @@ spec:
             valueFrom:
               secretKeyRef:
                 key: AUTH_TOKEN
-                {{- if (.Values.accuknox.secretName | empty) }}
+                {{- if (.Values.global.accuknox.secretName | empty) }}
                 name: cis-k8s-job-auth-token
                 {{- else }}
-                name: {{ .Values.accuknox.secretName }}
+                name: {{ .Values.global.accuknox.secretName }}
                 {{- end }}
           - name: CLUSTER_NAME
-            value: {{ .Values.accuknox.clusterName }}
+            value: {{ .Values.global.accuknox.clusterName }}
           - name: LABEL_NAME
-            value: {{ .Values.accuknox.label }}
+            value: {{ .Values.global.accuknox.label }}
           - name: CLUSTER_ID
-            value: {{ .Values.accuknox.clusterId }}
+            value: {{ .Values.global.accuknox.clusterId }}
           - name: TENANT_ID
-            value: {{ .Values.accuknox.tenantId | quote}}
+            value: {{ .Values.global.accuknox.tenantId | quote}}
           - name: URL
-            value: {{ .Values.accuknox.url }}
+            value: {{ .Values.global.accuknox.url }}
         volumeMounts:
         - mountPath: /data
           name: datapath

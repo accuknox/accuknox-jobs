@@ -29,11 +29,10 @@ toolConfig:
   skip: ""
 
 accuknox:
-  authToken: "NO-TOKEN-SET"
-  cronTab: "30 9 * * *"
-  clusterName: ""
-  label: ""
-  clusterId: ""
-  tenantId: ""
-  url: "cspm.demo.accuknox.com"
-  secretName: ""
+  authToken: "{{ .Values.global.accuknox.authToken }}"
+  URL: "{{ .Values.global.accuknox.url }}"
+  tenantID: "{{ .Values.global.accuknox.tenantId }}"
+  cronTab: "{{ .Values.global.accuknox.cronTab }}"
+  clusterName: "{{ .Values.global.accuknox.clusterName }}"
+  label: "{{ .Values.global.accuknox.label }}"
+  secretName: "{{ .Values.global.accuknox.secretName }}"

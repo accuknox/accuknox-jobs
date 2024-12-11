@@ -21,7 +21,7 @@ spec:
           args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
           env:
             - name: CLUSTER_NAME
-              value: {{ .Values.accuknox.clusterName }}
+              value: {{ .Values.global.accuknox.clusterName }}
           volumeMounts:
             - name: datapath
               mountPath: /data
@@ -35,19 +35,19 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: AUTH_TOKEN
-                  {{- if (.Values.accuknox.secretName | empty) }}
+                  {{- if (.Values.global.accuknox.secretName | empty) }}
                   name: kiem-job-auth-token
                   {{- else }}
-                  name: {{ .Values.accuknox.secretName }}
+                  name: {{ .Values.global.accuknox.secretName }}
                   {{- end }}
             - name: URL
-              value: {{ .Values.accuknox.URL }}
+              value: {{ .Values.global.accuknox.url }}
             - name: TENANT_ID
-              value: {{ .Values.accuknox.tenantID | quote }}
+              value: {{ .Values.global.accuknox.tenantId | quote }}
             - name: CLUSTER_NAME
-              value: {{ .Values.accuknox.clusterName }}
+              value: {{ .Values.global.accuknox.clusterName }}
             - name: LABEL_NAME
-              value: {{ .Values.accuknox.label | quote}}
+              value: {{ .Values.global.accuknox.label | quote}}
           volumeMounts:
             - mountPath: /data
               name: datapath      
