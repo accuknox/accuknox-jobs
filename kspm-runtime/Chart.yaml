@@ -1,0 +1,38 @@
+apiVersion: v2
+name: kspm-runtime
+description: A Helm chart for Kubernetes
+
+type: application
+
+version: 0.1.0
+appVersion: "0.1.0"
+
+dependencies:
+  - name: accuknox-agents
+    version: v0.8.1
+    repository: oci://registry-1.docker.io/accuknox
+    condition: accuknox-agents.enabled
+  - name: kubearmor
+    version: v1.4.3
+    repository: https://kubearmor.github.io/charts
+    condition: kubearmor.enabled
+  - name: cis-k8s-job
+    version: "0.1.0"
+    repository: "file://../kspm-jobs/cis-k8s-job"
+    condition: accuknox-jobs.cis.enabled  
+  - name: k8s-risk-assessment-job
+    version: "0.1.0"
+    repository: "file://../kspm-jobs/k8s-risk-assessment-job"
+    condition: accuknox-jobs.riskassessment.enabled  
+  - name: kiem-job
+    version: "0.1.0"
+    repository: "file://../kspm-jobs/kiem-job"
+    condition: accuknox-jobs.kiem.enabled     
+  - name: knoxguard-chart
+    version: v0.2.0
+    repository: oci://public.ecr.aws/k9v9d5v2
+    condition: admissionController.enabled
+  - name: kyverno
+    version: 3.3.3
+    repository: https://kyverno.github.io/kyverno/
+    condition: admissionController.enabled

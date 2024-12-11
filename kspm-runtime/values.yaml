@@ -1,0 +1,44 @@
+# Global values that apply to the entire chart or sub-charts
+global:
+  accuknox:
+    url: ""
+    tenantId: ""
+    authToken: "" 
+    cronTab: ""
+    clusterName: ""
+    label: ""
+    secretName: ""
+
+# Values specific to accuknox-agents sub-chart
+accuknox-agents:
+  enabled: false
+  joinToken: ""
+  spireHost: ""
+  ppsHost: ""
+  knoxGateway: ""
+  install:
+    localRegistryAgent: false
+
+# Values specific to accuknox-jobs sub-chart
+accuknoxJobs:
+  cis:
+    enabled: false  
+    toolConfig:
+      platform: ""  
+      nodeType: "worker"
+      targets: ""
+      benchmark: ""
+      check: ""
+      skip: ""
+  riskassessment:
+    enabled: false  
+  kiem:
+    enabled: false 
+
+# Values specific to KubeArmorOperator sub-chart
+kubearmor:
+  enabled: false
+
+# Values specific to knoxguard and kyverno sub-charts
+admissionController:
+  enabled: false
