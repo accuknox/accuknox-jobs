@@ -1,4 +1,4 @@
-name: Accuknox-Job Workflow
+name: KSPM-Runtime Workflow
 
 on:
   push:
@@ -8,6 +8,7 @@ on:
   pull_request_target:
     branches:
       - "*" 
+
 
 jobs:
   tag-validate:
@@ -20,6 +21,7 @@ jobs:
 
   helm_chart_validation:
     runs-on: ubuntu-latest
+    if: always() && !contains(needs.tag-validate.result, 'failure')   
     needs: [tag-validate]
     steps:
       - name: Checkout code
@@ -31,14 +33,19 @@ jobs:
           chmod 700 get_helm.sh
           ./get_helm.sh
 
+      - name: Update Helm Dependencies
+        run: |
+          cd kspm-runtime
+          helm dependency update
+
       - name: Validate Helm charts
         run: |
-          helm lint accuknox-jobs
-          helm template accuknox-jobs --dry-run > /dev/null      
+          helm lint kspm-runtime
+          helm template kspm-runtime --dry-run > /dev/null
 
   helm_push_to_ecr:
     runs-on: ubuntu-latest
-    needs: [helm_chart_validation,tag-validate]
+    needs: [helm_chart_validation]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -60,19 +67,19 @@ jobs:
         run: |
           aws ecr-public get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin ${{ secrets.REPO }}
 
+      - name: Update Helm Dependencies
+        run: |
+          cd kspm-runtime
+          helm dependency update
 
-      - name: Chart versioning 
+      - name: Chart versioning
         if: ( github.event_name != 'pull_request' && github.event_name != 'pull_request_target' )
-        shell: bash
-        id: chart-version
         run: |
-            sed -i "s/^version:.*$/version: ${{ github.ref_name }}/" accuknox-jobs/Chart.yaml
-            sed -i "s/^appVersion:.*$/appVersion: ${{ github.ref_name }}/" accuknox-jobs/Chart.yaml
-          
+          sed -i "s/^version:.*$/version: ${{ github.ref_name }}/" kspm-runtime/Chart.yaml
+          sed -i "s/^appVersion:.*$/appVersion: ${{ github.ref_name }}/" kspm-runtime/Chart.yaml
 
-      - name: Package and Push Helm Charts
+      - name: Package and Push Helm Chart
         run: |
-            helm package accuknox-jobs
-            HELM_PACKAGE=$(ls accuknox-jobs-*.tgz)
-            helm push $HELM_PACKAGE oci://${{ secrets.REPO }}
-       
+          helm package kspm-runtime
+          HELM_PACKAGE=$(ls kspm-runtime-*.tgz)
+          helm push $HELM_PACKAGE oci://${{ secrets.REPO }}

@@ -13,7 +13,7 @@ dependencies:
     repository: oci://registry-1.docker.io/accuknox
     condition: accuknox-agents.enabled
   - name: kubearmor
-    version: v1.4.3
+    version: v1.4.6
     repository: https://kubearmor.github.io/charts
     condition: kubearmor.enabled
   - name: cis-k8s-job
