@@ -16,6 +16,8 @@ accuknox-agents:
   spireHost: ""
   ppsHost: ""
   knoxGateway: ""
+  accessKey: ""
+  tokenURL: ""
   install:
     localRegistryAgent: false
 
@@ -25,7 +27,7 @@ accuknoxJobs:
     enabled: false  
     toolConfig:
       platform: ""  
-      nodeType: "worker"
+      nodeType: ""
       targets: ""
       benchmark: ""
       check: ""
