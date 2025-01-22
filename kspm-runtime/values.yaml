@@ -22,7 +22,7 @@ accuknox-agents:
     localRegistryAgent: false
 
 # Values specific to accuknox-jobs sub-chart
-accuknoxJobs:
+accuknox-jobs:
   cis:
     enabled: false  
     toolConfig:
@@ -40,6 +40,7 @@ accuknoxJobs:
 # Values specific to KubeArmorOperator sub-chart
 kubearmor:
   enabled: false
+  autoDeploy: false
 
 # Values specific to knoxguard and kyverno sub-charts
 admissionController:

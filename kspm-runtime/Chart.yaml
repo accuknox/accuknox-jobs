@@ -12,7 +12,7 @@ dependencies:
     version: v0.8.4
     repository: oci://registry-1.docker.io/accuknox
     condition: accuknox-agents.enabled
-  - name: kubearmor
+  - name: kubearmor-operator
     version: v1.4.6
     repository: https://kubearmor.github.io/charts
     condition: kubearmor.enabled
