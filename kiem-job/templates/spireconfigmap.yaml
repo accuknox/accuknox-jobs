@@ -1,0 +1,45 @@
+{{- if .Values.spire.joinToken }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ printf "spire-agent-config-%s" .Release.Name }} 
+  namespace: {{ .Release.Namespace }}
+data:
+  agent.conf: |
+    agent {
+    data_dir = "/run/spire/agent"
+    log_level = "DEBUG"
+    agent_address = "0.0.0.0"
+    agent_port = "9091"
+    socket_path = "/run/spire/agent/agent.sock"
+    trust_domain = "accuknox.com"
+    }
+
+    plugins {
+          
+        NodeAttestor "join_token" {
+        }
+
+        KeyManager "keymanager-k8s" {
+            plugin_cmd = "/config/plugin/keymanager-k8s"
+            plugin_data {
+              namespace = "{{ .Release.Namespace }}"
+              secretname = "spire-agent-secret-{{ .Release.Name }}"
+            }
+        }
+
+        WorkloadAttestor "k8s_sat" {
+            plugin_cmd = "/config/plugin/k8s-sat"
+            plugin_data {
+            }
+        }
+    }
+
+    health_checks {
+        listener_enabled = true
+        bind_address = "0.0.0.0"
+        bind_port = "9090"
+        live_path = "/live"
+        ready_path = "/ready"
+    }
+{{- end }}

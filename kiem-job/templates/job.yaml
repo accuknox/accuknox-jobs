@@ -17,7 +17,7 @@ spec:
     {{- end }}    
       initContainers:
         - name: kiem-init
-          image: accuknox/kiem:latest
+          image: "{{ .Values.kiem.image.repository }}:{{ .Values.kiem.image.tag }}"
           args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
           env:
             - name: CLUSTER_NAME
@@ -26,8 +26,7 @@ spec:
             - name: datapath
               mountPath: /data
       containers:
-        - image: accuknox/accuknox-job:latest
-          command: ['sh', '-c', 'curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KIEM&save_to_s3=true&label_id=${LABEL_NAME}" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"/data/report.json\""']
+        - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}"
           name: accuknox-kiem-job
           resources: {}
           env:
@@ -48,11 +47,44 @@ spec:
               value: {{ .Values.accuknox.clusterName }}
             - name: LABEL_NAME
               value: {{ .Values.accuknox.label | quote}}
+            - name: DATA_TYPE
+              value: {{ .Values.accuknox.dataType | default "KIEM" }}
+            - name:  "SAVE_TO_S3"
+              value: {{ .Values.accuknox.saveToS3 | default "false" }}
+            - name:  "REPORT_FILE"
+              value: {{ .Values.accuknox.reportFile | default "/data/report.json" }}
+            - name:  "SPIRE_SERVER"
+              value: {{ .Values.spire.server }}
+            - name:  "SPIRE_PORT"
+              value: {{ .Values.spire.port | default "8081" | quote }}
+            - name:  "SPIRE_SECRET_NAME"
+              value: {{ .Values.spire.secretName | default (printf "spire-agent-secret-%s" .Release.Name) }}
+            - name:  "SPIRE_JOIN_TOKEN"
+              value: {{ .Values.spire.joinToken }}
+            - name:  "SPIRE_NAMESPACE"
+              value: {{ .Release.Namespace }}
+            - name:  "SPIRE_CONFIG_PATH"
+              value: {{ .Values.spire.configPath | default "/spire/agent.conf" | quote }}
+            - name:  "KNOX_GATEWAY"
+              value: {{ .Values.accuknox.gateway }}
           volumeMounts:
             - mountPath: /data
-              name: datapath      
+              name: datapath
+            {{- if .Values.spire.joinToken }}    
+            - name: spire-agent
+              mountPath: /spire/ 
+            - name: spirepath
+              mountPath: /run/spire/agent
+            {{- end }}
       volumes:
         - name: datapath
           emptyDir: {}
+        {{- if .Values.spire.joinToken }} 
+        - name: spirepath
+          emptyDir: {}
+        - name: spire-agent
+          configMap:
+            name: {{ printf "spire-agent-config-%s" .Release.Name }} 
+        {{- end }}
       restartPolicy: OnFailure
       serviceAccount: kiem-service-account

@@ -19,8 +19,6 @@ spec:
         {{- end }}
           containers:
           - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}" 
-            command: ["/bin/sh", "-c"]
-            args: ['/bin/sh entrypoint.sh && curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KB&label_id=${LABEL_NAME}&save_to_s3=true" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"./data/report.json\"" && cat /data/report.json']
             name: cis-k8s-cronjob
             resources: {}
             env:
@@ -43,9 +41,37 @@ spec:
                 value: {{ .Values.accuknox.tenantId | quote}}
               - name: URL
                 value: {{ .Values.accuknox.url }}
+              - name: DATA_TYPE
+                value: {{ .Values.accuknox.dataType | default "KB" }}
+              - name:  "SAVE_TO_S3"
+                value: {{ .Values.accuknox.saveToS3 | default "true" }}
+              - name:  "REPORT_FILE"
+                value: {{ .Values.accuknox.reportFile | default "/data/report.json" }}
+              - name:  "SPIRE_SERVER"
+                value: {{ .Values.spire.server }}
+              - name:  "SPIRE_PORT"
+                value: {{ .Values.spire.port | default "8081" | quote }}
+              - name:  "SPIRE_SECRET_NAME"
+                value: {{ .Values.spire.secretName | default (printf "spire-agent-secret-%s" .Release.Name) }}
+              - name:  "SPIRE_JOIN_TOKEN"
+                value: {{ .Values.spire.joinToken }}
+              - name:  "SPIRE_NAMESPACE"
+                value: {{ .Release.Namespace }}
+              - name:  "SPIRE_CONFIG_PATH"
+                value: {{ .Values.spire.configPath | default "/spire/agent.conf" | quote }}
+              - name:  "KNOX_GATEWAY"
+                value: {{ .Values.accuknox.gateway }}
+              - name: "PRINT_DATA"
+                value: true
             volumeMounts:
             - mountPath: /data
               name: datapath
+            {{- if .Values.spire.joinToken }}    
+            - name: spire-agent
+              mountPath: /spire/ 
+            - name: spirepath
+              mountPath: /run/spire/agent
+            {{- end }}
           initContainers:
           - image: "{{ .Values.kubeBench.image.repository }}:{{ .Values.kubeBench.image.tag }}" 
             command:
@@ -56,8 +82,15 @@ spec:
           hostPID: true
           restartPolicy: Never
           volumes:
-          {{- include "volumes" .Values.toolConfig | trim | nindent 11 }}
-
+            {{- if .Values.spire.joinToken }} 
+            - name: spirepath
+              emptyDir: {}
+            - name: spire-agent
+              configMap:
+                name: {{ printf "spire-agent-config-%s" .Release.Name }} 
+            {{- end }}
+          {{- include "volumes" .Values.toolConfig | trim | nindent 12 }}
+          serviceAccount: cis-service-account
   schedule: "{{ .Values.accuknox.cronTab }}"
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1

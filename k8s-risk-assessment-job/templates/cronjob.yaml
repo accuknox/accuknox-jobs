@@ -32,9 +32,6 @@ spec:
           containers:
             - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}"
               name: artifact-api-container
-              command:
-                - '/bin/sh'
-                - '/script/augment-and-push-results.sh'
               env:
                 - name: AUTH_TOKEN
                   valueFrom:
@@ -55,16 +52,51 @@ spec:
                   value: {{ .Values.accuknox.clusterID | quote }}
                 - name: LABEL_NAME
                   value: {{ .Values.accuknox.label }}
+                - name: DATA_TYPE
+                  value: {{ .Values.accuknox.dataType | default "KS" }}
+                - name:  "SAVE_TO_S3"
+                  value: {{ .Values.accuknox.saveToS3 | default "false" }}
+                - name:  "REPORT_FILE"
+                  value: {{ .Values.accuknox.reportFile | default "/data/report.json" }}
+                - name:  "SPIRE_SERVER"
+                  value: {{ .Values.spire.server }}
+                - name:  "SPIRE_PORT"
+                  value: {{ .Values.spire.port | default "8081" | quote }}
+                - name:  "SPIRE_SECRET_NAME"
+                  value: {{ .Values.spire.secretName | default (printf "spire-agent-secret-%s" .Release.Name) }}
+                - name:  "SPIRE_JOIN_TOKEN"
+                  value: {{ .Values.spire.joinToken | quote }}
+                - name:  "SPIRE_NAMESPACE"
+                  value: {{ .Release.Namespace }}
+                - name:  "SPIRE_CONFIG_PATH"
+                  value: {{ .Values.spire.configPath | default "/spire/agent.conf" | quote }}
+                - name:  "KNOX_GATEWAY"
+                  value: {{ .Values.accuknox.gateway }}
+                - name: "PRINT_DATA"
+                  value: true
               volumeMounts:
                 - mountPath: /data
                   name: datapath
                 - mountPath: /script
                   name: scriptpath
+                {{- if .Values.spire.joinToken }} 
+                - name: spire-agent
+                  mountPath: /spire/ 
+                - name: spirepath
+                  mountPath: /run/spire/agent
+                {{- end }}
           volumes:
             - name: datapath
               emptyDir: {}
             - name: scriptpath
               configMap:
                 name: k8s-risk-assessment-job-script-configmap
+            {{- if .Values.spire.joinToken }} 
+            - name: spirepath
+              emptyDir: {}
+            - name: spire-agent
+              configMap:
+                name: {{ printf "spire-agent-config-%s" .Release.Name }} 
+            {{- end }}
           restartPolicy: OnFailure
           serviceAccount: k8s-risk-assessment-job-service-account
