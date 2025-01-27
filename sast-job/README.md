@@ -8,7 +8,7 @@ docker run --rm -it \
 	-e SQ_PROJECTS="^nimbus$" \
 	-e SQ_ORG="accuknox" /* needed for sonarcloud.io */ \
 	-e REPORT_PATH=/app/data/ \
-	-v $PWD:/app/data/ \
+	-v $PWD:/app \
 	accuknox/sastjob:latest
 ```
 
