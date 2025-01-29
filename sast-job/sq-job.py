@@ -70,7 +70,8 @@ async def _get_issue_details(session, issue, sonar_url, auth_token, is_hotspot=F
                         "comments": data.get("comment", [])
                     })
             else:
-                description = data["rule"].get("htmlDesc", "No Description Available.")
+                description_sections = data["rule"].get("descriptionSections", [])
+                description = description_sections if description_sections else "No Description Available."
                 issue.update({"description": description})
             break
         except Exception:
@@ -118,8 +119,7 @@ async def _process_issues(session, issues, auth_token, sonar_url, is_hotspots=Fa
             tasks.append(_get_snippet(session, issue, sonar_url, auth_token))
     
     processed_issues = await asyncio.gather(*tasks)
-    # Fixed: Remove duplicates caused by adding both issue details and snippets
-    return [i for i in processed_issues if i is not None]
+    return processed_issues
 
 async def _get_results_async(key, auth_token, sonar_url, branch=None):
     """
