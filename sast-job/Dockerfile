@@ -13,6 +13,6 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-COPY sq-job.py .
+COPY sq-job.py /code/sq-job.py
 
-CMD ["python", "sq-job.py"]
+CMD ["python", "/code/sq-job.py"]
