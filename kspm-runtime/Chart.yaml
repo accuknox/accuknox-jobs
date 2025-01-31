@@ -31,8 +31,8 @@ dependencies:
   - name: knoxguard-chart
     version: v0.2.0
     repository: oci://public.ecr.aws/k9v9d5v2
-    condition: admissionController-knoxguard.enabled
+    condition: knoxguard.enabled
   - name: kyverno
     version: 3.3.3
     repository: https://kyverno.github.io/kyverno/
-    condition: admissionController-kyverno.enabled
+    condition: kyverno.enabled

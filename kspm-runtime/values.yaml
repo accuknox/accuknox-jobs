@@ -43,8 +43,8 @@ kubearmor:
   autoDeploy: false
 
 # Values specific to knoxguard and kyverno sub-charts
-admissionController-knoxguard:
+knoxguard:
   enabled: false
 
-admissionController-kyverno:
-  enabled: false
+kyverno:
+  enabled: true 
