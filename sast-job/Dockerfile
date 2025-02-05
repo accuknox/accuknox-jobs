@@ -15,4 +15,4 @@ RUN apt-get update && apt-get install --no-install-recommends -y \
 
 COPY sq-job.py .
 
-CMD ["python", "sq-job.py"]
+CMD ["python3", "sq-job.py"]

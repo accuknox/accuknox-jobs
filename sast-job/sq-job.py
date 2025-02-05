@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 
 # Global variables
 pbar = None
-SCANNED_FILE_DIR = "."
+SCANNED_FILE_DIR = os.environ.get('REPORT_PATH', '/app/data')
 
 async def async_sq_api(session, api, params, auth_token=None):
     """Make an async API call to SonarQube"""
@@ -29,19 +29,19 @@ async def async_sq_api(session, api, params, auth_token=None):
                 raise ValueError("sonarqube auth error")
             if response.status != 200:
                 raise ValueError("sonarqube api error")
-            return response.status, await response.json()
+            return await response.json()
     except Exception as e:
         log.error(f"Error calling SonarQube API: {e}")
         raise
 
 async def _get_issues_batch(session, api, params, auth_token):
     """Get a batch of issues from SonarQube"""
-    code, issues = await async_sq_api(session, api, params, auth_token)
+    issues = await async_sq_api(session, api, params, auth_token)
     return issues.get("issues", [])
 
 async def _get_hotspots_batch(session, api, params, auth_token):
     """Get a batch of security hotspots from SonarQube"""
-    code, response = await async_sq_api(session, api, params, auth_token)
+    response = await async_sq_api(session, api, params, auth_token)
     return response.get("hotspots", [])
 
 async def _get_issue_details(session, issue, sonar_url, auth_token, is_hotspot=False):
@@ -58,7 +58,7 @@ async def _get_issue_details(session, issue, sonar_url, auth_token, is_hotspot=F
     max_retries = 3
     for attempt in range(max_retries):
         try:
-            code, data = await async_sq_api(session, api, params, auth_token)
+            data = await async_sq_api(session, api, params, auth_token)
             if is_hotspot:
                 if "rule" in data:
                     rule = data["rule"]
@@ -70,8 +70,11 @@ async def _get_issue_details(session, issue, sonar_url, auth_token, is_hotspot=F
                         "comments": data.get("comment", [])
                     })
             else:
-                description_sections = data["rule"].get("descriptionSections", [])
-                description = description_sections if description_sections else "No Description Available."
+                if "htmlDesc" in data["rule"]:
+                    description = data["rule"].get("htmlDesc", "No Description Available.")
+                else:
+                    description_sections = data["rule"].get("descriptionSections", [])
+                    description = description_sections if description_sections else "No Description Available."
                 issue.update({"description": description})
             break
         except Exception:
@@ -90,7 +93,7 @@ async def _get_snippet(session, issue, sonar_url, auth_token):
     api = f"{sonar_url}/api/sources/issue_snippets"
 
     try:
-        code, data = await async_sq_api(session, api, params, auth_token)
+        data = await async_sq_api(session, api, params, auth_token)
         component_data = data[issue["component"]]
         
         fullSnippet = []
@@ -101,11 +104,11 @@ async def _get_snippet(session, issue, sonar_url, auth_token):
                 space_count = len(code) - len(code.lstrip())
                 code = " " * space_count + code
                 fullSnippet.append({"line": line, "code": code})
-            except Exception as e:
+            except Exception:
                 log.error(traceback.format_exc())
         
         issue["snippet"] = fullSnippet
-    except Exception as e:
+    except Exception:
         log.error(traceback.format_exc())
 
     return issue
@@ -144,7 +147,7 @@ async def _get_results_async(key, auth_token, sonar_url, branch=None):
             params["branch"] = branch
 
         try:
-            code, initial_response = await async_sq_api(session, api, params, auth_token)
+            initial_response = await async_sq_api(session, api, params, auth_token)
             total_issues = initial_response.get("total", 0)
             all_issues = initial_response.get("issues", [])
 
@@ -167,7 +170,7 @@ async def _get_results_async(key, auth_token, sonar_url, branch=None):
             if branch:
                 hotspot_params["branch"] = branch
 
-            code, hotspots_response = await async_sq_api(session, hotspots_api, hotspot_params, auth_token)
+            hotspots_response = await async_sq_api(session, hotspots_api, hotspot_params, auth_token)
             if "errors" in hotspots_response:
                 error = hotspots_response.get("errors", [{"msg": "An unspecified error occurred."}])[0]["msg"]
                 if error == "Insufficient privileges":
@@ -217,7 +220,7 @@ async def process_project(key, auth_token, sonar_url):
     async with aiohttp.ClientSession() as session:
         params = {"project": key}
         try:
-            code, response = await async_sq_api(session, api, params, auth_token)
+            response = await async_sq_api(session, api, params, auth_token)
             branches = [item["name"] for item in response["branches"]]
             results = []
             for branch in branches:
@@ -253,7 +256,7 @@ async def get_all_results_async(auth_token, sonar_url):
 
     try:
         async with aiohttp.ClientSession() as session:
-            code, response = await async_sq_api(session, api, params, auth_token)
+            response = await async_sq_api(session, api, params, auth_token)
             total = response["paging"]["total"]
             components = response["components"]
             
@@ -267,7 +270,7 @@ async def get_all_results_async(auth_token, sonar_url):
                 page = 2
                 while True:
                     params["p"] = page
-                    code, response = await async_sq_api(session, api, params, auth_token)
+                    response = await async_sq_api(session, api, params, auth_token)
                     if not response["components"]:
                         break
                     for component in response["components"]:
