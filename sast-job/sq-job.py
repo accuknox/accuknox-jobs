@@ -14,25 +14,28 @@ logging.basicConfig(level=logging.INFO)
 
 # Global variables
 pbar = None
-SCANNED_FILE_DIR = os.environ.get('REPORT_PATH', '/app/data')
+SCANNED_FILE_DIR = os.environ.get('REPORT_PATH', '/app/data/')
 
 async def async_sq_api(session, api, params, auth_token=None):
     """Make an async API call to SonarQube"""
     global pbar
     if pbar is None:
         pbar = tqdm(desc="API Calls")
-    try:
-        pbar.update(1)
-        auth = aiohttp.BasicAuth(auth_token, '')
-        async with session.get(api, params=params, auth=auth) as response:
-            if response.status == 401:
-                raise ValueError("sonarqube auth error")
-            if response.status != 200:
-                raise ValueError("sonarqube api error")
-            return await response.json()
-    except Exception as e:
-        log.error(f"Error calling SonarQube API: {e}")
-        raise
+    
+    pbar.update(1)
+    auth = aiohttp.BasicAuth(auth_token, '')
+    async with session.get(api, params=params, auth=auth) as response:
+        if response.status == 401:
+            log.error("SonarQube authentication error")
+            return None
+        if response.status != 200:
+            log.error(f"SonarQube API error: {response.status}")
+            return None
+        data = await response.json()
+        if "errors" in data:
+            log.error(f"SonarQube API error: {data['errors'][0]['msg']}")
+            return None
+        return data
 
 async def _get_issues_batch(session, api, params, auth_token):
     """Get a batch of issues from SonarQube"""
@@ -115,13 +118,26 @@ async def _get_snippet(session, issue, sonar_url, auth_token):
 
 async def _process_issues(session, issues, auth_token, sonar_url, is_hotspots=False):
     """Process a list of issues or security hotspots"""
-    tasks = []
-    for issue in issues:
-        tasks.append(_get_issue_details(session, issue, sonar_url, auth_token, is_hotspots))
-        if not is_hotspots:
-            tasks.append(_get_snippet(session, issue, sonar_url, auth_token))
+    processed_issues = []
+    detail_tasks = []
     
-    processed_issues = await asyncio.gather(*tasks)
+    for issue in issues:
+        task = _get_issue_details(session, issue, sonar_url, auth_token, is_hotspots)
+        detail_tasks.append(task)
+    
+    # Get all details in parallel
+    details_results = await asyncio.gather(*detail_tasks)
+    
+    # If these are issues (not hotspots), add snippets
+    if not is_hotspots:
+        snippet_tasks = []
+        for issue in details_results:
+            task = _get_snippet(session, issue, sonar_url, auth_token)
+            snippet_tasks.append(task)
+        processed_issues = await asyncio.gather(*snippet_tasks)
+    else:
+        processed_issues = details_results
+    
     return processed_issues
 
 async def _get_results_async(key, auth_token, sonar_url, branch=None):
@@ -314,4 +330,8 @@ if __name__ == '__main__':
         log.error("SQ_URL or SQ_AUTH_TOKEN env var not specified")
         exit(1)
     
-    asyncio.run(get_all_results_async(sq_auth_token, sq_url))
+    result = asyncio.run(get_all_results_async(sq_auth_token, sq_url))
+    if "Error" in result or "No projects found" in result:
+        log.error(result)
+        exit(1)
+        
