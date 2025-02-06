@@ -1,68 +1,146 @@
-# from bs4 import BeautifulSoup
-import json
+import asyncio
 import re
-import logging
-import os
-import shutil
-import subprocess
-import tarfile
-import time
-import traceback
+import aiohttp
+from tqdm import tqdm
+import json
 import urllib.parse
-import xml.etree.ElementTree as ET
-from datetime import date
+import os
+import traceback
+import logging
 
-import requests
-
-SCANNED_FILE_DIR = './'
-
+# Initialize logging
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
-def prereq():
-    """
-    Install NodeJS which is needed to run SonarQube.
-    """
+# Global variables
+pbar = None
+SCANNED_FILE_DIR = os.environ.get('REPORT_PATH', '/app/data/')
+
+async def async_sq_api(session, api, params, auth_token=None):
+    """Make an async API call to SonarQube"""
+    global pbar
+    if pbar is None:
+        pbar = tqdm(desc="API Calls")
+    
+    pbar.update(1)
+    auth = aiohttp.BasicAuth(auth_token, '')
+    async with session.get(api, params=params, auth=auth) as response:
+        if response.status == 401:
+            log.error("SonarQube authentication error")
+            return None
+        if response.status != 200:
+            log.error(f"SonarQube API error: {response.status}")
+            return None
+        data = await response.json()
+        if "errors" in data:
+            log.error(f"SonarQube API error: {data['errors'][0]['msg']}")
+            return None
+        return data
+
+async def _get_issues_batch(session, api, params, auth_token):
+    """Get a batch of issues from SonarQube"""
+    issues = await async_sq_api(session, api, params, auth_token)
+    return issues.get("issues", [])
+
+async def _get_hotspots_batch(session, api, params, auth_token):
+    """Get a batch of security hotspots from SonarQube"""
+    response = await async_sq_api(session, api, params, auth_token)
+    return response.get("hotspots", [])
+
+async def _get_issue_details(session, issue, sonar_url, auth_token, is_hotspot=False):
+    """Get detailed information about an issue or security hotspot"""
+    if is_hotspot:
+        params = {"hotspot": issue["key"]}
+        api = f"{sonar_url}/api/hotspots/show"
+    else:
+        params = {"key": issue["rule"]}
+        if sq_org:
+            params["organization"] = sq_org
+        api = f"{sonar_url}/api/rules/show"
+
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            data = await async_sq_api(session, api, params, auth_token)
+            if is_hotspot:
+                if "rule" in data:
+                    rule = data["rule"]
+                    issue.update({
+                        "name": rule.get("name", "None"),
+                        "riskDescription": rule.get("riskDescription", "None"),
+                        "vulnerabilityDescription": rule.get("vulnerabilityDescription", "None"),
+                        "fixRecommendations": rule.get("fixRecommendations", "None"),
+                        "comments": data.get("comment", [])
+                    })
+            else:
+                if "htmlDesc" in data["rule"]:
+                    description = data["rule"].get("htmlDesc", "No Description Available.")
+                else:
+                    description_sections = data["rule"].get("descriptionSections", [])
+                    description = description_sections if description_sections else "No Description Available."
+                issue.update({"description": description})
+            break
+        except Exception:
+            if attempt == max_retries - 1:
+                raise
+            await asyncio.sleep(5)
+
+    return issue
+
+async def _get_snippet(session, issue, sonar_url, auth_token):
+    """Get the code snippet for an issue"""
+    if "line" not in issue and "textRange" not in issue:
+        return issue
+
+    params = {"issueKey": issue["key"]}
+    api = f"{sonar_url}/api/sources/issue_snippets"
+
     try:
-        return "" # Everything installed using Dockerfile
-        subprocess.run(
-            "curl -sL https://s3.amazonaws.com/scripts.accuknox.com/nodesource_setup.sh -o /tmp/nodesource_setup.sh",
-            shell=True,
-        )
-        subprocess.run("bash /tmp/nodesource_setup.sh", shell=True)
-        subprocess.run("apt-get -o DPkg::Lock::Timeout=-1 update -y", shell=True)
-        #__salt__["pkg.install"]("nodejs")
-        #__salt__["pkg.install"]("python3-pip")
-        #__salt__["pip.install"]("beautifulsoup4")
-        #__salt__["pip.install"]("lxml")
+        data = await async_sq_api(session, api, params, auth_token)
+        component_data = data[issue["component"]]
+        
+        fullSnippet = []
+        for source in component_data["sources"]:
+            try:
+                line = source["line"]
+                code = source["code"]
+                space_count = len(code) - len(code.lstrip())
+                code = " " * space_count + code
+                fullSnippet.append({"line": line, "code": code})
+            except Exception:
+                log.error(traceback.format_exc())
+        
+        issue["snippet"] = fullSnippet
+    except Exception:
+        log.error(traceback.format_exc())
 
-        return ""
-    except:
-        error = traceback.format_exc()
-        log.error(error)
-        return error
+    return issue
 
-def sq_api(api, params, auth_token=None):
-    log.info("calling api={}".format(api))
-    try:
-        response = requests.get(
-            api,
-            params=params,
-            auth=(auth_token, ""),
-        )
-    except Exception as e:
-        err = "error calling SonarQube API."
-        log.error(f"{err} + {e}")
-        raise
+async def _process_issues(session, issues, auth_token, sonar_url, is_hotspots=False):
+    """Process a list of issues or security hotspots"""
+    processed_issues = []
+    detail_tasks = []
+    
+    for issue in issues:
+        task = _get_issue_details(session, issue, sonar_url, auth_token, is_hotspots)
+        detail_tasks.append(task)
+    
+    # Get all details in parallel
+    details_results = await asyncio.gather(*detail_tasks)
+    
+    # If these are issues (not hotspots), add snippets
+    if not is_hotspots:
+        snippet_tasks = []
+        for issue in details_results:
+            task = _get_snippet(session, issue, sonar_url, auth_token)
+            snippet_tasks.append(task)
+        processed_issues = await asyncio.gather(*snippet_tasks)
+    else:
+        processed_issues = details_results
+    
+    return processed_issues
 
-    log.info("api={} resp={}".format(api,response.status_code))
-    if response.status_code == 401:
-        raise ValueError("sonarqube auth error")
-    if response.status_code != 200:
-        raise ValueError("sonarqube api error")
-    return response.status_code, response.json()
-
-def _get_results(key, auth_token=None, sonar_url=None, branch=None):
+async def _get_results_async(key, auth_token, sonar_url, branch=None):
     """
      Gather scan results for a project from the SonarQube API
 
@@ -72,582 +150,188 @@ def _get_results(key, auth_token=None, sonar_url=None, branch=None):
     sonar_url:      The URL of the SonarQube server where scan results are sent.
     """
 
-    # salt_wrapper = SaltWrapper()
+    async with aiohttp.ClientSession() as session:
+        api = urllib.parse.urljoin(sonar_url, "api/issues/search")
+        params = {
+            "componentKeys": key,
+            "ps": 500,
+            "p": 1,
+            "additionalFields": "comments",
+            "resolved": "false",
+        }
+        if branch:
+            params["branch"] = branch
 
-    # Gather variables for HTTP Query
-    api = urllib.parse.urljoin(sonar_url, "api/issues/search")
-    params = {
-        "componentKeys": key,
-        "ps": 500,
-        "p": 1,
-        "additionalFields": "comments",
-        "resolved": "false",
-    }
-    if branch:
-        params.update({"branch": branch})
-
-    # Query the API to get total number of results
-    try:
-        code, issues = sq_api(api, params, auth_token)
-    except Exception as e:
-        err = "An error occured when connecting to the SonarQube API."
-        log.error(f"{err} + {e}")
-        return False, None, err
-
-    total = issues.get("total", 0)
-    issues = issues.get("issues", [])
-
-    results = "{ "
-
-    if branch:
-        results += '"branch": "{}",'.format(branch)
-
-    if total == 0:
-        log.error("No SonarQube results for {} on {}.".format(key, api))
-        results += '"issues": [], '
-
-    else:
-        results += '"issues": ['
-
-        results = _build_issues_string(issues, auth_token, results, sonar_url)
-
-        if total > 500:  # maximum page size for SonarQube API
-            # Continue to query API until all issues have been retrieved
-            while params["p"] < 20:
-                params["p"] += 1
-                try:
-                    code, issues = sq_api(api, params, auth_token)
-                except Exception as e:
-                    err = "An error occured when connecting to the SonarQube API."
-                    log.error(f"{err} + {e}")
-                    return False, None, err
-
-                issues = issues.get("issues", [])
-                if issues:
-                    # Add issues on current page to total issues
-                    results = _build_issues_string(
-                        issues,
-                        auth_token,
-                        results,
-                        sonar_url,
-                    )
-                else:
-                    break
-        results = results[:-2]
-        results += "], "
-
-    # Get Security Hotspots
-    params = {"projectKey": key, "ps": 500, "p": 1, "status": "TO_REVIEW"}
-    if branch:
-        params.update({"branch": branch})
-
-    try:
-        code, hotspots = sq_api("{}/api/hotspots/search".format(sonar_url), params, auth_token)
-    except Exception as e:
-        err = "An error occured when connecting to the SonarQube API."
-        log.error(f"{err} + {e}")
-        return False, None, err
-
-    if "errors" in hotspots:
         try:
-            error = hotspots["errors"][0]["msg"]
-        except Exception as e:
-            return False, None, "An unspecified error occurred."
-        if error == "Insufficient privileges":
-            err = "Token has insufficient privileges to list hotspots. This may be because you are using the built-in Administrator user."
-            log.error(err)
-            return False, None, err
-        else:
-            return False, None, error
+            initial_response = await async_sq_api(session, api, params, auth_token)
+            total_issues = initial_response.get("total", 0)
+            all_issues = initial_response.get("issues", [])
 
-    total = hotspots["paging"]["total"]
+            if total_issues > 500:
+                remaining_pages = min((total_issues - 1) // 500, 19)
+                tasks = []
+                for page in range(2, remaining_pages + 2):
+                    page_params = {**params, "p": page}
+                    tasks.append(_get_issues_batch(session, api, page_params, auth_token))
+                
+                additional_issues = await asyncio.gather(*tasks)
+                for issues in additional_issues:
+                    all_issues.extend(issues)
 
-    if total == 0:
-        results = results[:-2]
-        results += "}"
+            processed_issues = await _process_issues(session, all_issues, auth_token, sonar_url)
 
-    elif total > 0:
-        results += '"hotspots": ['
+            # Get hotspots
+            hotspots_api = f"{sonar_url}/api/hotspots/search"
+            hotspot_params = {"projectKey": key, "ps": 500, "p": 1, "status": "TO_REVIEW"}
+            if branch:
+                hotspot_params["branch"] = branch
 
-        hotspots = hotspots["hotspots"]
-
-        results = _build_issues_string(hotspots, auth_token, results, sonar_url, True)
-
-        if total >= 500:
-            while params["p"] < 20:
-                params["p"] += 1
-                try:
-                    code, hotspots = sq_api("{}/api/hotspots/search".format(sonar_url), params, auth_token)
-                except Exception as e:
-                    err = "An error occured when connecting to the SonarQube API."
-                    log.error(f"{err} + {e}")
+            hotspots_response = await async_sq_api(session, hotspots_api, hotspot_params, auth_token)
+            if "errors" in hotspots_response:
+                error = hotspots_response.get("errors", [{"msg": "An unspecified error occurred."}])[0]["msg"]
+                if error == "Insufficient privileges":
+                    err = "Token has insufficient privileges to list hotspots."
+                    log.error(err)
                     return False, None, err
+                return False, None, error
 
-                hotspots = hotspots["hotspots"]
-                if hotspots:
-                    # Add issues on current page to total issues
-                    results = _build_issues_string(
-                        hotspots,
-                        auth_token,
-                        results,
-                        sonar_url,
-                        True,
-                    )
-                else:
-                    break
-        results = results[:-2]
-        results += "]}"
+            total_hotspots = hotspots_response["paging"]["total"]
+            all_hotspots = hotspots_response.get("hotspots", [])
 
-    # Write results to file
-    issues_file = os.path.join(f"{SCANNED_FILE_DIR}", "SQ-{}.json".format(key))
-    #issues_file = os.path.join(f"{SCANNED_FILE_DIR}", "SQ-{}.json".format(time.time()))
-    with open(issues_file, "w") as f:
-        f.write(results)
+            if total_hotspots > 500:
+                remaining_pages = min((total_hotspots - 1) // 500, 19)
+                tasks = []
+                for page in range(2, remaining_pages + 2):
+                    page_params = {**hotspot_params, "p": page}
+                    tasks.append(_get_hotspots_batch(session, hotspots_api, page_params, auth_token))
+                
+                additional_hotspots = await asyncio.gather(*tasks)
+                for hotspots in additional_hotspots:
+                    all_hotspots.extend(hotspots)
 
-    return True, issues_file, "Success."
+            processed_hotspots = await _process_issues(session, all_hotspots, auth_token, sonar_url, True)
 
+            # Build results JSON
+            results = {
+                **({"branch": branch} if branch else {}),
+                "issues": processed_issues or [],
+                "hotspots": processed_hotspots or []
+            }
 
-def _build_issues_string(issues, auth_token, results, sonar_url, hotspots=False):
-    from bs4 import BeautifulSoup
+            # Write results to file
+            issues_file = os.path.join(SCANNED_FILE_DIR, f"SQ-{key}.json")
+            with open(issues_file, "w") as f:
+                json.dump(results, f, indent=2)
 
-    for issue in issues:
-        hasSnippet = True
-        issueKey = issue["key"]
-        try:
-            line = issue["line"]
+            return True, issues_file, "Success."
+
         except Exception as e:
-            try:
-                textRange = issue["textRange"]
-                line = textRange["startLine"]
-            except Exception as e:
-                hasSnippet = False
-        component = issue["component"]
-        if hotspots:
-            params = {"hotspot": issueKey}
-            success = False
-            while not success:
-                try:
-                    code, data = sq_api("{}/api/hotspots/show".format(sonar_url), params, auth_token)
-                    success = True
-                except Exception as e:
-                    time.sleep(5)
-            if "rule" in data:
-                rule = data["rule"]
-                if "name" in rule:
-                    name = rule["name"]
-                else:
-                    name = "None"
-                if "riskDescription" in rule:
-                    riskDescription = rule["riskDescription"]
-                else:
-                    riskDescription = "None"
-                # soup = BeautifulSoup(riskDescription, 'lxml')
-                # riskDescription = soup.get_text()
-                if "vulnerabilityDescription" in rule:
-                    vulnerabilityDescription = rule["vulnerabilityDescription"]
-                else:
-                    vulnerabilityDescription = "None"
-                # soup = BeautifulSoup(vulnerabilityDescription, 'lxml')
-                # vulnerabilityDescription = soup.get_text()
-                if "fixRecommendations" in rule:
-                    fixRecommendations = rule["fixRecommendations"]
-                else:
-                    fixRecommendations = "None"
-                # soup = BeautifulSoup(fixRecommendations, 'lxml')
-                # fixRecommendations = soup.get_text()
+            error_msg = f"An error occurred when connecting to the SonarQube API: {str(e)}"
+            log.error(error_msg)
+            return False, None, error_msg
 
-                issue.update({"name": name})
-                issue.update({"riskDescription": riskDescription})
-                issue.update({"vulnerabilityDescription": vulnerabilityDescription})
-                issue.update({"fixRecommendations": fixRecommendations})
-            issue.update({"comments": data.get("comment", [])})
-        else:
-            rule = issue["rule"]
-            params = {"key": rule}
-            if sq_org != "":
-                params["organization"] = sq_org
+async def process_project(key, auth_token, sonar_url):
+    """Process all branches of a project"""
+    api = urllib.parse.urljoin(sonar_url, "api/project_branches/list")
+    async with aiohttp.ClientSession() as session:
+        params = {"project": key}
+        try:
+            response = await async_sq_api(session, api, params, auth_token)
+            branches = [item["name"] for item in response["branches"]]
+            results = []
+            for branch in branches:
+                result = await _get_results_async(key, auth_token, sonar_url, branch)
+                if result[0]:
+                    results.append(result[1])
+                else:
+                    raise Exception(result[2])
+            return results
+        except Exception as e:
+            log.error(f"Error processing project {key}: {str(e)}")
+            raise
 
-            success = False
-            while not success:
-                try:
-                    code, data = sq_api("{}/api/rules/show".format(sonar_url), params, auth_token)
-                    success = True
-                except Exception as e:
-                    time.sleep(5)
-            if "htmlDesc" in data["rule"]:
-                description = data["rule"]["htmlDesc"]
-            else:
-                description = "No Description Available."
-            issue.update({"description": description})
-        if hasSnippet:
-            params = {"issueKey": issueKey}
-            success = False
-            while not success:
-                try:
-                    code, data = sq_api("{}/api/sources/issue_snippets".format(sonar_url), params, auth_token)
-                    success = True
-                except Exception as e:
-                    time.sleep(5)
-            try:
-                data = data[component]
-                sources = data["sources"]
-                fullSnippet = []
-                for source in sources:
-                    try:
-                        line = source["line"]
-                        code = source["code"]
-                        space_count = len(code) - len(code.lstrip())
-                        soup = BeautifulSoup(code, "lxml")
-                        code = " " * space_count + soup.get_text()
-                        lineSnippet = {"line": line, "code": code}
-                        fullSnippet.append(lineSnippet)
-                    except Exception as e:
-                        error = traceback.format_exc()
-                        log.error(error)
-                issue.update({"snippet": fullSnippet})
-            except Exception as e:
-                error = traceback.format_exc()
-                log.error(error)
-        results += json.dumps(issue)
-        results += ", "
-    return results
-
-
-def _handleMissingParam(param):
+def _handle_missing_param(param):
     """
     The function that return missing param
     """
-    error = "The {} parameter is missing".format(param)
+    error = f"The {param} parameter is missing"
     log.error(error)
     return error
 
+async def get_all_results_async(auth_token, sonar_url):
+    if not all([auth_token, sonar_url]):
+        missing = "auth token" if not auth_token else "Sonar URL"
+        return _handle_missing_param(missing)
 
-def run(
-    key=None,
-    auth_token=None,
-    sonar_url=None,
-    branch=None,
-):
-    """
-    Execute a new SonarQube scan
-
-       Parameters:
-           key:             SonarQube project Key
-           token:           The SonarQube authentication token used to create this project on the SonarQube server
-           sonar_url:       The URL of the SonarQube server where scan results are sent,
-                            defaults to https://sonar.isystematics.com
-           branch:          Project branch to scan.
-    """
-
-    errorMessage = prereq()
-    if errorMessage:
-        return errorMessage
-
-    if not key:
-        return _handleMissingParam("key")
-    if not auth_token:
-        return _handleMissingParam("auth token")
-    if not sonar_url:
-        return _handleMissingParam("Sonar URL")
-    if sonar_url.endswith("/"):
-        sonar_url = sonar_url[:-1]
-
-    # Determine code requirements based on Operating System of the Minion used
-    result = False
-    result, issues_file, error = _get_results(
-        key=key,
-        auth_token=auth_token,
-        sonar_url=sonar_url,
-        branch=branch,
-    )
-    if result:
-        return "Success! Data written to {}".format(issues_file)
-    log.error(error)
-    return error
-
-
-def get_all_results(
-    auth_token=None,
-    sonar_url=None,
-):
-    """
-    Collects all projects on the SonarQube server. Collects all results on all branches.
-
-       Parameters:
-           token:           The SonarQube authentication token used to create this project on the SonarQube server
-           sonar_url:       The URL of the SonarQube server where scan results are sent.
-    """
-
-    errorMessage = prereq()
-    if errorMessage:
-        return errorMessage
-
-    if not auth_token:
-        return _handleMissingParam("auth token")
-    if not sonar_url:
-        return _handleMissingParam("Sonar URL")
-    if sonar_url.endswith("/"):
-        sonar_url = sonar_url[:-1]
-
+    sonar_url = sonar_url.rstrip('/')
     api = urllib.parse.urljoin(sonar_url, "api/components/search")
-
     params = {"qualifiers": "TRK", "ps": 500, "p": 1}
-    if sq_org != "":
+    
+    if sq_org:
         params["organization"] = sq_org
 
-    log.info("sonarqube: initiating components search ...")
     try:
-        code, response = sq_api(api, params, auth_token)
-    except Exception as e:
-        err = "An error occured when connecting to the SonarQube API."
-        log.error(err)
-        return err
-
-    total = response["paging"]["total"]
-    components = response["components"]
-
-    global keys
-    keys = []
-
-    log.info("projects regex {}".format(sq_projects))
-    for component in components:
-        key = component["key"]
-        x = re.search(sq_projects, key)
-        if x == None:
-            log.info("ignoring project {}".format(key))
-            continue
-        log.info("adding project: {}".format(key))
-        keys.append(key)
-
-    if total > 500:
-        while True:
-            params["p"] += 1
-            try:
-                code, response = sq_api(api, params, auth_token)
-            except Exception as e:
-                err = "An error occured when connecting to the SonarQube API."
-                log.error(f"{err} + {e}")
-                return err
+        async with aiohttp.ClientSession() as session:
+            response = await async_sq_api(session, api, params, auth_token)
+            total = response["paging"]["total"]
             components = response["components"]
-            if not components:
-                break
+            
+            all_keys = []
             for component in components:
-                keys.append(component["key"])
+                key = component["key"]
+                if re.search(sq_projects, key):
+                    all_keys.append(key)
 
-    file_list = []
+            if total > 500:
+                page = 2
+                while True:
+                    params["p"] = page
+                    response = await async_sq_api(session, api, params, auth_token)
+                    if not response["components"]:
+                        break
+                    for component in response["components"]:
+                        key = component["key"]
+                        if re.search(sq_projects, key):
+                            all_keys.append(key)
+                    page += 1
 
-    if len(keys) == 0:
-        return "No projects found on the SonarQube server."
+            if not all_keys:
+                return "No projects found on the SonarQube server."
 
-    log.info("projects found {0}".format(keys))
+            tasks = []
+            for key in all_keys:
+                task = asyncio.create_task(process_project(key, auth_token, sonar_url))
+                tasks.append(task)
+            
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            
+            file_list = []
+            for result in results:
+                if isinstance(result, list):
+                    file_list.extend(result)
+                else:
+                    log.error(f"Error processing project: {str(result)}")
+                    return f"Error processing project: {str(result)}"
 
-    for key in keys:
-        api = urllib.parse.urljoin(sonar_url, "api/project_branches/list")
+            return f"Success! Data written to {file_list}"
 
-        params = {"project": key}
-
-        try:
-            code, response = sq_api(api, params, auth_token)
-        except Exception as e:
-            err = "An error occured when connecting to the SonarQube API."
-            log.error(f"{err} + {e}")
-            return err
-
-        for item in response["branches"]:
-            branch = item["name"]
-
-            result = False
-            result, issues_file, error = _get_results(
-                key=key,
-                auth_token=auth_token,
-                sonar_url=sonar_url,
-                branch=branch,
-            )
-            if result:
-                file_list.append(issues_file)
-            else:
-                log.error(error)
-                return error
-    return "Success! Data written to {}".format(file_list)
-
-
-def get_some_results(
-    auth_token=None,
-    sonar_url=None,
-    page_size=None,
-    page=None,
-):
-    """
-    Collects a subset of scan results on the SonarQube server. Collects all branches.
-
-       Parameters:
-           token:           The SonarQube authentication token used to create this project on the SonarQube server
-           sonar_url:       The URL of the SonarQube server where scan results are sent
-    """
-
-    errorMessage = prereq()
-    if errorMessage:
-        return errorMessage
-
-    if not auth_token:
-        return _handleMissingParam("auth token")
-    if not sonar_url:
-        return _handleMissingParam("Sonar URL")
-    if not page_size:
-        return _handleMissingParam("page size")
-    if not page:
-        return _handleMissingParam("page")
-    if sonar_url.endswith("/"):
-        sonar_url = sonar_url[:-1]
-
-    api = urllib.parse.urljoin(sonar_url, "api/components/search")
-
-    params = {"qualifiers": "TRK", "ps": page_size, "p": page}
-
-    try:
-        code, response = sq_api(api, params, auth_token)
     except Exception as e:
-        err = "An error occured when connecting to the SonarQube API."
-        log.error(f"{err} + {e}")
-        return err
-
-    total = response["paging"]["total"]
-    components = response["components"]
-
-    global keys
-    keys = []
-
-    for component in components:
-        keys.append(component["key"])
-
-    file_list = []
-
-    if len(keys) == 0:
-        return "No projects found. Check the page parameter."
-
-    for key in keys:
-        api = urllib.parse.urljoin(sonar_url, "api/project_branches/list")
-
-        params = {"project": key}
-
-        try:
-            code, response = sq_api(api, params, auth_token)
-        except Exception as e:
-            err = "An error occured when connecting to the SonarQube API."
-            log.error(f"{err} + {e}")
-            return err
-
-        for item in response["branches"]:
-            branch = item["name"]
-
-            result = False
-            result, issues_file, error = _get_results(
-                key=key,
-                auth_token=auth_token,
-                sonar_url=sonar_url,
-                branch=branch,
-            )
-            if result:
-                r.sadd(redis_write_key, issues_file)
-                file_list.append(issues_file)
-            else:
-                log.error(error)
-                return error
-    return "Success! Data written to {}".format(file_list)
-
-
-def get_all_results_main_branch(
-    auth_token=None,
-    sonar_url=None,
-):
-    """
-    Collects all projects on the SonarQube server. Only collects results on the main branch.
-
-       Parameters:
-           token:           The SonarQube authentication token used to create this project on the SonarQube server
-           sonar_url:       The URL of the SonarQube server where scan results are sent
-    """
-
-    errorMessage = prereq()
-    if errorMessage:
-        return errorMessage
-
-    if not auth_token:
-        return _handleMissingParam("auth token")
-    if not sonar_url:
-        return _handleMissingParam("Sonar URL")
-    if sonar_url.endswith("/"):
-        sonar_url = sonar_url[:-1]
-
-    api = urllib.parse.urljoin(sonar_url, "api/components/search")
-
-    params = {"qualifiers": "TRK", "ps": 500, "p": 1}
-
-    try:
-        response = requests.get(api, params=params, auth=(auth_token, ""))
-    except Exception as e:
-        pass
-        log.error("An error occured when connecting to the SonarQube API.")
-        return "An error occured when connecting to the SonarQube API."
-
-    if response.status_code == 401:
-        return "401 Unauthorized Error. Check SonarQube auth token."
-
-    response = response.json()
-
-    total = response["paging"]["total"]
-
-    components = response["components"]
-
-    global keys
-    keys = []
-
-    for component in components:
-        keys.append(component["key"])
-
-    if total > 500:
-        while True:
-            params["p"] += 1
-            try:
-                response = requests.get(api, params=params, auth=(auth_token, ""))
-            except Exception as e:
-                log.error("An error occured when connecting to the SonarQube API.")
-                return "An error occured when connecting to the SonarQube API."
-            response = response.json()
-            components = response["components"]
-            if not components:
-                break
-            for component in components:
-                keys.append(component["key"])
-
-    file_list = []
-
-    if len(keys) == 0:
-        return "No projects found on the SonarQube server."
-
-    for key in keys:
-        result = False
-        result, issues_file, error = _get_results(
-            key=key,
-            auth_token=auth_token,
-            sonar_url=sonar_url,
-        )
-        if result:
-            file_list.append(issues_file)
-        else:
-            log.error(error)
-            return error
-    return "Success! Data written to {}".format(file_list)
+        error_msg = f"An error occurred: {str(e)}"
+        log.error(error_msg)
+        return error_msg
 
 if __name__ == '__main__':
     sq_url = os.environ.get("SQ_URL", "")
     sq_auth_token = os.environ.get('SQ_AUTH_TOKEN', "")
     sq_projects = os.environ.get('SQ_PROJECTS', ".*")
     sq_org = os.environ.get('SQ_ORG', "")
-    SCANNED_FILE_DIR = os.environ.get('REPORT_PATH', "./")
     
-    if sq_url == "" or sq_auth_token == "":
+    if not sq_url or not sq_auth_token:
         log.error("SQ_URL or SQ_AUTH_TOKEN env var not specified")
         exit(1)
-    log.info(f"SQ_ORG={sq_org}")
-    get_all_results(sq_auth_token, sq_url)
+    
+    result = asyncio.run(get_all_results_async(sq_auth_token, sq_url))
+    if "Error" in result or "No projects found" in result:
+        log.error(result)
+        exit(1)
+        
