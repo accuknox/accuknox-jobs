@@ -199,8 +199,8 @@ def _get_results(key, auth_token=None, sonar_url=None, branch=None):
         results += "]}"
 
     # Write results to file
-    issues_file = os.path.join(f"{SCANNED_FILE_DIR}", "SQ-{}.json".format(key))
-    #issues_file = os.path.join(f"{SCANNED_FILE_DIR}", "SQ-{}.json".format(time.time()))
+    # RJ 08-02-2025 issues_file = os.path.join(f"{SCANNED_FILE_DIR}", "SQ-{}.json".format(key))
+    issues_file = os.path.join(f"{SCANNED_FILE_DIR}", "SQ-{}-{}.json".format(key, branch.replace("/", "_")))
     with open(issues_file, "w") as f:
         f.write(results)
 
