@@ -219,7 +219,7 @@ async def _get_results_async(key, auth_token, sonar_url, branch=None):
             }
 
             # Write results to file
-            issues_file = os.path.join(SCANNED_FILE_DIR, f"SQ-{key}.json")
+            issues_file = os.path.join(SCANNED_FILE_DIR, f"SQ-{key}-{branch.replace('/', '_')}.json")
             with open(issues_file, "w") as f:
                 json.dump(results, f, indent=2)
 
