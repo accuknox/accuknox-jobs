@@ -28,6 +28,9 @@ spec:
       containers:
         - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}"
           name: accuknox-kiem-job
+          command: ["/bin/sh", "-c"]
+          args: 
+          - '/home/jobs/job -url "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KIEM&save_to_s3=true&label_id=${LABEL_NAME}"'
           resources: {}
           env:
             - name: AUTH_TOKEN

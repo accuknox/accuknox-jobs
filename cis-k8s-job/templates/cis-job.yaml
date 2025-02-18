@@ -22,6 +22,9 @@ spec:
     {{- end }}
       containers:
       - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}"
+        command: ["/bin/sh", "-c"]
+        args: 
+        - '/home/jobs/job -url "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KB&label_id=${LABEL_NAME}&save_to_s3=true"'
         name: cis-k8s-cronjob
         resources: {}
         env:
@@ -65,7 +68,7 @@ spec:
           - name:  "KNOX_GATEWAY"
             value: {{ .Values.accuknox.gateway }}
           - name: "PRINT_DATA"
-            value: true
+            value: "true"
         volumeMounts:
         - mountPath: /data
           name: datapath
