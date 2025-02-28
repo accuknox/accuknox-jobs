@@ -23,3 +23,6 @@ Set of jobs that integrate with AccuKnox SaaS to provide reporting/assessment.
 ## Tenable Nessus job
 
 [nessus-job](nessus-job)
+
+## VM STIG job
+[rat-job](rat-job)
