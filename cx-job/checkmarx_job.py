@@ -2,6 +2,7 @@ import json
 import logging
 import math
 import os
+import time
 from datetime import datetime
 from enum import Enum
 
@@ -74,7 +75,10 @@ class Checkmarx:
 
         try:
             url = f"https://{self.domain}ast.checkmarx.net/{endpoint}"
-            headers = {"accept": "application/json", "Authorization": f"Bearer {self.bearer_token}"}
+            headers = {
+                "accept": "application/json",
+                "Authorization": f"Bearer {self.bearer_token}",
+            }
 
             for attempt in range(self.MAX_RETRIES):
                 response = requests.get(url, headers=headers)
@@ -87,11 +91,17 @@ class Checkmarx:
                         log.info(
                             f"<warning>Unauthorized access. Retrying... ({attempt + 1}/{self.MAX_RETRIES}) </warning>",
                         )
-                        self.bearer_token = self._get_checkmarx_bearer_token()  # Refresh token
-                        headers["Authorization"] = f"Bearer {self.bearer_token}"  # Update header
+                        self.bearer_token = (
+                            self._get_checkmarx_bearer_token()
+                        )  # Refresh token
+                        headers[
+                            "Authorization"
+                        ] = f"Bearer {self.bearer_token}"  # Update header
 
                     else:
-                        log.error("<error> Maximum retry attempts reached. Authorization failed. </error>")
+                        log.error(
+                            "<error> Maximum retry attempts reached. Authorization failed. </error>",
+                        )
                         raise RuntimeError
                         break
                 if response.status_code == 400:
@@ -121,10 +131,16 @@ class Checkmarx:
         filteredTotalCount = data.get("filteredTotalCount")
         if filteredTotalCount:
             log.info("<info> project id is correct </info>")
-        return data.get("projects")
+        if data.get("projects"):
+            return data.get("projects")[0]
+        else:
+            log.error("<error> There is no project data. </error>")
+            raise RuntimeError
 
     def _fetch_scan_id(self, project_id, scan_date):
-        log.info(f"<info> Fetching latest scan id for project: {project_id} and date: {scan_date}</info>")
+        log.info(
+            f"<info> Fetching latest scan id for project: {project_id} and date: {scan_date}</info>",
+        )
         # Convert to RFC 3339 format
         scan_date = scan_date.replace("+00:00", "Z")
         endpoint = f"api/scans/?statuses=Completed&statuses=Partial&project-id={project_id}&from-date={scan_date}"
@@ -141,6 +157,17 @@ class Checkmarx:
         scan_detail = self._fetch_data(endpoint)
         return scan_detail
 
+    def _fix_isoformat(self, iso_str):
+        if "Z" in iso_str:
+            iso_str = iso_str.replace("Z", "+00:00")
+        date_part, time_part = iso_str.split("T")
+        time_main, offset = time_part.split("+")
+        if "." in time_main:
+            t, micro = time_main.split(".")
+            micro = micro.ljust(6, "0")
+            time_main = f"{t}.{micro}"
+        return datetime.fromisoformat(f"{date_part}T{time_main}+{offset}")
+
     def _fetch_last_scan_id(self, project_id, main_branch=False):
         endpoint_completed = f"api/projects/last-scan?offset=0&limit=20&project-ids={project_id}&use-main-branch={main_branch}&scan-status=Completed"
         scan_completed = self._fetch_data(endpoint_completed)
@@ -149,10 +176,12 @@ class Checkmarx:
         scan_partial = self._fetch_data(endpoint_partial)
         try:
             # If both are empty, return [], {}
-            log.info(f"<info> scan_completed: {scan_completed}, scan_partial: {scan_partial}. </info>")
+            log.info(
+                f"<info> scan_completed: {scan_completed}, scan_partial: {scan_partial}. </info>",
+            )
             if not scan_completed and not scan_partial:
                 log.info("<info> No completed or partial scans found. </info>")
-                return [], {}
+                return [], []
 
             key = None
 
@@ -160,11 +189,11 @@ class Checkmarx:
 
             if scan_completed:
                 key = list(scan_completed.keys())[0]
-                dt_completed = datetime.fromisoformat(scan_completed[key]["createdAt"].replace("Z", "+00:00"))
+                dt_completed = self._fix_isoformat(scan_completed[key]["createdAt"])
 
             if scan_partial:
                 key = list(scan_partial.keys())[0]
-                dt_partial = datetime.fromisoformat(scan_partial[key]["createdAt"].replace("Z", "+00:00"))
+                dt_partial = self._fix_isoformat(scan_partial[key]["createdAt"])
 
             # Compare timestamps and decide which scan ID to use
             if dt_completed and (not dt_partial or dt_completed > dt_partial):
@@ -174,10 +203,10 @@ class Checkmarx:
                 log.info("<info> Scan ID from partial scan. </info>")
                 scan_id = scan_partial[key]["id"]
             else:
-                return [], {}
+                return [], []
 
             scan_detail = self._fetch_scan_detail(scan_id)
-            return [scan_id], scan_detail
+            return [scan_id], [scan_detail]
         except Exception as e:
             log.error(f"<error> {e} </error> ")
             return [], {}
@@ -187,22 +216,25 @@ class Checkmarx:
         Fetch all result for a scan_id.
         :return: JSON response containing scan data
         """
-        log.info(f"<info> Fetching checkmarx scan result for a scan_id:{scan_id} </info>")
+        log.info(
+            f"<info> Fetching checkmarx scan result for a scan_id:{scan_id} </info>",
+        )
 
         all_result = {}
+        all_result["scan_id"] = scan_id
         limit = 1000
         offset = 0
         endpoint = f"api/results/?limit={limit}&offset={offset}&scan-id={scan_id}"
         data = self._fetch_data(endpoint)
         total_count = data.get("totalCount")
         if total_count is not None:
-            all_result = data
+            all_result["finding"] = data.get("results", [])
             offset = math.ceil(total_count / limit)
         for count in range(1, offset):
             endpoint = f"api/results/?limit={limit}&offset={count}&scan-id={scan_id}"
             data = self._fetch_data(endpoint)
             if data.get("results"):
-                all_result["results"] += data.get("results", [])
+                all_result["finding"] += data.get("results", [])
 
         query_desc = self._get_sast_query_detail(all_result)
         all_result["query_desc"] = query_desc
@@ -237,7 +269,6 @@ class Checkmarx:
         return query_description
 
     def run(self):
-        data = {}
         self.domain = getattr(CheckmarxRegion, self.region, None)
         if self.domain is None:
             raise Exception(
@@ -245,16 +276,19 @@ class Checkmarx:
             )
         self.domain = self.domain.value[0]
         self.bearer_token = self._get_checkmarx_bearer_token()
-        project_info = self._fetch_checkmarx_projects(project_id=self.project_id)
-        data["project"] = project_info
-        scan_ids, scan_info = self._fetch_last_scan_id(self.project_id, main_branch=self.main_branch)
+        data = self._fetch_checkmarx_projects(project_id=self.project_id)
+        scan_ids, scan_info = self._fetch_last_scan_id(
+            self.project_id,
+            main_branch=self.main_branch,
+        )
         data["scan"] = scan_info
-
+        scan_result = []
         for scan_id in scan_ids:
-            data[scan_id] = self._get_result(scan_id)
+            scan_result.append(self._get_result(scan_id))
+        data["result"] = scan_result
         # Write results to file
-        current_time = datetime.now()
-        issues_file = os.path.join(SCANNED_FILE_DIR, f"Checkmarx-{self.project_id}-{current_time}.json")
+        time_suffix = str(time.time())
+        issues_file = os.path.join(SCANNED_FILE_DIR, f"CHECKMARX-CX-{time_suffix}.json")
         with open(issues_file, "w") as f:
             json.dump(data, f, indent=2)
 
