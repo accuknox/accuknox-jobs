@@ -6,17 +6,17 @@ Instruction to perform CIS Benchmark on Cluster via AccuKnox CIS K8s Job
 - [Helm (v3.13.1 or later)](https://v3.helm.sh/docs/intro/install/)
 
 ### Parameters:
-| Variable             | Sample Value                     | Description                          |
-| -------------------- | -------------------------------- | ------------------------------------ |
-| accuknox.url         | cspm.demo.accuknox.com           | AccuKnox CSPM Endpoint URL           |
-| accuknox.tenantId    | 2                                | AccuKnox Tenant ID                   |
-| accuknox.label       | CIS                              | AccuKnox Label                       |
-| accuknox.authToken   | $token                           | AccuKnox Token                       |
-| accuknox.clusterName | $clusterName                     | Cluster Name                         |
-| accuknox.cronTab     | 30 9 * * *                       | CronJob (UTC)                        |
-| toolConfig.platform  | "GKE" OR "AKS" | Name of the platform. Default: empty |
-| toolConfig.nodeType  | master OR controlplane           | For node selection                   |
-| toolConfig.targets   | "master,controlplane,node"       | [Ref](https://github.com/aquasecurity/kube-bench/blob/main/docs/flags-and-commands.md#specifying-benchmark-sections) |
+| Variable              | Sample Value                      | Description                          |
+| --------------------- | --------------------------------- | ------------------------------------ |
+| url                   | cspm.domain-url.com               | AccuKnox CSPM Endpoint URL           |
+| tenantId              | 2                                 | AccuKnox Tenant ID                   |
+| label                 | CIS                               | AccuKnox Label                       |
+| authToken             | $token                            | AccuKnox Token                       |
+| clusterName           | $clusterName                      | Cluster Name                         |
+| cronTab               | 30 9 * * *                        | CronJob (UTC)                        |
+| toolConfig.platform   | "GKE" OR "AKS"                    | Name of the platform. Default: empty |
+| toolConfig.nodeType   | master OR controlplane            | For node selection                   |
+| toolConfig.targets    | "master,controlplane,node"        | [Ref](https://github.com/aquasecurity/kube-bench/blob/main/docs/flags-and-commands.md#specifying-benchmark-sections) |
 | toolConfig.benchmark  | "gke-1.6.0" | [Ref](https://github.com/aquasecurity/kube-bench/blob/main/docs/platforms.md) |
 | toolConfig.check | "1.1.1,1.2.3"     | Control IDs to check |
 | toolConfig.skip | "1.1.1,1.3.1" | Control IDs to skip |
@@ -31,12 +31,12 @@ git clone https://github.com/accuknox/accuknox-jobs.git && cd accuknox-jobs/cis-
 #### Helm Command to deploy AccuKnox CIS K8s Job locally:
 ```sh
 helm upgrade --install accuknox-cis-k8s . \
-    --set accuknox.url="cspm.demo.accuknox.com" \
-    --set accuknox.tenantId="$tenantId" \
-    --set accuknox.label="$label" \
-    --set accuknox.authToken="$token" \
-    --set accuknox.clusterName="$clusterName" \
-    --set accuknox.cronTab="30 9 * * *"
+    --set url="cspm.<domain-url>.com" \
+    --set tenantId="$tenantId" \
+    --set label="$label" \
+    --set authToken="$token" \
+    --set clusterName="$clusterName" \
+    --set cronTab="30 9 * * *"
 ```
 
 ### Note:
@@ -71,7 +71,7 @@ cat <<<$(jq '. += {
 
  - Sending output file to AccuKnox SaaS
 ```sh
-curl --location --request POST 'https://cspm.demo.accuknox.com/api/v1/artifact/?tenant_id=$tenantId&data_type=KB&save_to_s3=true' --header 'Tenant-Id: $tenantId' --header "Authorization: Bearer $token" --form 'file=@"./results.json"'
+curl --location --request POST 'https://cspm.domain-url.com/api/v1/artifact/?tenant_id=$tenantId&data_type=KB&save_to_s3=true' --header 'Tenant-Id: $tenantId' --header "Authorization: Bearer $token" --form 'file=@"./results.json"'
 ```
 > Replace value of `$tenantId` from AccuKnox Tenant ID & `$token` from AccuKnox Token
 

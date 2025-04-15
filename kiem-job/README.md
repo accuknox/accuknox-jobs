@@ -13,12 +13,12 @@ Follow these instructions to deploy AccuKnox KIEM as a Kubernetes job.
 
 | Variable             | Sample Value           | Description                |
 |----------------------|------------------------|----------------------------|
-| accuknox.url         | cspm.demo.accuknox.com | AccuKnox CSPM Endpoint URL |
-| accuknox.tenantId    | 2                      | AccuKnox Tenant ID         |
-| accuknox.label       | KIEM                   | AccuKnox Label             |
-| accuknox.authToken   | $token                 | AccuKnox Token             |
-| accuknox.clusterName | $clusterName           | Cluster Name               |
-| accuknox.cronTab     | 30 9 * * *             | CronJob (UTC)              |
+| url                  | cspm.demo.com | AccuKnox CSPM Endpoint URL |
+| tenantId             | 2                      | AccuKnox Tenant ID         |
+| label                | KIEM                   | AccuKnox Label             |
+| authToken            | $token                 | AccuKnox Token             |
+| clusterName          | $clusterName           | Cluster Name               |
+| cronTab              | 30 9 * * *             | CronJob (UTC)              |
 
 ### Clone GitHub and switch to KIEM job folder
 
@@ -31,12 +31,12 @@ cd accuknox-jobs/kiem-job
 
 ```sh
 helm upgrade --install accuknox-kiem . \
-    --set accuknox.url="cspm.demo.accuknox.com" \
-    --set accuknox.tenantId="$tenantId" \
-    --set accuknox.label="$label" \
-    --set accuknox.authToken="$token" \
-    --set accuknox.clusterName="$clusterName" \
-    --set accuknox.cronTab="30 9 * * *"
+    --set url="cspm.demo.com" \
+    --set tenantId="$tenantId" \
+    --set label="$label" \
+    --set authToken="$token" \
+    --set clusterName="$clusterName" \
+    --set cronTab="30 9 * * *"
 ```
 
 ### Notes:
@@ -73,7 +73,7 @@ docker run \
 ### Push the report to AccuKnox SaaS:
 
 ```sh
-export URL="<AccuKnox CSPM URL>" # e.g., cspm.demo.accuknox.com
+export URL="<AccuKnox CSPM URL>" # e.g., cspm.demo.com
 export TENANT_ID="<tenant ID>"
 export LABEL_NAME="<label>"
 export AUTH_TOKEN="<auth token>"

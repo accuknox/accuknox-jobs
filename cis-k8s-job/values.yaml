@@ -35,5 +35,5 @@ accuknox:
   label: ""
   clusterId: ""
   tenantId: ""
-  url: "cspm.demo.accuknox.com"
+  url: "cspm.domain-url.com"
   secretName: ""
