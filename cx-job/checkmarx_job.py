@@ -242,7 +242,7 @@ class Checkmarx:
 
     def _get_sast_query_detail(self, data):
         query_id = set()
-        for item in data.get("results", []):
+        for item in data.get("finding", []):
             if item.get("type", "") == "sast" and item.get("data", {}).get("queryId"):
                 query_id.add(item.get("data", {}).get("queryId"))
 
