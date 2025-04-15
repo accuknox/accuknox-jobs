@@ -9,9 +9,9 @@ rm -f Checkmarx-*.json # Remove existing reports (optional cleanup)
 
 docker run --rm -it \
   -e ACCESS_TOKEN=eIGNiD384Tg \
-  -e REGION=DEU \
-  -e TENANT_NAME=accuknox-nfr \
-  -e PROJECT_ID=2e973c17-c30b-4960-a3ef-e4916fd7eadc \
+  -e REGION=`$region` \
+  -e TENANT_NAME=`$tenant_id` \
+  -e PROJECT_ID=`$project_uuid` \
   -e REPORT_PATH=/app/data/ \
   -v $PWD:/app/data/ \
   accuknox/checkmarxjob:1.0.3
@@ -40,9 +40,9 @@ docker run --rm -it \
 Once the scan is complete and reports are generated, use the following script to upload them to the AccuKnox Management Plane:
 
 ```bash
-TENANT_ID=2509
-LABEL=SAST
-AK_URL="cspm.demo.accuknox.com"
+TENANT_ID="<tenant ID>" # e.g., 19
+LABEL="<label>" # e.g., SAST
+AK_URL="<AccuKnox CSPM URL>" # e.g., cspm.demo.accuknox.com
 AK_TOK=<artifact token received from accuknox management plane>
 
 for file in `ls -1 Checkmarx-*.json`; do
