@@ -26,9 +26,9 @@ docker run --rm -it \
 | Environment Variable | Sample Value                            | Description                                          |
 |----------------------|------------------------------------------|------------------------------------------------------|
 | `ACCESS_TOKEN`*       | `eIGNiD384Tg`                            | Access token to authenticate with Checkmarx API      |
-| `REGION`*             | `DEU`                                    | Region code (e.g., `USA`, `DEU`)                     |
-| `TENANT_NAME`*        | `accuknox-nfr`                           | Your AccuKnox tenant name                            |
-| `PROJECT_ID`*         | `2e973c17-c30b-4960-a3ef-e4916fd7eadc`   | UUID of the Checkmarx project                        |
+| `REGION`*             | `$region`                                    | Region code (e.g., `USA`, `DEU`)                     |
+| `TENANT_NAME`*        | `$tenant_id`                           | Your Tenant name                            |
+| `PROJECT_ID`*         | `$project_uuid`   | UUID of the Checkmarx project                        |
 | `REPORT_PATH`         | `/app/data/`                             | Directory to save the generated JSON reports         |
 
 > **Note:** Variables marked with `*` are mandatory.
