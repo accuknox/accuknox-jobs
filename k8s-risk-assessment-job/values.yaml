@@ -31,3 +31,14 @@ accuknox:
   clusterID: 0
   label: ""
   secretName: ""
+  saveToS3: "true"
+  dataType: "KS"
+  reportFile: "/data/report.json"
+  gateway: ""
+spire:
+  secretName: "" 
+  server: "" 
+  port: "" 
+  joinToken: ""
+  namespace: ""
+  configPath: ""
