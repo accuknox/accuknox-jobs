@@ -3,7 +3,7 @@
 # Declare variables to be passed into your templates.
 
 image:
-  repository: accuknox/accuknox-job
+  repository: public.ecr.aws/k9v9d5v2/cluster-job
   tag: "latest"
 
 kubeBench:

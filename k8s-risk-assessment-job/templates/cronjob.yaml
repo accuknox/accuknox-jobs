@@ -30,7 +30,7 @@ spec:
                 - name: datapath
                   mountPath: /data
           containers:
-            - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}"
+            - image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
               name: artifact-api-container
               command:
                 - '/bin/sh'
