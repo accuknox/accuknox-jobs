@@ -21,7 +21,7 @@ spec:
         - name: {{ .Values.imagePullSecrets.name }}
     {{- end }}
       containers:
-      - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}"
+      - image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         command: ["/bin/sh", "-c"]
         args: ['/bin/sh entrypoint.sh && curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KB&label_id=${LABEL_NAME}&save_to_s3=true" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"./data/report.json\"" && cat /data/report.json']
         name: cis-k8s-cronjob
@@ -31,21 +31,21 @@ spec:
             valueFrom:
               secretKeyRef:
                 key: AUTH_TOKEN
-                {{- if (.Values.accuknox.secretName | empty) }}
+                {{- if (.Values.secretName | empty) }}
                 name: cis-k8s-job-auth-token
                 {{- else }}
-                name: {{ .Values.accuknox.secretName }}
+                name: {{ .Values.secretName }}
                 {{- end }}
           - name: CLUSTER_NAME
-            value: {{ .Values.accuknox.clusterName }}
+            value: {{ .Values.clusterName }}
           - name: LABEL_NAME
-            value: {{ .Values.accuknox.label }}
+            value: {{ .Values.label }}
           - name: CLUSTER_ID
-            value: {{ .Values.accuknox.clusterId }}
+            value: {{ .Values.clusterId }}
           - name: TENANT_ID
-            value: {{ .Values.accuknox.tenantId | quote}}
+            value: {{ .Values.tenantId | quote}}
           - name: URL
-            value: {{ .Values.accuknox.url }}
+            value: {{ .Values.url }}
         volumeMounts:
         - mountPath: /data
           name: datapath

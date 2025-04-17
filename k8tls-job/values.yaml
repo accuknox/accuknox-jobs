@@ -7,10 +7,9 @@ k8tls:
     repository: kubearmor/k8tls
     tag: "latest"
 
-accuknoxJob:
-  image:
-    repository: accuknox/accuknox-job
-    tag: "latest"
+image:
+  repository: public.ecr.aws/k9v9d5v2/cluster-job
+  tag: "latest"
 
 # To use existing secret updated {imagePullSecrets.name} with your secret name.
 imagePullSecrets:
@@ -19,11 +18,10 @@ imagePullSecrets:
   username: ""
   password: ""
 
-accuknox:
-  authToken: "NO-TOKEN-SET"
-  cronTab: "30 9 * * *"
-  tenantID: ""
-  clusterName: ""
-  label: ""
-  URL: "cspm.demo.accuknox.com"
-  secretName: ""
+authToken: "NO-TOKEN-SET"
+cronTab: "30 9 * * *"
+tenantID: ""
+clusterName: ""
+label: ""
+URL: "cspm.domain-url.com"
+secretName: ""

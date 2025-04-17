@@ -21,12 +21,12 @@ spec:
           args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
           env:
             - name: CLUSTER_NAME
-              value: {{ .Values.accuknox.clusterName }}
+              value: {{ .Values.clusterName }}
           volumeMounts:
             - name: datapath
               mountPath: /data
       containers:
-        - image: accuknox/accuknox-job:latest
+        - image: public.ecr.aws/k9v9d5v2/cluster-job:latest
           command: ['sh', '-c', 'curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KIEM&save_to_s3=true&label_id=${LABEL_NAME}" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"/data/report.json\""']
           name: accuknox-kiem-job
           resources: {}
@@ -35,19 +35,19 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: AUTH_TOKEN
-                  {{- if (.Values.accuknox.secretName | empty) }}
+                  {{- if (.Values.secretName | empty) }}
                   name: kiem-job-auth-token
                   {{- else }}
-                  name: {{ .Values.accuknox.secretName }}
+                  name: {{ .Values.secretName }}
                   {{- end }}
             - name: URL
-              value: {{ .Values.accuknox.URL }}
+              value: {{ .Values.URL }}
             - name: TENANT_ID
-              value: {{ .Values.accuknox.tenantID | quote }}
+              value: {{ .Values.tenantID | quote }}
             - name: CLUSTER_NAME
-              value: {{ .Values.accuknox.clusterName }}
+              value: {{ .Values.clusterName }}
             - name: LABEL_NAME
-              value: {{ .Values.accuknox.label | quote}}
+              value: {{ .Values.label | quote}}
           volumeMounts:
             - mountPath: /data
               name: datapath      
