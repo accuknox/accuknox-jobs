@@ -11,13 +11,13 @@ spec:
       labels:
         app: kiem-job-{{ now | unixEpoch }}
     spec:
-    {{- if .Values.imagePullSecrets.name }}
+    {{- if .Values.registry.secretName }}
       imagePullSecrets:
-        - name: {{ .Values.imagePullSecrets.name }}
-    {{- end }}    
+      - name: {{ .Values.registry.secretName }}
+    {{- end }}      
       initContainers:
         - name: kiem-init
-          image: accuknox/kiem:latest
+          image: "{{ include "kiem.image" . }}"
           args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
           env:
             - name: CLUSTER_NAME
@@ -26,7 +26,7 @@ spec:
             - name: datapath
               mountPath: /data
       containers:
-        - image: public.ecr.aws/k9v9d5v2/cluster-job:latest
+        - image: "{{ include "cluster_job.image" . }}"
           command: ['sh', '-c', 'curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KIEM&save_to_s3=true&label_id=${LABEL_NAME}" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"/data/report.json\""']
           name: accuknox-kiem-job
           resources: {}

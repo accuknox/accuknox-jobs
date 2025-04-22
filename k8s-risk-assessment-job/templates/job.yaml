@@ -11,13 +11,13 @@ spec:
       labels:
         app: k8s-risk-assessment-job-{{ now | unixEpoch }}
     spec:
-    {{- if .Values.imagePullSecrets.name }}
+    {{- if .Values.registry.secretName }}
       imagePullSecrets:
-        - name: {{ .Values.imagePullSecrets.name }}
-    {{- end }}    
+      - name: {{ .Values.registry.secretName }}
+    {{- end }}     
       initContainers:
         - name: job-init-container
-          image: "{{ .Values.kubescape.image.repository }}:{{ .Values.kubescape.image.tag }}"
+          image: "{{ include "kubescape.image" . }}"
           args: ["scan", "framework", "allcontrols,clusterscan,mitre,nsa", "--format", "json", "--cache-dir", "/data/kubescape-cache", "--output", "/data/report.json", "--cluster-name=$(CLUSTER_NAME)"]
           env:
             - name: CLUSTER_NAME
@@ -26,7 +26,7 @@ spec:
             - name: datapath
               mountPath: /data
       containers:
-        - image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+        - image: "{{ include "cluster_job.image" . }}"
           name: artifact-api-container
           command:
             - '/bin/sh'

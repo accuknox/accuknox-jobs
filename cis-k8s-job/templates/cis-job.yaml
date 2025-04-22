@@ -15,13 +15,12 @@ spec:
     {{- if or (or (contains "master" .Values.toolConfig.nodeType) (contains "controlplane" .Values.toolConfig.nodeType)) (or (contains "master" .Values.toolConfig.targets) (contains "controlplane" .Values.toolConfig.targets)) }}
       {{- include "masterConfig" .Values.toolConfig | trim | nindent 6 }}
     {{- end }}
-
-    {{- if .Values.imagePullSecrets.name }}
+      {{- if .Values.registry.secretName }}
       imagePullSecrets:
-        - name: {{ .Values.imagePullSecrets.name }}
-    {{- end }}
+      - name: {{ .Values.registry.secretName | quote }}
+      {{- end }}
       containers:
-      - image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+      - image: "{{ include "cluster_job.image" . }}"
         command: ["/bin/sh", "-c"]
         args: ['/bin/sh entrypoint.sh && curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KB&label_id=${LABEL_NAME}&save_to_s3=true" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"./data/report.json\"" && cat /data/report.json']
         name: cis-k8s-cronjob
@@ -50,7 +49,7 @@ spec:
         - mountPath: /data
           name: datapath
       initContainers:
-      - image: "{{ .Values.kubeBench.image.repository }}:{{ .Values.kubeBench.image.tag }}"
+      - image: "{{ include "kubeBench.image" . }}"
         command:
         {{- include "cmd" .Values.toolConfig | trim | nindent 9 }}
         name: kube-bench
