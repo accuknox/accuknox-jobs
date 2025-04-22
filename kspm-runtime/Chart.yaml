@@ -9,7 +9,7 @@ appVersion: "0.1.0"
 
 dependencies:
   - name: accuknox-agents
-    version: v0.8.4
+    version: v0.9.5
     repository: oci://registry-1.docker.io/accuknox
     condition: accuknox-agents.enabled
   - name: kubearmor-operator
