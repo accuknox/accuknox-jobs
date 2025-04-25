@@ -2,21 +2,25 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-k8tls:
-  image:
-    repository: kubearmor/k8tls
-    tag: "latest"
-
-image:
-  repository: public.ecr.aws/k9v9d5v2/cluster-job
+cluster_job:
+  owner: public.ecr.aws/k9v9d5v2
+  repository: cluster-job
   tag: "latest"
+  image: ""
 
-# To use existing secret updated {imagePullSecrets.name} with your secret name.
-imagePullSecrets:
-  name: ""
-  registry: ""
+k8tls:
+  owner: kubearmor
+  repository: k8tls
+  tag: "latest"
+  image: ""
+
+# To use existing secret updated {registry.secretName} with your secret name.
+registry: 
+  url: ""
+  secretName: ""
   username: ""
   password: ""
+  preserveUpstream: true
 
 authToken: "NO-TOKEN-SET"
 cronTab: "30 9 * * *"

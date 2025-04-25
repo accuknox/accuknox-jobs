@@ -2,22 +2,25 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-kubescape:
-  image:
-    repository: quay.io/kubescape/kubescape-cli
-    tag: "v3.0.8"
-
-image:
-  repository: public.ecr.aws/k9v9d5v2/cluster-job
+cluster_job:
+  owner: public.ecr.aws/k9v9d5v2
+  repository: cluster-job
   tag: "latest"
+  image: ""
 
+kubescape:
+  owner: quay.io/kubescape
+  repository: kubescape-cli
+  tag: "v3.0.8"
+  image: ""
 
-# To use existing secret updated {imagePullSecrets.name} with your secret name.
-imagePullSecrets:
-  name: ""
-  registry: ""
+# To use existing secret updated {registry.secretName} with your secret name.
+registry: 
+  url: ""
+  secretName: ""
   username: ""
   password: ""
+  preserveUpstream: true
 
 replicaCount: 1
 
