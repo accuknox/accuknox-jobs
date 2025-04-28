@@ -1,3 +1,4 @@
+import base64
 import json
 import logging
 import math
@@ -15,27 +16,38 @@ logging.basicConfig(level=logging.INFO)
 SCANNED_FILE_DIR = os.environ.get("REPORT_PATH", "/app/data/")
 
 
-class CheckmarxRegion(Enum):
-    US = "", ""  # United States
-    US2 = "us.", "us."
-    EU = "eu.", "eu."
-    EU2 = "eu-2.", "eu-2."
-    DEU = "deu.", "deu."
-    ANZ = "anz.", "anz."
-    INDIA = "ind.", "ind."
-    SINGAPORE = "sng.", "sng."
-    UAE = "mea.", "mea."
-    ISRAEL = "gov-il.", "gov-il."
-
-
 class Checkmarx:
-    def __init__(self, region, access_token, tenant_name, project_id, main_branch):
-        self.region = region
-        self.access_token = access_token
-        self.tenant_name = tenant_name
-        self.project_id = project_id
+    def __init__(self, api_key, project_name, main_branch):
+        self.api_key = api_key
+        self.project_name = project_name
         self.main_branch = main_branch
         self.bearer_token = ""
+        self.base_url = ""
+
+    def _get_domain_auth_url(self, token):
+        """
+        Decodes a JWT token without verifying the signature.
+        Returns the payload as a dictionary.
+        """
+        try:
+            parts = token.split(".")
+            if len(parts) != 3:
+                raise ValueError("Invalid JWT format")
+
+            payload_b64 = parts[1]
+            # Add base64 padding
+            payload_b64 += "=" * (-len(payload_b64) % 4)
+            decoded_bytes = base64.urlsafe_b64decode(payload_b64)
+            payload = json.loads(decoded_bytes)
+
+            auth_url = payload.get("iss")
+            if not auth_url:
+                raise ValueError("Missing 'iss' field in JWT payload")
+            domain = auth_url.split("iam")[0]
+            self.base_url = domain + "ast.checkmarx.net"
+            return auth_url
+        except Exception as e:
+            raise ValueError(f"Failed to decode JWT: {e}")
 
     def _get_checkmarx_bearer_token(self):
         """
@@ -47,12 +59,13 @@ class Checkmarx:
         :return: JSON response containing the new token
         """
         try:
-            url = f"https://{self.domain}iam.checkmarx.net/auth/realms/{self.tenant_name}/protocol/openid-connect/token"
+            auth_url = self._get_domain_auth_url(self.api_key)
+            url = f"{auth_url}/protocol/openid-connect/token"
 
             payload = {
                 "grant_type": "refresh_token",
                 "client_id": "ast-app",
-                "refresh_token": self.access_token,
+                "refresh_token": self.api_key,
             }
 
             headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -74,7 +87,7 @@ class Checkmarx:
         log.info(f"<info> Fetching data for endpoint: {endpoint} </info>")
 
         try:
-            url = f"https://{self.domain}ast.checkmarx.net/{endpoint}"
+            url = f"{self.base_url}/{endpoint}"
             headers = {
                 "accept": "application/json",
                 "Authorization": f"Bearer {self.bearer_token}",
@@ -91,12 +104,8 @@ class Checkmarx:
                         log.info(
                             f"<warning>Unauthorized access. Retrying... ({attempt + 1}/{self.MAX_RETRIES}) </warning>",
                         )
-                        self.bearer_token = (
-                            self._get_checkmarx_bearer_token()
-                        )  # Refresh token
-                        headers[
-                            "Authorization"
-                        ] = f"Bearer {self.bearer_token}"  # Update header
+                        self.bearer_token = self._get_checkmarx_bearer_token()  # Refresh token
+                        headers["Authorization"] = f"Bearer {self.bearer_token}"  # Update header
 
                     else:
                         log.error(
@@ -117,25 +126,26 @@ class Checkmarx:
         except Exception as e:
             log.error(f"<error> {e} </error> ")
 
-    def _fetch_checkmarx_projects(self, project_id=None):
+    def _fetch_checkmarx_projects(self, project=None):
         """
         Fetch projects from Checkmarx API.
         :return: JSON response containing project data
         """
         log.info(f"<info> Fetch a projects details from Checkmarx </info>")
 
-        limit = 1000
+        limit = 10
         offset = 0
-        endpoint = f"api/projects/?limit={limit}&offset={offset}&ids={project_id}"
+        endpoint = f"api/projects/?limit={limit}&offset={offset}&names={project}"
         data = self._fetch_data(endpoint)
         filteredTotalCount = data.get("filteredTotalCount")
         if filteredTotalCount:
-            log.info("<info> project id is correct </info>")
+            log.info("<info> project name is correct </info>")
         if data.get("projects"):
-            return data.get("projects")[0]
+            project_data = data.get("projects")[0]
+            return project_data, project_data.get("id")
         else:
-            log.error("<error> There is no project data. </error>")
-            raise RuntimeError
+            log.error(f"<error> There is no project with name {project}. </error>")
+            return {}, None
 
     def _fetch_scan_id(self, project_id, scan_date):
         log.info(
@@ -269,23 +279,18 @@ class Checkmarx:
         return query_description
 
     def run(self):
-        self.domain = getattr(CheckmarxRegion, self.region, None)
-        if self.domain is None:
-            raise Exception(
-                f"Invalid region: {self.region}. Allowed values: {list(CheckmarxRegion.__members__.keys())}",
-            )
-        self.domain = self.domain.value[0]
         self.bearer_token = self._get_checkmarx_bearer_token()
-        data = self._fetch_checkmarx_projects(project_id=self.project_id)
-        scan_ids, scan_info = self._fetch_last_scan_id(
-            self.project_id,
-            main_branch=self.main_branch,
-        )
-        data["scan"] = scan_info
-        scan_result = []
-        for scan_id in scan_ids:
-            scan_result.append(self._get_result(scan_id))
-        data["result"] = scan_result
+        data, project_id = self._fetch_checkmarx_projects(project=self.project_name)
+        if project_id:
+            scan_ids, scan_info = self._fetch_last_scan_id(
+                project_id,
+                main_branch=self.main_branch,
+            )
+            data["scan"] = scan_info
+            scan_result = []
+            for scan_id in scan_ids:
+                scan_result.append(self._get_result(scan_id))
+            data["result"] = scan_result
         # Write results to file
         time_suffix = str(time.time())
         issues_file = os.path.join(SCANNED_FILE_DIR, f"CHECKMARX-CX-{time_suffix}.json")
@@ -294,12 +299,8 @@ class Checkmarx:
 
 
 if __name__ == "__main__":
-    access_token = os.environ.get("ACCESS_TOKEN")
-    region = os.environ.get("REGION")
-    tenant_name = os.environ.get("TENANT_NAME")
-    project_id = os.environ.get("PROJECT_ID")
+    api_key = os.environ.get("API_KEY")
+    project_name = os.environ.get("PROJECT_NAME")
     main_branch = os.environ.get("MAIN_BRANCH", False)
-
-    cc = Checkmarx(region, access_token, tenant_name, project_id, main_branch)
-
+    cc = Checkmarx(api_key, project_name, main_branch)
     cc.run()
