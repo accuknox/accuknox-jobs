@@ -11,22 +11,22 @@ spec:
       labels:
         app: k8s-risk-assessment-job-{{ now | unixEpoch }}
     spec:
-    {{- if .Values.imagePullSecrets.name }}
+    {{- if .Values.registry.secretName }}
       imagePullSecrets:
-        - name: {{ .Values.imagePullSecrets.name }}
-    {{- end }}    
+      - name: {{ .Values.registry.secretName }}
+    {{- end }}     
       initContainers:
         - name: job-init-container
-          image: "{{ .Values.kubescape.image.repository }}:{{ .Values.kubescape.image.tag }}"
+          image: "{{ include "kubescape.image" . }}"
           args: ["scan", "framework", "allcontrols,clusterscan,mitre,nsa", "--format", "json", "--cache-dir", "/data/kubescape-cache", "--output", "/data/report.json", "--cluster-name=$(CLUSTER_NAME)"]
           env:
             - name: CLUSTER_NAME
-              value: {{ .Values.accuknox.clusterName }}
+              value: {{ .Values.clusterName }}
           volumeMounts:
             - name: datapath
               mountPath: /data
       containers:
-        - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}"
+        - image: "{{ include "cluster_job.image" . }}"
           name: artifact-api-container
           command:
             - '/bin/sh'
@@ -36,21 +36,21 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: AUTH_TOKEN
-                  {{- if (.Values.accuknox.secretName | empty) }}
+                  {{- if (.Values.secretName | empty) }}
                   name: k8s-risk-assessment-job-auth-token
                   {{- else }}
-                  name: {{ .Values.accuknox.secretName }}
+                  name: {{ .Values.secretName }}
                   {{- end }}
             - name: URL
-              value: {{ .Values.accuknox.URL }}
+              value: {{ .Values.URL }}
             - name: TENANT_ID
-              value: {{ .Values.accuknox.tenantID | quote }}
+              value: {{ .Values.tenantID | quote }}
             - name: CLUSTER_NAME
-              value: {{ .Values.accuknox.clusterName }}
+              value: {{ .Values.clusterName }}
             - name: CLUSTER_ID
-              value: {{ .Values.accuknox.clusterID | quote }}
+              value: {{ .Values.clusterID | quote }}
             - name: LABEL_NAME
-              value: {{ .Values.accuknox.label }}
+              value: {{ .Values.label }}
           volumeMounts:
             - mountPath: /data
               name: datapath

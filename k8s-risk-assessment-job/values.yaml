@@ -2,32 +2,33 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
+cluster_job:
+  owner: public.ecr.aws/k9v9d5v2
+  repository: cluster-job
+  tag: "latest"
+  image: ""
+
 kubescape:
-  image:
-    repository: quay.io/kubescape/kubescape-cli
-    tag: "v3.0.8"
+  owner: quay.io/kubescape
+  repository: kubescape-cli
+  tag: "v3.0.8"
+  image: ""
 
-accuknoxJob:
-  image:
-    repository: accuknox/accuknox-job
-    tag: "latest"
-
-
-# To use existing secret updated {imagePullSecrets.name} with your secret name.
-imagePullSecrets:
-  name: ""
-  registry: ""
+# To use existing secret updated {registry.secretName} with your secret name.
+registry: 
+  url: ""
+  secretName: ""
   username: ""
   password: ""
+  preserveUpstream: true
 
 replicaCount: 1
 
-accuknox:
-  authToken: "NO-TOKEN-SET"
-  URL: "cspm.demo.accuknox.com"
-  tenantID: ""
-  cronTab: "30 9 * * *"
-  clusterName: ""
-  clusterID: 0
-  label: ""
-  secretName: ""
+authToken: "NO-TOKEN-SET"
+URL: "cspm.domain-url.com"
+tenantID: ""
+cronTab: "30 9 * * *"
+clusterName: ""
+clusterID: 0
+label: ""
+secretName: ""

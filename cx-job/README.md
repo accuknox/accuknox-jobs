@@ -36,9 +36,9 @@ docker run --rm -it \
 Once the scan is complete and reports are generated, use the following script to upload them to the AccuKnox Management Plane:
 
 ```bash
-TENANT_ID=2509
-LABEL=SAST
-AK_URL="cspm.demo.accuknox.com"
+TENANT_ID="<tenant ID>" # e.g., 19
+LABEL="<label>" # e.g., SAST
+AK_URL="<AccuKnox CSPM URL>" # e.g., cspm.demo.accuknox.com
 AK_TOK=<artifact token received from accuknox management plane>
 
 for file in `ls -1 Checkmarx-*.json`; do
