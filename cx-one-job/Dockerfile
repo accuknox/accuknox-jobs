@@ -1,6 +1,6 @@
 # syntax = docker/dockerfile:1.6
 
-FROM 3.12-alpine
+FROM python:3.12-alpine
 
 ENV PYTHONDONTWRITEBYTECODE 1
 
