@@ -3,6 +3,7 @@ import json
 import logging
 import math
 import os
+import sys
 import time
 from datetime import datetime
 from enum import Enum
@@ -47,7 +48,8 @@ class Checkmarx:
             self.base_url = domain + "ast.checkmarx.net"
             return auth_url
         except Exception as e:
-            raise ValueError(f"Failed to decode JWT: {e}")
+            log.error(f"<error> Invalid API key </error>  ")
+            return None
 
     def _get_checkmarx_bearer_token(self):
         """
@@ -59,9 +61,11 @@ class Checkmarx:
         :return: JSON response containing the new token
         """
         try:
+            log.info(f"<info> Fetching bearer token ... </info>")
             auth_url = self._get_domain_auth_url(self.api_key)
+            if auth_url is None:
+                return None
             url = f"{auth_url}/protocol/openid-connect/token"
-
             payload = {
                 "grant_type": "refresh_token",
                 "client_id": "ast-app",
@@ -75,56 +79,59 @@ class Checkmarx:
                 return response.json().get("access_token")
             else:
                 response.raise_for_status()
-
+            return None
         except KeyError:
-            raise ValueError(f"Invalid region: {self.domain}")
+            log.error(f"<error> Invalid region: {self.domain} </error>  ")
+            return None
         except requests.RequestException as e:
-            raise ValueError(f"HTTP Request failed: {str(e)}")
+            log.error(f"<error> Invalid API key: {str(e)} </error>  ")
+            return None
 
     MAX_RETRIES = 3  # Maximum retry attempts
 
     def _fetch_data(self, endpoint):
         log.info(f"<info> Fetching data for endpoint: {endpoint} </info>")
 
-        try:
-            url = f"{self.base_url}/{endpoint}"
-            headers = {
-                "accept": "application/json",
-                "Authorization": f"Bearer {self.bearer_token}",
-            }
+        url = f"{self.base_url}/{endpoint}"
+        headers = {
+            "accept": "application/json",
+            "Authorization": f"Bearer {self.bearer_token}",
+        }
+        response = ""
+        for attempt in range(self.MAX_RETRIES):
+            response = requests.get(url, headers=headers)
 
-            for attempt in range(self.MAX_RETRIES):
-                response = requests.get(url, headers=headers)
+            if response.status_code == 200:
+                return response.json()
 
-                if response.status_code == 200:
-                    return response.json()
+            if response.status_code == 401:  # Unauthorized
+                if attempt < self.MAX_RETRIES:
+                    log.info(
+                        f"<warning>Unauthorized access. Retrying... ({attempt + 1}/{self.MAX_RETRIES}) </warning>",
+                    )
+                    self.bearer_token = (
+                        self._get_checkmarx_bearer_token()
+                    )  # Refresh token
+                    headers[
+                        "Authorization"
+                    ] = f"Bearer {self.bearer_token}"  # Update header
 
-                if response.status_code == 401:  # Unauthorized
-                    if attempt < self.MAX_RETRIES:
-                        log.info(
-                            f"<warning>Unauthorized access. Retrying... ({attempt + 1}/{self.MAX_RETRIES}) </warning>",
-                        )
-                        self.bearer_token = self._get_checkmarx_bearer_token()  # Refresh token
-                        headers["Authorization"] = f"Bearer {self.bearer_token}"  # Update header
-
-                    else:
-                        log.error(
-                            "<error> Maximum retry attempts reached. Authorization failed. </error>",
-                        )
-                        raise RuntimeError
-                        break
-                if response.status_code == 400:
-                    log.error(f"<error> Bad request {response.json()} </error> ")
-
-                if response.status_code == 403:
-                    log.error(f"<error> Forbidden : {response} </error> ")
-
-                if response.status_code == 404:
-                    log.error(f"<error> Resource not found :  {response} </error> ")
                 else:
-                    log.error(f"<error> Unknow error {response.json()} </error> ")
-        except Exception as e:
-            log.error(f"<error> {e} </error> ")
+                    log.error(
+                        "<error> Maximum retry attempts reached. Authorization failed. </error>",
+                    )
+                    raise RuntimeError
+                    break
+            if response.status_code == 400:
+                log.error(f"<error> Bad request {response.json()} </error> ")
+
+            if response.status_code == 403:
+                log.error(f"<error> Forbidden : {response} </error> ")
+
+            if response.status_code == 404:
+                log.error(f"<error> Resource not found :  {response} </error> ")
+            else:
+                log.error(f"<error> Unknow error {response.json()} </error> ")
 
     def _fetch_checkmarx_projects(self, project=None):
         """
@@ -137,14 +144,18 @@ class Checkmarx:
         offset = 0
         endpoint = f"api/projects/?limit={limit}&offset={offset}&names={project}"
         data = self._fetch_data(endpoint)
-        filteredTotalCount = data.get("filteredTotalCount")
-        if filteredTotalCount:
-            log.info("<info> project name is correct </info>")
-        if data.get("projects"):
-            project_data = data.get("projects")[0]
-            return project_data, project_data.get("id")
+        if isinstance(data, dict):
+            filteredTotalCount = data.get("filteredTotalCount")
+            if not filteredTotalCount:
+                log.info("<warning> Invalid project name </warning>")
+            if data.get("projects"):
+                project_data = data.get("projects")[0]
+                return project_data, project_data.get("id")
+            else:
+                log.error(f"<error> Invalid project name: {project}. </error>")
+                return {}, None
         else:
-            log.error(f"<error> There is no project with name {project}. </error>")
+            log.error(f"<Info> There is unknown issue: {data} </error>")
             return {}, None
 
     def _fetch_scan_id(self, project_id, scan_date):
@@ -236,18 +247,19 @@ class Checkmarx:
         offset = 0
         endpoint = f"api/results/?limit={limit}&offset={offset}&scan-id={scan_id}"
         data = self._fetch_data(endpoint)
-        total_count = data.get("totalCount")
-        if total_count is not None:
-            all_result["finding"] = data.get("results", [])
-            offset = math.ceil(total_count / limit)
-        for count in range(1, offset):
-            endpoint = f"api/results/?limit={limit}&offset={count}&scan-id={scan_id}"
-            data = self._fetch_data(endpoint)
-            if data.get("results"):
-                all_result["finding"] += data.get("results", [])
+        if isinstance(data, dict):
+            total_count = data.get("totalCount")
+            if total_count is not None:
+                all_result["finding"] = data.get("results", [])
+                offset = math.ceil(total_count / limit)
+            for count in range(1, offset):
+                endpoint = f"api/results/?limit={limit}&offset={count}&scan-id={scan_id}"
+                data = self._fetch_data(endpoint)
+                if isinstance(data, dict) and data.get("results"):
+                    all_result["finding"] += data.get("results", [])
 
-        query_desc = self._get_sast_query_detail(all_result)
-        all_result["query_desc"] = query_desc
+            query_desc = self._get_sast_query_detail(all_result)
+            all_result["query_desc"] = query_desc
         return all_result
 
     def _get_sast_query_detail(self, data):
@@ -280,27 +292,41 @@ class Checkmarx:
 
     def run(self):
         self.bearer_token = self._get_checkmarx_bearer_token()
-        data, project_id = self._fetch_checkmarx_projects(project=self.project_name)
-        if project_id:
-            scan_ids, scan_info = self._fetch_last_scan_id(
-                project_id,
-                main_branch=self.main_branch,
-            )
-            data["scan"] = scan_info
-            scan_result = []
-            for scan_id in scan_ids:
-                scan_result.append(self._get_result(scan_id))
-            data["result"] = scan_result
-        # Write results to file
-        time_suffix = str(time.time())
-        issues_file = os.path.join(SCANNED_FILE_DIR, f"CHECKMARX-CX-{time_suffix}.json")
-        with open(issues_file, "w") as f:
-            json.dump(data, f, indent=2)
+        if self.bearer_token:
+            data, project_id = self._fetch_checkmarx_projects(project=self.project_name)
+            if project_id:
+                scan_ids, scan_info = self._fetch_last_scan_id(
+                    project_id,
+                    main_branch=self.main_branch,
+                )
+                data["scan"] = scan_info
+                scan_result = []
+                for scan_id in scan_ids:
+                    scan_result.append(self._get_result(scan_id))
+                data["result"] = scan_result
+            # Write results to file
+            time_suffix = str(time.time())
+            issues_file = os.path.join(SCANNED_FILE_DIR, f"CHECKMARX-CX-{time_suffix}.json")
+            with open(issues_file, "w") as f:
+                json.dump(data, f, indent=2)
 
 
 if __name__ == "__main__":
     api_key = os.environ.get("API_KEY")
     project_name = os.environ.get("PROJECT_NAME")
     main_branch = os.environ.get("MAIN_BRANCH", False)
+    missing_vars = []
+    if not api_key:
+        missing_vars.append("API_KEY")
+    if not project_name:
+        missing_vars.append("PROJECT_NAME")
+
+    if missing_vars:
+        print(
+            f"❌ Error: Missing required environment variable(s): {', '.join(missing_vars)}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     cc = Checkmarx(api_key, project_name, main_branch)
     cc.run()
+    
