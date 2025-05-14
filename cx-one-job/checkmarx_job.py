@@ -18,10 +18,10 @@ SCANNED_FILE_DIR = os.environ.get("REPORT_PATH", "/app/data/")
 
 
 class Checkmarx:
-    def __init__(self, api_key, project_name, main_branch):
+    def __init__(self, api_key, project_name, branch_name):
         self.api_key = api_key
         self.project_name = project_name
-        self.main_branch = main_branch
+        self.branch_name = branch_name
         self.bearer_token = ""
         self.base_url = ""
 
@@ -189,11 +189,22 @@ class Checkmarx:
             time_main = f"{t}.{micro}"
         return datetime.fromisoformat(f"{date_part}T{time_main}+{offset}")
 
-    def _fetch_last_scan_id(self, project_id, main_branch=False):
-        endpoint_completed = f"api/projects/last-scan?offset=0&limit=20&project-ids={project_id}&use-main-branch={main_branch}&scan-status=Completed"
+    def _validate_branch_name(self, project_id, name):
+        endpoint = f"api/projects/branches?offset=0&project-ids={project_id}&branch-name={name}&limit=5"    
+        branch_names =  self._fetch_data(endpoint)
+        if isinstance(branch_names, list) and name in branch_names:
+            return True
+        return False
+
+
+    def _fetch_last_scan_id(self, project_id, branch_name):
+        api = f"api/projects/last-scan?offset=0&limit=20&project-ids={project_id}&"
+        if branch_name:
+            api += f"branch={branch_name}&"
+        endpoint_completed = api + "scan-status=Completed"
         scan_completed = self._fetch_data(endpoint_completed)
 
-        endpoint_partial = f"api/projects/last-scan?offset=0&limit=20&project-ids={project_id}&use-main-branch={main_branch}&scan-status=Partial"
+        endpoint_partial = api + "scan-status=Partial"
         scan_partial = self._fetch_data(endpoint_partial)
         try:
             # If both are empty, return [], {}
@@ -201,7 +212,7 @@ class Checkmarx:
                 f"<info> scan_completed: {scan_completed}, scan_partial: {scan_partial}. </info>",
             )
             if not scan_completed and not scan_partial:
-                log.info("<info> No completed or partial scans found. </info>")
+                log.error(f"<error> Invalid branch Name: {branch_name}. </error>")
                 return [], []
 
             key = None
@@ -295,26 +306,30 @@ class Checkmarx:
         if self.bearer_token:
             data, project_id = self._fetch_checkmarx_projects(project=self.project_name)
             if project_id:
+                if self.branch_name and not self._validate_branch_name(project_id, name=self.branch_name):
+                    log.error(f"<error> Invalid Branch name <error>")
+                    sys.exit(1)
                 scan_ids, scan_info = self._fetch_last_scan_id(
                     project_id,
-                    main_branch=self.main_branch,
+                    branch_name=self.branch_name,
                 )
                 data["scan"] = scan_info
                 scan_result = []
                 for scan_id in scan_ids:
                     scan_result.append(self._get_result(scan_id))
                 data["result"] = scan_result
-            # Write results to file
-            time_suffix = str(time.time())
-            issues_file = os.path.join(SCANNED_FILE_DIR, f"CHECKMARX-CX-{time_suffix}.json")
-            with open(issues_file, "w") as f:
-                json.dump(data, f, indent=2)
+                # Write results to file
+                if scan_ids:
+                    time_suffix = str(time.time())
+                    issues_file = os.path.join(SCANNED_FILE_DIR, f"CHECKMARX-CX-{time_suffix}.json")
+                    with open(issues_file, "w") as f:
+                        json.dump(data, f, indent=2)
 
 
 if __name__ == "__main__":
     api_key = os.environ.get("API_KEY")
     project_name = os.environ.get("PROJECT_NAME")
-    main_branch = os.environ.get("MAIN_BRANCH", False)
+    branch_name = os.environ.get("BRANCH_NAME")
     missing_vars = []
     if not api_key:
         missing_vars.append("API_KEY")
@@ -322,11 +337,8 @@ if __name__ == "__main__":
         missing_vars.append("PROJECT_NAME")
 
     if missing_vars:
-        print(
-            f"❌ Error: Missing required environment variable(s): {', '.join(missing_vars)}",
-            file=sys.stderr,
-        )
+        log.error(f"❌ Error: Missing required environment variable(s): {', '.join(missing_vars)}",file=sys.stderr,)
         sys.exit(1)
-    cc = Checkmarx(api_key, project_name, main_branch)
+    cc = Checkmarx(api_key, project_name, branch_name)
     cc.run()
     

@@ -10,6 +10,7 @@ rm -f Checkmarx-*.json # Remove existing reports (optional cleanup)
 docker run --rm -it \
   -e API_KEY=eIGNiD384Tg \
   -e PROJECT_NAME=Accuknox/checkmarx \
+  -e BRANCH_NAME=main \
   -e REPORT_PATH=/app/data/ \
   -v $PWD:/app/data/ \
   accuknox/checkmarx-one-job:1.0
@@ -25,6 +26,7 @@ docker run --rm -it \
 |----------------------|------------------------------------------|------------------------------------------------------|
 | `API_KEY`*           | `eIGNiD384Tg`                            | API key token to authenticate with Checkmarx API     |
 | `PROJECT_NAME`*      | `Accuknox/checkmarx`                     | Name of the Checkmarx project                        |
+| `BRANCH_NAME`        | `main`                                   | Branch to scan. If not provided, fetches the latest scan for the project across all branches. |
 | `REPORT_PATH`        | `/app/data/`                             | Directory to save the generated JSON reports         |
 
 > **Note:** Variables marked with `*` are mandatory.
