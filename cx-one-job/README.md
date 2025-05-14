@@ -12,7 +12,7 @@ docker run --rm -it \
   -e PROJECT_NAME=Accuknox/checkmarx \
   -e REPORT_PATH=/app/data/ \
   -v $PWD:/app/data/ \
-  accuknox/checkmarxjob:1.0.4
+  accuknox/checkmarx-one-job:1.0
 ```
 
 > This will generate `Checkmarx-*.json` files in the current directory, one per project/component found.

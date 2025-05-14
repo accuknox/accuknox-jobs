@@ -10,7 +10,7 @@ WORKDIR /app
 RUN apt-get update -y \
     && apt-get install --no-install-recommends -y python3-pip \
     && pip install requests==2.31.0 && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false \
-    && rm -rf /var/lib/apt/lists/* 
+    && rm -rf /var/lib/apt/lists/*
 
 COPY checkmarx_job.py .
 
