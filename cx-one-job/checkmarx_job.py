@@ -286,13 +286,14 @@ class Checkmarx:
         for id in query_id:
             count += 1
             paras += f"ids={id}&"
-            if count == 100:
+            if count == 500:
                 api = f"api/queries/descriptions?{paras}"
                 query_data = self._fetch_data(api)
                 for item in query_data:
                     if item.get("queryId"):
                         query_description[item["queryId"]] = item
                 paras = ""
+                count = 0
         if query_id:
             api = f"api/queries/descriptions?{paras}"
             query_data = self._fetch_data(api)
