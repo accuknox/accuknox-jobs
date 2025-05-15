@@ -44,9 +44,9 @@ class Checkmarx:
                 "username": self.username,
                 "password": self.password,
                 "scope": self.scope ,
-                "grant_type": self.grant_type or "password",
-                "client_id": self.client_id or "resource_owner_client",
-                "client_secret": self.client_secret or "014DF517-39D1-4453-B7B3-9930C563627C"
+                "grant_type": self.grant_type ,
+                "client_id": self.client_id ,
+                "client_secret": self.client_secret
             }
             url = self.base_url+"/cxrestapi/auth/identity/connect/token"
             headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -336,8 +336,8 @@ class Checkmarx:
 
 
 if __name__ == "__main__":
-    project_name = os.environ.get("PROJECT_NAME","AccuKnox Integration")
-    base_url = os.environ.get("BASE_URL","https://partners9x.checkmarx.net")
+    project_name = os.environ.get("PROJECT_NAME")
+    base_url = os.environ.get("BASE_URL")
     username = os.environ.get("USER_NAME")
     password = os.environ.get("PASSWARD")
     scope = os.environ.get("SCOPE", "sast_rest_api")
