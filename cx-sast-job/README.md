@@ -11,7 +11,7 @@ Use your Checkmarx credentials and OAuth parameters to authenticate and run the 
 ```bash
 docker run --rm -it \
   -e PROJECT_NAME="Accuknox/checkmarx" \
-  -e BASE_URL="https://deu.ast.checkmarx.net/" \
+  -e BASE_URL="https://accuknox.checkmarx.net" \
   -e USER_NAME="admin" \
   -e PASSWARD="yourpassword" \
   -v $PWD:/app/data/ \
@@ -27,7 +27,7 @@ docker run --rm -it \
 | Environment Variable | Sample Value                             | Description                                          |
 | ---------------- | -------------------------------------- | -------------------------------------------------------- |
 | `PROJECT_NAME`\* | `Accuknox/checkmarx`                   | Name of the Checkmarx project to scan                    |
-| `BASE_URL`\*     | `https://deu.ast.checkmarx.net/api`    | Base URL for the Checkmarx API                           |
+| `BASE_URL`\*     | `https://accuknox.checkmarx.net`    | Base URL for the Checkmarx API                           |
 | `USER_NAME`\*    | `admin`                                | Username for Checkmarx login (used for token generation) |
 | `PASSWARD`\*     | `yourpassword`                         | Password for Checkmarx login (used for token generation) |
 | `SCOPE`          | `sast_rest_api`                        | OAuth scope used for token generation ( default: `sast_rest_api` ) |
