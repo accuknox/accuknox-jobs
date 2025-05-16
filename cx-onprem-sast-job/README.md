@@ -13,7 +13,7 @@ docker run --rm -it \
   -e PROJECT_NAME="Accuknox/checkmarx" \
   -e BASE_URL="https://accuknox.checkmarx.net" \
   -e USER_NAME="admin" \
-  -e PASSWARD="yourpassword" \
+  -e PASSWORD="yourpassword" \
   -v $PWD:/app/data/ \
   accuknox/checkmarxsastjob:1.1
 
@@ -29,9 +29,9 @@ docker run --rm -it \
 | `PROJECT_NAME`\* | `Accuknox/checkmarx`                   | Name of the Checkmarx project to scan                    |
 | `BASE_URL`\*     | `https://accuknox.checkmarx.net`    | Base URL for the Checkmarx API                           |
 | `USER_NAME`\*    | `admin`                                | Username for Checkmarx login (used for token generation) |
-| `PASSWARD`\*     | `yourpassword`                         | Password for Checkmarx login (used for token generation) |
+| `PASSWORD`\*     | `yourpassword`                         | Password for Checkmarx login (used for token generation) |
 | `SCOPE`          | `sast_rest_api`                        | OAuth scope used for token generation ( default: `sast_rest_api` ) |
-| `GRANT_TYPE`     | `password`                             | OAuth grant type ( default: `passward` )                   |
+| `GRANT_TYPE`     | `password`                             | OAuth grant type ( default: `password` )                   |
 | `CLIENT_ID`      | `resource_owner_client`                | OAuth client ID ( default: `resource_owner_client` )       |
 | `CLIENT_SECRET`  | `014DF517-39D1-4453-B7B3-9930C563627C` | OAuth client secret  ( default: `014DF517-39D1-4453-B7B3-9930C563627C` ) |
 
