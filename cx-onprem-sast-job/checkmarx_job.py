@@ -116,7 +116,7 @@ class Checkmarx:
                         log.error(f"<error> Invalid Project name </error> ")
                         sys.exit(1)
                     if message["messageCode"]==25016:
-                        log.error(f"<warning> Cx description not found for queryID : {endpoint} </warning> ")
+                        log.info(f"<warning> Cx description not found for queryID : {endpoint} </warning> ")
                         return {}
 
                 log.error(f"<error> Resource not found url-{url}: </error> ")
@@ -178,23 +178,21 @@ class Checkmarx:
             query_id =  finding.get("query", {}).get("queryId")
             sast_result = {
                 "type": "sast",
-                "id": finding.get("similarityHash"),
-                "alternateId": finding.get("similarityHash"),
-                "similarityId": str(finding.get("similarityHash", 0)),
+                "id": finding.get("index"),
+                "similarityId": str(finding.get("similarityHash")),
                 "status": finding.get("status"),
-                "state": finding.get("state", 4),
-                "severity": severity_map.get(finding.get("severity", 3), "LOW"),
-                "confidenceLevel": finding.get("confidenceLevel", 0),
+                "state": finding.get("state"),
+                "severity": severity_map.get(finding.get("severity")),
+                "confidenceLevel": finding.get("confidenceLevel"),
                 "created": finding.get("date"),
                 "firstFoundAt": finding.get("detectionDate"),
                 "foundAt": finding.get("date"),
-                "firstScanId": finding.get("deepLink", "").split("scanid=")[-1].split("&")[0] if "scanid=" in finding.get("deepLink", "") else "",
                 "description": clean_description(finding.get("resultDescription", "")),
                 "data": {
                     "queryId": query_id,
                     "queryName": finding.get("query", {}).get("name"),
                     "group": "Unknown",
-                    "resultHash": finding.get("similarityHash"),
+                    "resultHash": finding.get("index"),
                     "languageName": "Unknown",
                     "nodes": [
                         {
