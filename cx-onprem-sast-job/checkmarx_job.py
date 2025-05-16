@@ -169,8 +169,19 @@ class Checkmarx:
         severity_map = {0:"INFO", 1: "LOW", 2: "MEDIUM", 3: "HIGH", 4: "CRITICAL"}
         query_ids = set()
         # Helper to clean HTML from resultDescription
-        def clean_description(html):
-            return re.sub('<[^<]+?>', '', html).replace('Similarity ID:', '').strip()
+        def clean_description(html_text):
+            # Remove <style> tags and content
+            html_text = re.sub(r'<style.*?>.*?</style>', '', html_text, flags=re.DOTALL | re.IGNORECASE)
+            # Remove "Similarity ID" span
+            html_text = re.sub(r'<span[^>]*?>Similarity ID:.*?</span>', '', html_text, flags=re.IGNORECASE)
+            # Remove all other HTML tags
+            html_text = re.sub(r'<[^>]+>', '', html_text)
+            # Decode HTML entities (e.g., &#39;, &nbsp;)
+            html_text = html.unescape(html_text)
+            # Normalize whitespace
+            html_text = html_text.replace('\xa0', ' ')
+            html_text = re.sub(r'\s+', ' ', html_text)
+            return html_text.strip()
 
         for finding in findings:
             nodes = finding.get("nodes", [])
