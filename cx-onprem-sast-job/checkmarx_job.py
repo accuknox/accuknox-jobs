@@ -339,7 +339,7 @@ if __name__ == "__main__":
     project_name = os.environ.get("PROJECT_NAME")
     base_url = os.environ.get("BASE_URL")
     username = os.environ.get("USER_NAME")
-    password = os.environ.get("PASSWARD")
+    password = os.environ.get("PASSWORD")
     scope = os.environ.get("SCOPE", "sast_rest_api")
     grant_type = os.environ.get("GRANT_TYPE", "password")
     client_id = os.environ.get("CLIENT_ID", "resource_owner_client")
@@ -353,7 +353,7 @@ if __name__ == "__main__":
     if not base_url:
         missing_vars.append("BASE_URL")
     if not password:
-        missing_vars.append("PASSWARD")
+        missing_vars.append("PASSWORD")
 
     if missing_vars:
         print(
