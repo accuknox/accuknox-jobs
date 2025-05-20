@@ -7,11 +7,14 @@ import os
 import re
 import sys
 import time
+from urllib.parse import urljoin
 
 import requests
+import urllib3
 from bs4 import BeautifulSoup
 from requests.exceptions import SSLError
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Initialize logging
 log = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -48,9 +51,14 @@ class Checkmarx:
                 "client_id": self.client_id ,
                 "client_secret": self.client_secret
             }
-            url = self.base_url+"/cxrestapi/auth/identity/connect/token"
+            url = urljoin(self.base_url, "/cxrestapi/auth/identity/connect/token")
             headers = {"Content-Type": "application/x-www-form-urlencoded"}
-            response = requests.post(url, data=payload, headers=headers)
+            response = ""
+            try:
+                response = requests.post(url, data=payload, headers=headers, verify=False)
+            except SSLError:
+                response = requests.post(url, data=payload, headers=headers)
+
             log.info(f"<info> Fetching authentication token for Checkmarx... </info>")
             if response.status_code == 200:
                 return response.json().get("access_token")
@@ -70,7 +78,7 @@ class Checkmarx:
         if flag:
             log.info(f"<info> Fetching data for endpoint: {endpoint} </info>")
 
-        url = f"{self.base_url}/cxrestapi/{endpoint}"
+        url = urljoin(self.base_url, f"/cxrestapi/{endpoint}")
         headers = {
             "accept": "application/json",
             "Authorization": f"Bearer {self.bearer_token}",
@@ -78,9 +86,10 @@ class Checkmarx:
         response = ""
         for attempt in range(self.MAX_RETRIES):
             try:
-                response = requests.get(url, headers=headers)
-            except SSLError as ssl_err:
                 response = requests.get(url, headers=headers, verify=False)
+            except SSLError as ssl_err:
+                response = requests.get(url, headers=headers)
+                
             if response.status_code == 200:
                 return response.json()
 

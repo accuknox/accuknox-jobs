@@ -15,8 +15,8 @@ docker run --rm -it \
   -e USER_NAME="admin" \
   -e PASSWORD="yourpassword" \
   -v $PWD:/app/data/ \
-  accuknox/checkmarxsastjob:1.1
-
+  accuknox/checkmarxsastjob:1.2
+```
 
 > This will generate `Checkmarx-*.json` files in the current directory, one per project/component found.
 
