@@ -3,9 +3,7 @@
 FROM python:3.12-alpine
 
 ENV PYTHONDONTWRITEBYTECODE 1
-# <--- Add this line to trigger rebuildd
-ENV TEST_BUILD="true"  
-
+ 
 WORKDIR /app
 
 # Update package list and install git
