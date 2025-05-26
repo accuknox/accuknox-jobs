@@ -3,7 +3,7 @@
 FROM python:3.12-alpine
 
 ENV PYTHONDONTWRITEBYTECODE 1
-
+ 
 WORKDIR /app
 
 # Update package list and install git
