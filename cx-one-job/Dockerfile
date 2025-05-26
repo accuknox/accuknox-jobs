@@ -3,7 +3,8 @@
 FROM python:3.12-alpine
 
 ENV PYTHONDONTWRITEBYTECODE 1
-ENV TEST_BUILD="true"  # <--- Add this line to trigger rebuildd
+# <--- Add this line to trigger rebuildd
+ENV TEST_BUILD="true"  
 
 WORKDIR /app
 
