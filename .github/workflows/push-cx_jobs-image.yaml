@@ -1,10 +1,10 @@
-name: Build and Push Docker Images
+name: Build and Push Job Image to Public ECR
 
 on:
   push:
     paths:
-      - 'cx-one-job/release.txt'
-      - 'cx-onprem-sast-job/release.txt'
+      - "cx-one-job/**"
+      - "cx-onprem-sast-job/**"
 
 jobs:
   build-and-push:
@@ -14,8 +14,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
-          
+          fetch-depth: 2 
+
       - name: Set up AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -31,30 +31,22 @@ jobs:
           aws ecr-public get-login-password --region us-east-1 \
           | docker login --username AWS --password-stdin public.ecr.aws/k9v9d5v2
 
-      - name: Determine changed job
+      - name: Determine which job changed
         id: detect-folder
         run: |
-          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q '^cx-one-job/release.txt'; then
+          if git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q '^cx-one-job/'; then
             echo "job=cx-one-job" >> $GITHUB_OUTPUT
-          elif git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q '^cx-onprem-sast-job/release.txt'; then
+          elif git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -q '^cx-onprem-sast-job/'; then
             echo "job=cx-onprem-sast-job" >> $GITHUB_OUTPUT
           else
-            echo "No relevant release.txt file changed. Exiting."
+            echo "No relevant folder changed. Exiting."
             exit 1
           fi
 
-      - name: Read version from release.txt
-        id: get-version
-        run: |
-          VERSION=$(cat ./${{ steps.detect-folder.outputs.job }}/release.txt)
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-
-      - name: Build and Push Docker image with version tag
+      - name: Build and Push Docker image to Public ECR
         uses: docker/build-push-action@v6
         with:
           context: ./${{ steps.detect-folder.outputs.job }}
           file: ./${{ steps.detect-folder.outputs.job }}/Dockerfile
           push: true
-          tags: |
-            public.ecr.aws/k9v9d5v2/${{ steps.detect-folder.outputs.job }}:${{ steps.get-version.outputs.version }}
-            public.ecr.aws/k9v9d5v2/${{ steps.detect-folder.outputs.job }}:latest
+          tags: public.ecr.aws/k9v9d5v2/${{ steps.detect-folder.outputs.job }}:latest
