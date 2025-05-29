@@ -1,17 +1,19 @@
-# 🔍 Checkmarx SAST Docker Job
+# 🔍 Checkmarx ONE API Docker Job
 
-This Docker job runs a Checkmarx scan and generates report files in JSON format, which can later be uploaded to the AccuKnox Management Portal.
+This Docker job fetches **scan results** from [Checkmarx](https://www.checkmarx.com/) in JSON format and uploads them to the [AccuKnox](https://accuknox.com) SaaS portal.
 
 ## 🚀 Usage
+
+### 1️⃣ Create a `.env` file
+Add the required environment variables from **Configuration**  to a `.env` file in your working directory:
+
+### 🐳 Docker Run Example
 
 ```bash
 rm -f Checkmarx-*.json # Remove existing reports (optional cleanup)
 
 docker run --rm -it \
-  -e API_KEY=eIGNiD384Tg \
-  -e PROJECT_NAME=Accuknox/checkmarx \
-  -e BRANCH_NAME=main \
-  -e REPORT_PATH=/app/data/ \
+  --env-file .env \
   -v $PWD:/app/data/ \
   accuknox/checkmarx-one-job:1.2
 ```
@@ -25,28 +27,12 @@ docker run --rm -it \
 | Environment Variable | Sample Value                             | Description                                          |
 |----------------------|------------------------------------------|------------------------------------------------------|
 | `API_KEY`*           | `eIGNiD384Tg`                            | API key token to authenticate with Checkmarx API     |
-| `PROJECT_NAME`*      | `Accuknox/checkmarx`                     | Name of the Checkmarx project                        |
-| `BRANCH_NAME`        | `main`                                   | Branch to scan. If not provided, fetches the latest scan for the project across all branches. |
-| `REPORT_PATH`        | `/app/data/`                             | Directory to save the generated JSON reports         |
+| `PROJECT_NAMES`*     | `Accuknox/checkmarx:main`                | Comma-separated project names in format project:branch (e.g., org1/proj1,org2/proj2). If a branch is not specified for a project, the latest scan across all branches will be used.                  |
+| `CSPM_BASE_URL`\*    | `https://cspm.demo.accuknox.com`         | AccuKnox CSPM API Endpoint                               |
+| `LABEL`\*            | `$LABEL `                                | The label created in AccuKnox SaaS for associating scan results |
+| `TENANT_ID`\*        | `$TENANT_ID$`                            |  The ID of the tenant associated with the CSPM panel   |
+| `ARTIFACT_TOKEN`\*   | `$ARTIFACT_TOKEN`                        | The token for authenticating with the CSPM panel |
 
 > **Note:** Variables marked with `*` are mandatory.
 
 ---
-
-## 📤 Upload Reports to AccuKnox Management Portal
-
-Once the scan is complete and reports are generated, use the following script to upload them to the AccuKnox Management Plane:
-
-```bash
-TENANT_ID="<tenant ID>" # e.g., 19
-LABEL="<label>" # e.g., SAST
-AK_URL="<AccuKnox CSPM URL>" # e.g., cspm.demo.accuknox.com
-AK_TOK=<artifact token received from accuknox management plane>
-
-for file in `ls -1 Checkmarx-*.json`; do
-  curl --location "https://$AK_URL/api/v1/artifact/?tenant_id=$TENANT_ID&data_type=CX&save_to_s3=True&label_id=$LABEL" \
-       --header "Tenant-Id: $TENANT_ID" \
-       --header "Authorization: Bearer $AK_TOK" \
-       --form "file=@"$file""
-done
-```

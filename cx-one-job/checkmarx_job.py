@@ -1,14 +1,17 @@
 import base64
+import gzip
 import json
 import logging
 import math
 import os
+import shutil
 import sys
+import tempfile
 import time
 from datetime import datetime
-from enum import Enum
 
 import requests
+from requests.exceptions import HTTPError, SSLError
 
 # Initialize logging
 log = logging.getLogger(__name__)
@@ -18,10 +21,8 @@ SCANNED_FILE_DIR = os.environ.get("REPORT_PATH", "/app/data/")
 
 
 class Checkmarx:
-    def __init__(self, api_key, project_name, branch_name):
-        self.api_key = api_key
-        self.project_name = project_name
-        self.branch_name = branch_name
+    def __init__(self, env):
+        self.env = env
         self.bearer_token = ""
         self.base_url = ""
 
@@ -62,14 +63,14 @@ class Checkmarx:
         """
         try:
             log.info(f"<info> Fetching bearer token ... </info>")
-            auth_url = self._get_domain_auth_url(self.api_key)
+            auth_url = self._get_domain_auth_url(self.env["API_KEY"])
             if auth_url is None:
                 return None
             url = f"{auth_url}/protocol/openid-connect/token"
             payload = {
                 "grant_type": "refresh_token",
                 "client_id": "ast-app",
-                "refresh_token": self.api_key,
+                "refresh_token": self.env["API_KEY"],
             }
 
             headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -190,7 +191,7 @@ class Checkmarx:
         return datetime.fromisoformat(f"{date_part}T{time_main}+{offset}")
 
     def _validate_branch_name(self, project_id, name):
-        endpoint = f"api/projects/branches?offset=0&project-ids={project_id}&branch-name={name}&limit=5"    
+        endpoint = f"api/projects/branches?offset=0&project-ids={project_id}&branch-name={name}&limit=5"
         branch_names =  self._fetch_data(endpoint)
         if isinstance(branch_names, list) and name in branch_names:
             return True
@@ -212,7 +213,6 @@ class Checkmarx:
                 f"<info> scan_completed: {scan_completed}, scan_partial: {scan_partial}. </info>",
             )
             if not scan_completed and not scan_partial:
-                log.error(f"<error> Invalid branch Name: {branch_name}. </error>")
                 return [], []
 
             key = None
@@ -274,72 +274,146 @@ class Checkmarx:
         return all_result
 
     def _get_sast_query_detail(self, data):
-        query_id = set()
+        query_ids = set()
         for item in data.get("finding", []):
             if item.get("type", "") == "sast" and item.get("data", {}).get("queryId"):
-                query_id.add(item.get("data", {}).get("queryId"))
+                query_ids.add(item.get("data", {}).get("queryId"))
 
         query_description = {}
-        count = 0
-        paras = ""
-        query_id = list(query_id)
-        for id in query_id:
-            count += 1
-            paras += f"ids={id}&"
-            if count == 500:
-                api = f"api/queries/descriptions?{paras}"
+        query_ids = list(query_ids)
+        batch_size = 500
+        for i in range(0, len(query_ids), batch_size):
+            batch = query_ids[i:i + batch_size]
+            query_params = "&".join(f"ids={qid}" for qid in batch)
+            api = f"api/queries/descriptions?{query_params}"
+            try:
                 query_data = self._fetch_data(api)
                 for item in query_data:
-                    if item.get("queryId"):
+                    if "queryId" in item:
                         query_description[item["queryId"]] = item
-                paras = ""
-                count = 0
-        if query_id:
-            api = f"api/queries/descriptions?{paras}"
-            query_data = self._fetch_data(api)
-            for item in query_data:
-                if item.get("queryId"):
-                    query_description[item["queryId"]] = item
+            except Exception as e:
+                log.error(f"Failed to fetch query descriptions for batch starting at index {i}: {e}")
+
         return query_description
 
     def run(self):
         self.bearer_token = self._get_checkmarx_bearer_token()
-        if self.bearer_token:
-            data, project_id = self._fetch_checkmarx_projects(project=self.project_name)
-            if project_id:
-                if self.branch_name and not self._validate_branch_name(project_id, name=self.branch_name):
-                    log.error(f"<error> Invalid Branch name <error>")
-                    sys.exit(1)
-                scan_ids, scan_info = self._fetch_last_scan_id(
-                    project_id,
-                    branch_name=self.branch_name,
-                )
-                data["scan"] = scan_info
-                scan_result = []
-                for scan_id in scan_ids:
-                    scan_result.append(self._get_result(scan_id))
-                data["result"] = scan_result
-                # Write results to file
-                if scan_ids:
-                    time_suffix = str(time.time())
-                    issues_file = os.path.join(SCANNED_FILE_DIR, f"CHECKMARX-CX-{time_suffix}.json")
-                    with open(issues_file, "w") as f:
-                        json.dump(data, f, indent=2)
+        if not self.bearer_token:
+            log.error("Failed to retrieve Checkmarx bearer token.")
+            return
+        print("self.env[PROJECT_NAMES]",self.env["PROJECT_NAMES"])
+        for project_name, branch_name in self.env["PROJECT_NAMES"].items():
+            data, project_id = self._fetch_checkmarx_projects(project=project_name)
+            if not project_id:
+                log.warning(f"Project ID not found for {project_name}. Skipping.")
+                continue
+            if branch_name:
+                if not self._validate_branch_name(project_id, name=branch_name):
+                    log.error(f"<error> Invalid branch name '{branch_name}' for project '{project_name}'. <error>")
+                    continue
+                log.info(f"Validated branch name '{branch_name}' for project '{project_name}'.")
 
+            scan_ids, scan_info = self._fetch_last_scan_id(project_id, branch_name=branch_name)
+            if not scan_ids:
+                log.warning(f"No scans found for project '{project_name}'")
+                continue
+
+            data["scan"] = scan_info
+            data["result"] = [self._get_result(scan_id) for scan_id in scan_ids]
+            try:
+                time_suffix = str(time.time())
+                issues_file = os.path.join(SCANNED_FILE_DIR, f"CHECKMARX-CX-{time_suffix}.json")
+                with open(issues_file, "w") as f:
+                    json.dump(data, f, indent=2)
+                log.info(f"<info> Results written to {issues_file} </info>")
+                self.upload_results(issues_file)
+                log.info(f"<info> Results uploaded for project '{project_name}'.</info>")
+                ## remove the json file
+                if os.path.exists(issues_file):
+                    os.remove(issues_file)
+            except Exception as e:
+                log.error(f"Error while saving or uploading results for {project_name}: {e}")
+
+
+    def upload_results(self, result_file):
+        log.info(f"<info> Uploading the result to AccuKnox control plane... </info>")
+        """Upload the result JSON to the specified endpoint."""
+        try:
+                    # Create temp gzip file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".gz") as tmp:
+                compressed_path = tmp.name
+            with open(result_file, 'rb') as f_in, gzip.open(compressed_path, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+
+            with open(result_file, 'rb') as file:
+
+                url = f"{self.env["CSPM_BASE_URL"]}/api/v1/artifact/"
+                headers={
+                        "Tenant-Id": self.env["TENANT_ID"],
+                        "Authorization": f"Bearer {self.env["ARTIFACT_TOKEN"]}"
+                    }
+                params={
+                        "tenant_id": self.env["TENANT_ID"],
+                        "data_type": "CX",
+                        "save_to_s3": "false",
+                        "label_id": self.env["LABEL"],
+                    }
+                files = {'file': (result_file, file)}
+                try:
+                    response = requests.post(url=url, files=files, headers=headers, params= params)
+                except SSLError:
+                    response = requests.post(url=url, files=files, headers=headers, params= params, verify=False)
+            response.raise_for_status()
+            log.info(f"<info> Upload successful. Response: {response.status_code} </info>")
+        except HTTPError as http_err:
+           log.error(f"<error> Status code: {response.status_code}, Response: {response.text} </error>")
+        except requests.exceptions.RequestException as req_err:
+            log.error(f"<error>403 Request exception occurred: {req_err} </error>")
+        except Exception as err:
+            log.error(f"<error>Unexpected error occurred: {err} </error>")
+        finally:
+            # Remove temp gzip file
+            if os.path.exists(compressed_path):
+                os.remove(compressed_path)
+
+
+
+REQUIRED_ENV_VARS = [
+    "PROJECT_NAMES",
+    "API_KEY",
+    "CSPM_BASE_URL",
+    "LABEL",
+    "TENANT_ID",
+    "ARTIFACT_TOKEN"
+]
+
+
+def get_env_config():
+    missing = [key for key in REQUIRED_ENV_VARS if not os.environ.get(key)]
+    if missing:
+        print(f"❌ Missing required environment variables: {', '.join(missing)}", file=sys.stderr)
+        sys.exit(1)
+
+    config = {key: os.environ.get(key) for key in REQUIRED_ENV_VARS}
+
+    # Parse PROJECT_NAMES as from comma-separated string
+    project_name =  os.environ.get("PROJECT_NAMES","").strip()
+    project_map = {}
+    for item in project_name.split(","):
+        item = item.strip()
+        if not item:
+            continue
+        if ":" in item:
+            key, value = item.split(":", 1)
+            if key:
+                project_map[key.strip()] = value.strip()
+        else:
+            project_map[item] = ""  # No branch specified
+
+    config["PROJECT_NAMES"] = project_map
+    return config
 
 if __name__ == "__main__":
-    api_key = os.environ.get("API_KEY")
-    project_name = os.environ.get("PROJECT_NAME")
-    branch_name = os.environ.get("BRANCH_NAME")
-    missing_vars = []
-    if not api_key:
-        missing_vars.append("API_KEY")
-    if not project_name:
-        missing_vars.append("PROJECT_NAME")
-
-    if missing_vars:
-        log.error(f"❌ Error: Missing required environment variable(s): {', '.join(missing_vars)}",file=sys.stderr,)
-        sys.exit(1)
-    cc = Checkmarx(api_key, project_name, branch_name)
+    env = get_env_config()
+    cc = Checkmarx(env)
     cc.run()
-    

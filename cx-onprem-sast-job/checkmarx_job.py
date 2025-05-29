@@ -1,18 +1,21 @@
 
+import gzip
 import html
 import json
 import logging
 import math
 import os
 import re
+import shutil
 import sys
+import tempfile
 import time
 from urllib.parse import urljoin
 
 import requests
 import urllib3
 from bs4 import BeautifulSoup
-from requests.exceptions import SSLError
+from requests.exceptions import HTTPError, SSLError
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 # Initialize logging
@@ -23,15 +26,9 @@ SCANNED_FILE_DIR = os.environ.get("REPORT_PATH", "/app/data/")
 
 
 class Checkmarx:
-    def __init__(self, project_name, base_url, username, password, scope, grant_type, client_id, client_secret):
-        self.project_name = project_name
-        self.base_url = base_url
-        self.username = username
-        self.password = password
-        self.scope = scope
-        self.grant_type = grant_type
-        self.client_id = client_id
-        self.client_secret = client_secret
+    def __init__(self, env):
+        self.env = env
+        self.base_url = env["BASE_URL"]
         self.bearer_token = ""
 
     MAX_RETRIES = 3  # Maximum retry attempts
@@ -44,20 +41,21 @@ class Checkmarx:
             log.info(f"<info> Fetching bearer token ... </info>")
 
             payload = {
-                "username": self.username,
-                "password": self.password,
-                "scope": self.scope ,
-                "grant_type": self.grant_type ,
-                "client_id": self.client_id ,
-                "client_secret": self.client_secret
+                "username": self.env["USER_NAME"],
+                "password": self.env["PASSWORD"],
+                "scope": self.env["SCOPE"],
+                "grant_type": self.env["GRANT_TYPE"],
+                "client_id": self.env["CLIENT_ID"],
+                "client_secret": self.env["CLIENT_SECRET"],
             }
             url = urljoin(self.base_url, "/cxrestapi/auth/identity/connect/token")
+            print(url)
             headers = {"Content-Type": "application/x-www-form-urlencoded"}
             response = ""
             try:
-                response = requests.post(url, data=payload, headers=headers, verify=False)
-            except SSLError:
                 response = requests.post(url, data=payload, headers=headers)
+            except SSLError:
+                response = requests.post(url, data=payload, headers=headers, verify=False)
 
             log.info(f"<info> Fetching authentication token for Checkmarx... </info>")
             if response.status_code == 200:
@@ -86,16 +84,16 @@ class Checkmarx:
         response = ""
         for attempt in range(self.MAX_RETRIES):
             try:
-                response = requests.get(url, headers=headers, verify=False)
-            except SSLError as ssl_err:
                 response = requests.get(url, headers=headers)
-                
+            except SSLError as ssl_err:
+                response = requests.get(url, headers=headers, verify=False)
+
             if response.status_code == 200:
                 return response.json()
 
             if response.status_code == 401:  # Unauthorized
                 if attempt < self.MAX_RETRIES:
-                    log.info(
+                    log.warning(
                         f"<warning>Unauthorized access. Retrying... ({attempt + 1}/{self.MAX_RETRIES}) </warning>",
                     )
                     self.bearer_token = (
@@ -125,7 +123,7 @@ class Checkmarx:
                         log.error(f"<error> Invalid Project name </error> ")
                         sys.exit(1)
                     if message["messageCode"]==25016:
-                        log.info(f"<warning> Cx description not found for queryID : {endpoint} </warning> ")
+                        log.warning(f"<warning> Cx description not found for queryID : {endpoint} </warning> ")
                         return {}
 
                 log.error(f"<error> Resource not found url-{url}: </error> ")
@@ -155,7 +153,7 @@ class Checkmarx:
 
     def _fetch_last_scan_id(self, project_id):
         log.info(
-            f"<info> Fetching latest scan id for project: {project_id} </info>",
+            f"<info> Fetching latest scan id for project id: {project_id} </info>",
         )
         # Convert to RFC 3339 format
         endpoint = f"sast/scans/?scanStatus=Finished&projectId={project_id}&last=1"
@@ -334,50 +332,121 @@ class Checkmarx:
 
     def run(self):
         self.bearer_token = self._get_checkmarx_bearer_token()
-        if self.bearer_token:
-            data, project_id = self._fetch_checkmarx_projects(project=self.project_name)
-            if project_id:
-                scan_info, scan_ids  = self._fetch_last_scan_id(
-                    project_id,
-                )
-                data["scan"] = scan_info
-                scan_result = []
-                for scan_id in scan_ids:
-                    scan_result.append(self._get_result(scan_id))
-                data["result"] = scan_result
+        if not self.bearer_token:
+            log.error("Failed to retrieve Checkmarx bearer token.")
+            return
+        for project in self.env["PROJECT_NAMES"]:
+            data, project_id = self._fetch_checkmarx_projects(project=project)
+            if not project_id:
+                log.warning(f"Project ID not found for {project}. Skipping.")
+                continue
+            scan_info, scan_ids  = self._fetch_last_scan_id(
+                project_id,
+            )
+            if not scan_ids:
+                log.warning(f"No scans found for project '{project}'")
+                continue
 
-                # Write results to file
+            data["scan"] = scan_info
+            data["result"] = [self._get_result(scan_id) for scan_id in scan_ids]
+            try:
                 time_suffix = str(time.time())
                 issues_file = os.path.join(SCANNED_FILE_DIR, f"CHECKMARX-CX-{time_suffix}.json")
                 with open(issues_file, "w") as f:
                     json.dump(data, f, indent=2)
+                log.info(f"Results written to {issues_file}")
+                self.upload_results(issues_file)
+                log.info(f"Results uploaded for project '{project}'.")
+                ## remove the json file 
+                if os.path.exists(issues_file):
+                    os.remove(issues_file)
+            except Exception as e:
+                log.error(f"Error while saving or uploading results for {project}: {e}")
+
+
+    def upload_results(self, result_file):
+        log.info(f"<info> Uploading the result to AccuKnox control plane... </info>")
+        """Upload the result JSON to the specified endpoint."""
+        try:
+                    # Create temp gzip file
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".gz") as tmp:
+                compressed_path = tmp.name
+            with open(result_file, 'rb') as f_in, gzip.open(compressed_path, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+
+            with open(result_file, 'rb') as file:
+
+                url = f"{self.env["CSPM_BASE_URL"]}/api/v1/artifact/"
+                headers={
+                        "Tenant-Id": self.env["TENANT_ID"],
+                        "Authorization": f"Bearer {self.env["ARTIFACT_TOKEN"]}"
+                    }
+                params={
+                        "tenant_id": self.env["TENANT_ID"],
+                        "data_type": "CX",
+                        "save_to_s3": "false",
+                        "label_id": self.env["LABEL"],
+                    }
+                files = {'file': (result_file, file)}
+                try:
+                    response = requests.post(url=url, files=files, headers=headers, params= params)
+                except SSLError:
+                    response = requests.post(url=url, files=files, headers=headers, params= params, verify=False)
+            response.raise_for_status()
+            log.info(f"<info> Upload successful. Response: {response.status_code} </info>")
+        except HTTPError as http_err:
+           log.error(f"<error> Status code: {response.status_code}, Response: {response.text} </error>")
+        except requests.exceptions.RequestException as req_err:
+            log.error(f"<error>403 Request exception occurred: {req_err} </error>")
+        except Exception as err:
+            log.error(f"<error>Unexpected error occurred: {err} </error>")
+        finally:
+            # Remove temp gzip file
+            if os.path.exists(compressed_path):
+                os.remove(compressed_path)
+
+
+
+
+
+REQUIRED_ENV_VARS = [
+    "PROJECT_NAMES",
+    "BASE_URL",
+    "USER_NAME",
+    "PASSWORD",
+    "CSPM_BASE_URL",
+    "LABEL",
+    "TENANT_ID",
+    "ARTIFACT_TOKEN"
+]
+
+OPTIONAL_ENV_DEFAULTS = {
+    "SCOPE": "sast_rest_api",
+    "GRANT_TYPE": "password",
+    "CLIENT_ID": "resource_owner_client",
+    "CLIENT_SECRET": "014DF517-39D1-4453-B7B3-9930C563627C",
+}
+
+def get_env_config():
+    missing = [key for key in REQUIRED_ENV_VARS if not os.environ.get(key)]
+    if missing:
+        print(f"❌ Missing required environment variables: {', '.join(missing)}", file=sys.stderr)
+        sys.exit(1)
+
+    config = {key: os.environ.get(key) for key in REQUIRED_ENV_VARS}
+
+    # Parse PROJECT_NAMES as list from comma-separated string
+    config["PROJECT_NAMES"] = [
+        name.strip() for name in config["PROJECT_NAMES"].split(",") if name.strip()
+    ]
+
+    for key, default in OPTIONAL_ENV_DEFAULTS.items():
+        config[key] = os.environ.get(key, default)
+
+    return config
 
 
 if __name__ == "__main__":
-    project_name = os.environ.get("PROJECT_NAME")
-    base_url = os.environ.get("BASE_URL")
-    username = os.environ.get("USER_NAME")
-    password = os.environ.get("PASSWORD")
-    scope = os.environ.get("SCOPE", "sast_rest_api")
-    grant_type = os.environ.get("GRANT_TYPE", "password")
-    client_id = os.environ.get("CLIENT_ID", "resource_owner_client")
-    client_secret = os.environ.get("CLIENT_SECRET", "014DF517-39D1-4453-B7B3-9930C563627C")
-
-    missing_vars = []
-    if not username:
-        missing_vars.append("USER_NAME")
-    if not project_name:
-        missing_vars.append("PROJECT_NAME")
-    if not base_url:
-        missing_vars.append("BASE_URL")
-    if not password:
-        missing_vars.append("PASSWORD")
-
-    if missing_vars:
-        print(
-            f"❌ Error: Missing required environment variable(s): {', '.join(missing_vars)}",
-            file=sys.stderr,
-        )
-        sys.exit(1)
-    cc = Checkmarx(project_name, base_url, username, password, scope, grant_type, client_id, client_secret)
+    env = get_env_config()
+    cc = Checkmarx(env)
     cc.run()
