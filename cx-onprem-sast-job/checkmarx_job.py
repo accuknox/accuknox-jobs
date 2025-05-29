@@ -53,9 +53,9 @@ class Checkmarx:
             headers = {"Content-Type": "application/x-www-form-urlencoded"}
             response = ""
             try:
-                response = requests.post(url, data=payload, headers=headers)
-            except SSLError:
                 response = requests.post(url, data=payload, headers=headers, verify=False)
+            except SSLError:
+                response = requests.post(url, data=payload, headers=headers)
 
             log.info(f"<info> Fetching authentication token for Checkmarx... </info>")
             if response.status_code == 200:
@@ -84,9 +84,9 @@ class Checkmarx:
         response = ""
         for attempt in range(self.MAX_RETRIES):
             try:
-                response = requests.get(url, headers=headers)
-            except SSLError as ssl_err:
                 response = requests.get(url, headers=headers, verify=False)
+            except SSLError as ssl_err:
+                response = requests.get(url, headers=headers)
 
             if response.status_code == 200:
                 return response.json()
@@ -389,9 +389,9 @@ class Checkmarx:
                     }
                 files = {'file': (result_file, file)}
                 try:
-                    response = requests.post(url=url, files=files, headers=headers, params= params)
-                except SSLError:
                     response = requests.post(url=url, files=files, headers=headers, params= params, verify=False)
+                except SSLError:
+                    response = requests.post(url=url, files=files, headers=headers, params= params)
             response.raise_for_status()
             log.info(f"<info> Upload successful. Response: {response.status_code} </info>")
         except HTTPError as http_err:

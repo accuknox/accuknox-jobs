@@ -15,7 +15,7 @@ rm -f Checkmarx-*.json # Remove existing reports (optional cleanup)
 docker run --rm -it \
   --env-file .env \
   -v $PWD:/app/data/ \
-  accuknox/checkmarx-one-job:1.2
+  accuknox/checkmarx-one-job:1.3
 ```
 
 > This will generate `Checkmarx-*.json` files in the current directory, one per project/component found.

@@ -13,7 +13,7 @@ Add the required environment variables from **Configuration**  to a `.env` file 
 docker run --rm -it \
   --env-file .env \
   -v $PWD:/app/data/ \
-  accuknox/checkmarxsastjob:1.2
+  accuknox/checkmarxsastjob:1.3
 ```
 
 > This will generate `Checkmarx-*.json` files in the current directory, one per project/component found.
