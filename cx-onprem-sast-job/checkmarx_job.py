@@ -121,7 +121,7 @@ class Checkmarx:
                 if isinstance(message, dict) and 'messageCode' in message:
                     if message["messageCode"]==47826:
                         log.error(f"<error> Invalid Project name </error> ")
-                        sys.exit(1)
+                        return "Invalid Project name"
                     if message["messageCode"]==25016:
                         log.warning(f"<warning> Cx description not found for queryID : {endpoint} </warning> ")
                         return {}
@@ -139,7 +139,7 @@ class Checkmarx:
         Fetch projects from Checkmarx API.
         :return: JSON response containing project data
         """
-        log.info(f"<info> Fetch a projects details from Checkmarx </info>")
+        log.info(f"<info> Fetching a projects details for {project} ... </info>")
         limit = 1
         offset = 0
         endpoint = f"projects/?limit={limit}&offset={offset}&projectName={project}"
@@ -147,6 +147,8 @@ class Checkmarx:
         if isinstance(data, list) and len(data) > 0:
             project_data = data[0]
             return project_data, project_data.get("id")
+        elif isinstance(data, str):
+            return {}, None
         else:
             log.error(f"<Info> There is unknown issue: {data} </error>")
             return {}, None
@@ -335,16 +337,22 @@ class Checkmarx:
         if not self.bearer_token:
             log.error("Failed to retrieve Checkmarx bearer token.")
             return
-        for project in self.env["PROJECT_NAMES"]:
-            data, project_id = self._fetch_checkmarx_projects(project=project)
+        log_info = []
+        for project_name in self.env["PROJECT_NAMES"]:
+            print("-"*90)
+            data, project_id = self._fetch_checkmarx_projects(project=project_name)
             if not project_id:
-                log.warning(f"Project ID not found for {project}. Skipping.")
+                msg = f"Invalid Project Name '{project_name}'"
+                log.warning(f"<warning> {msg} </warning>")
+                log_info.append(msg)
                 continue
             scan_info, scan_ids  = self._fetch_last_scan_id(
                 project_id,
             )
             if not scan_ids:
-                log.warning(f"No scans found for project '{project}'")
+                msg = f"No scans found for project '{project_name}'"
+                log.warning(f"<warning> {msg} </warning>")
+                log_info.append(msg)
                 continue
 
             data["scan"] = scan_info
@@ -356,13 +364,14 @@ class Checkmarx:
                     json.dump(data, f, indent=2)
                 log.info(f"Results written to {issues_file}")
                 self.upload_results(issues_file)
-                log.info(f"Results uploaded for project '{project}'.")
-                ## remove the json file 
+                log_info.append(f"Results uploaded for project '{project_name}''")
+                ## remove the json file
                 if os.path.exists(issues_file):
                     os.remove(issues_file)
             except Exception as e:
-                log.error(f"Error while saving or uploading results for {project}: {e}")
-
+                log.error(f"Error while saving or uploading results for {project_name}: {e}")
+        print("-"*30,"Result","-"*30)
+        print("\n".join(log_info))
 
     def upload_results(self, result_file):
         log.info(f"<info> Uploading the result to AccuKnox control plane... </info>")
