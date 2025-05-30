@@ -80,7 +80,7 @@ class Checkmarx:
                 response = requests.post(url, data=payload, headers=headers, verify=False)
             except SSLError as ssl_err:
                 response = requests.post(url, data=payload, headers=headers)
-                
+
             log.info(f"<info> Fetching authentication token for Checkmarx... </info>")
             if response.status_code == 200:
                 return response.json().get("access_token")
@@ -148,7 +148,7 @@ class Checkmarx:
         Fetch projects from Checkmarx API.
         :return: JSON response containing project data
         """
-        log.info(f"<info> Fetch a projects details from Checkmarx </info>")
+        log.info(f"<info> Fetching projects details for {project} ... </info>")
 
         limit = 10
         offset = 0
@@ -310,21 +310,30 @@ class Checkmarx:
         if not self.bearer_token:
             log.error("Failed to retrieve Checkmarx bearer token.")
             return
-        print("self.env[PROJECT_NAMES]",self.env["PROJECT_NAMES"])
+        log_info = []
         for project_name, branch_name in self.env["PROJECT_NAMES"].items():
+            print("-"*90)
             data, project_id = self._fetch_checkmarx_projects(project=project_name)
             if not project_id:
-                log.warning(f"Project ID not found for {project_name}. Skipping.")
+                msg = f"Invalid Project Name '{project_name}'"
+                log.warning(f"<warning> {msg} </warning>")
+                log_info.append(msg)
                 continue
             if branch_name:
                 if not self._validate_branch_name(project_id, name=branch_name):
-                    log.error(f"<error> Invalid branch name '{branch_name}' for project '{project_name}'. <error>")
+                    msg = f"Invalid branch name '{branch_name}' for project '{project_name}'"
+                    log.error(f"<error> {msg} </error>")
+                    log_info.append(msg)
                     continue
                 log.info(f"Validated branch name '{branch_name}' for project '{project_name}'.")
 
             scan_ids, scan_info = self._fetch_last_scan_id(project_id, branch_name=branch_name)
             if not scan_ids:
-                log.warning(f"No scans found for project '{project_name}'")
+                msg = f"No scans found for project '{project_name}'"
+                if branch_name:
+                    msg+=f" branch:{branch_name}"
+                log.warning(f"<warning> {msg} </warning>")
+                log_info.append(msg)
                 continue
 
             data["scan"] = scan_info
@@ -336,13 +345,14 @@ class Checkmarx:
                     json.dump(data, f, indent=2)
                 log.info(f"<info> Results written to {issues_file} </info>")
                 self.upload_results(issues_file)
-                log.info(f"<info> Results uploaded for project '{project_name}'.</info>")
+                log_info.append(f"Results uploaded for project '{project_name}''")
                 ## remove the json file
                 if os.path.exists(issues_file):
                     os.remove(issues_file)
             except Exception as e:
                 log.error(f"Error while saving or uploading results for {project_name}: {e}")
-
+        print("-"*30,"Result","-"*30)
+        print("\n".join(log_info))
 
     def upload_results(self, result_file):
         log.info(f"<info> Uploading the result to AccuKnox control plane... </info>")
