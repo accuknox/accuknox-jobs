@@ -28,7 +28,7 @@ SCANNED_FILE_DIR = os.environ.get("REPORT_PATH", "/app/data/")
 class Checkmarx:
     def __init__(self, env):
         self.env = env
-        self.base_url = env["BASE_URL"]
+        self.base_url = env["CX_BASE_URL"]
         self.bearer_token = ""
 
     MAX_RETRIES = 3  # Maximum retry attempts
@@ -41,8 +41,8 @@ class Checkmarx:
             log.info(f"<info> Fetching bearer token ... </info>")
 
             payload = {
-                "username": self.env["USER_NAME"],
-                "password": self.env["PASSWORD"],
+                "username": self.env["CX_USER_NAME"],
+                "password": self.env["CX_PASSWORD"],
                 "scope": self.env["SCOPE"],
                 "grant_type": self.env["GRANT_TYPE"],
                 "client_id": self.env["CLIENT_ID"],
@@ -338,7 +338,7 @@ class Checkmarx:
             log.error("Failed to retrieve Checkmarx bearer token.")
             return
         log_info = []
-        for project_name in self.env["PROJECT_NAMES"]:
+        for project_name in self.env["CX_PROJECT_NAMES"]:
             print("-"*90)
             data, project_id = self._fetch_checkmarx_projects(project=project_name)
             if not project_id:
@@ -385,16 +385,16 @@ class Checkmarx:
 
             with open(result_file, 'rb') as file:
 
-                url = f"{self.env["CSPM_BASE_URL"]}/api/v1/artifact/"
+                url = f"{self.env["AK_ENDPOINT"]}/api/v1/artifact/"
                 headers={
-                        "Tenant-Id": self.env["TENANT_ID"],
-                        "Authorization": f"Bearer {self.env["ARTIFACT_TOKEN"]}"
+                        "Tenant-Id": self.env["AK_TENANT_ID"],
+                        "Authorization": f"Bearer {self.env["AK_TOKEN"]}"
                     }
                 params={
-                        "tenant_id": self.env["TENANT_ID"],
+                        "tenant_id": self.env["AK_TENANT_ID"],
                         "data_type": "CX",
                         "save_to_s3": "false",
-                        "label_id": self.env["LABEL"],
+                        "label_id": self.env["AK_LABEL"],
                     }
                 files = {'file': (result_file, file)}
                 try:
@@ -419,14 +419,14 @@ class Checkmarx:
 
 
 REQUIRED_ENV_VARS = [
-    "PROJECT_NAMES",
-    "BASE_URL",
-    "USER_NAME",
-    "PASSWORD",
-    "CSPM_BASE_URL",
-    "LABEL",
-    "TENANT_ID",
-    "ARTIFACT_TOKEN"
+    "CX_PROJECT_NAMES",
+    "CX_BASE_URL",
+    "CX_USER_NAME",
+    "CX_PASSWORD",
+    "AK_ENDPOINT",
+    "AK_LABEL",
+    "AK_TENANT_ID",
+    "AK_TOKEN"
 ]
 
 OPTIONAL_ENV_DEFAULTS = {
@@ -444,9 +444,9 @@ def get_env_config():
 
     config = {key: os.environ.get(key) for key in REQUIRED_ENV_VARS}
 
-    # Parse PROJECT_NAMES as list from comma-separated string
-    config["PROJECT_NAMES"] = [
-        name.strip() for name in config["PROJECT_NAMES"].split(",") if name.strip()
+    # Parse CX_PROJECT_NAMES as list from comma-separated string
+    config["CX_PROJECT_NAMES"] = [
+        name.strip() for name in config["CX_PROJECT_NAMES"].split(",") if name.strip()
     ]
 
     for key, default in OPTIONAL_ENV_DEFAULTS.items():

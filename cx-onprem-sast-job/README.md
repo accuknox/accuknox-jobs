@@ -24,17 +24,17 @@ docker run --rm -it \
 
 | Environment Variable | Sample Value                           | Description                                        |
 | ---------------- | -------------------------------------- | -------------------------------------------------------- |
-| `PROJECT_NAME`\* | `Accuknox/checkmarx`                   | Comma-separated Checkmarx project names (e.g., org1/proj1,org2/proj2)                |
-| `BASE_URL`\*     | `https://accuknox.checkmarx.net`       | Base URL of the Checkmarx server                         |
-| `USER_NAME`\*    | `admin`                                | Username for Checkmarx login (used for token generation) |
-| `PASSWORD`\*     | `yourpassword`                         | Password for Checkmarx login (used for token generation) |
-| `CSPM_BASE_URL`\*| `https://cspm.demo.accuknox.com`       | AccuKnox CSPM API Endpoint                               |
-| `LABEL`\*        | `$LABEL `                              | The label created in AccuKnox SaaS for associating scan results |
-| `TENANT_ID`\*    | `$TENANT_ID$`                          |  The ID of the tenant associated with the CSPM panel   |
-| `ARTIFACT_TOKEN`\* | `$ARTIFACT_TOKEN`                    | The token for authenticating with the CSPM panel |
-| `SCOPE`          | `sast_rest_api`                        | OAuth scope used for token generation ( default: `sast_rest_api` ) |
-| `GRANT_TYPE`     | `password`                             | OAuth grant type ( default: `password` )                   |
-| `CLIENT_ID`      | `resource_owner_client`                | OAuth client ID ( default: `resource_owner_client` )       |
-| `CLIENT_SECRET`  | `014DF517-39D1-4453-B7B3-9930C563627C` | OAuth client secret  ( default: `014DF517-39D1-4453-B7B3-9930C563627C` ) |
+| `CX_PROJECT_NAMES`\* | `Accuknox/checkmarx`                   | Comma-separated Checkmarx project names (e.g., org1/proj1,org2/proj2)                |
+| `CX_BASE_URL`\*     | `https://accuknox.checkmarx.net`       | Base URL of the Checkmarx server                         |
+| `CX_USER_NAME`\*    | `admin`                                | Username for Checkmarx login (used for token generation) |
+| `CX_PASSWORD`\*     | `yourpassword`                         | Password for Checkmarx login (used for token generation) |
+| `AK_ENDPOINT`\*| `https://cspm.demo.accuknox.com`       | AccuKnox CSPM API Endpoint                               |
+| `AK_LABEL`\*        | `$LABEL `                              | The label created in AccuKnox SaaS for associating scan results |
+| `AK_TENANT_ID`\*    | `$TENANT_ID$`                          |  The ID of the tenant associated with the CSPM panel   |
+| `AK_TOKEN`\* | `$ARTIFACT_TOKEN`                    | The token for authenticating with the CSPM panel |
+| `CX_SCOPE`          | `sast_rest_api`                        | OAuth scope used for token generation ( default: `sast_rest_api` ) |
+| `CX_GRANT_TYPE`     | `password`                             | OAuth grant type ( default: `password` )                   |
+| `CX_CLIENT_ID`      | `resource_owner_client`                | OAuth client ID ( default: `resource_owner_client` )       |
+| `CX_CLIENT_SECRET`  | `014DF517-39D1-4453-B7B3-9930C563627C` | OAuth client secret  ( default: `014DF517-39D1-4453-B7B3-9930C563627C` ) |
 
 > **Note:** Variables marked with `*` are mandatory.

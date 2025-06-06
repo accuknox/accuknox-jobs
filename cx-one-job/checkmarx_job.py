@@ -65,14 +65,14 @@ class Checkmarx:
         """
         try:
             log.info(f"<info> Fetching bearer token ... </info>")
-            auth_url = self._get_domain_auth_url(self.env["API_KEY"])
+            auth_url = self._get_domain_auth_url(self.env["CX_API_KEY"])
             if auth_url is None:
                 return None
             url = f"{auth_url}/protocol/openid-connect/token"
             payload = {
                 "grant_type": "refresh_token",
                 "client_id": "ast-app",
-                "refresh_token": self.env["API_KEY"],
+                "refresh_token": self.env["CX_API_KEY"],
             }
 
             headers = {"Content-Type": "application/x-www-form-urlencoded"}
@@ -311,7 +311,7 @@ class Checkmarx:
             log.error("Failed to retrieve Checkmarx bearer token.")
             return
         log_info = []
-        for project_name, branch_name in self.env["PROJECT_NAMES"].items():
+        for project_name, branch_name in self.env["CX_PROJECT_NAMES"].items():
             print("-"*90)
             data, project_id = self._fetch_checkmarx_projects(project=project_name)
             if not project_id:
@@ -345,7 +345,10 @@ class Checkmarx:
                     json.dump(data, f, indent=2)
                 log.info(f"<info> Results written to {issues_file} </info>")
                 self.upload_results(issues_file)
-                log_info.append(f"Results uploaded for project '{project_name}''")
+                msg = "Results uploaded for project '{project_name}'"
+                if branch_name:
+                    msg+=f":{branch_name}"
+                log_info.append(msg)
                 ## remove the json file
                 if os.path.exists(issues_file):
                     os.remove(issues_file)
@@ -366,16 +369,16 @@ class Checkmarx:
 
             with open(result_file, 'rb') as file:
 
-                url = f"{self.env["CSPM_BASE_URL"]}/api/v1/artifact/"
+                url = f"{self.env["AK_ENDPOINT"]}/api/v1/artifact/"
                 headers={
-                        "Tenant-Id": self.env["TENANT_ID"],
-                        "Authorization": f"Bearer {self.env["ARTIFACT_TOKEN"]}"
+                        "Tenant-Id": self.env["AK_TENANT_ID"],
+                        "Authorization": f"Bearer {self.env["AK_TOKEN"]}"
                     }
                 params={
-                        "tenant_id": self.env["TENANT_ID"],
+                        "tenant_id": self.env["AK_TENANT_ID"],
                         "data_type": "CX",
                         "save_to_s3": "false",
-                        "label_id": self.env["LABEL"],
+                        "label_id": self.env["AK_LABEL"],
                     }
                 files = {'file': (result_file, file)}
                 try:
@@ -398,12 +401,12 @@ class Checkmarx:
 
 
 REQUIRED_ENV_VARS = [
-    "PROJECT_NAMES",
-    "API_KEY",
-    "CSPM_BASE_URL",
-    "LABEL",
-    "TENANT_ID",
-    "ARTIFACT_TOKEN"
+    "CX_PROJECT_NAMES",
+    "CX_API_KEY",
+    "AK_ENDPOINT",
+    "AK_LABEL",
+    "AK_TENANT_ID",
+    "AK_TOKEN"
 ]
 
 
@@ -415,8 +418,8 @@ def get_env_config():
 
     config = {key: os.environ.get(key) for key in REQUIRED_ENV_VARS}
 
-    # Parse PROJECT_NAMES as from comma-separated string
-    project_name =  os.environ.get("PROJECT_NAMES","").strip()
+    # Parse CX_PROJECT_NAMES as from comma-separated string
+    project_name =  os.environ.get("CX_PROJECT_NAMES","").strip()
     project_map = {}
     for item in project_name.split(","):
         item = item.strip()
@@ -429,7 +432,7 @@ def get_env_config():
         else:
             project_map[item] = ""  # No branch specified
 
-    config["PROJECT_NAMES"] = project_map
+    config["CX_PROJECT_NAMES"] = project_map
     return config
 
 if __name__ == "__main__":

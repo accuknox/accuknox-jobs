@@ -26,12 +26,12 @@ docker run --rm -it \
 
 | Environment Variable | Sample Value                             | Description                                          |
 |----------------------|------------------------------------------|------------------------------------------------------|
-| `API_KEY`*           | `eIGNiD384Tg`                            | API key token to authenticate with Checkmarx API     |
-| `PROJECT_NAMES`*     | `Accuknox/checkmarx:main`                | Comma-separated project names in format project:branch (e.g., org1/proj1,org2/proj2). If a branch is not specified for a project, the latest scan across all branches will be used.                  |
-| `CSPM_BASE_URL`\*    | `https://cspm.demo.accuknox.com`         | AccuKnox CSPM API Endpoint                               |
-| `LABEL`\*            | `$LABEL `                                | The label created in AccuKnox SaaS for associating scan results |
-| `TENANT_ID`\*        | `$TENANT_ID$`                            |  The ID of the tenant associated with the CSPM panel   |
-| `ARTIFACT_TOKEN`\*   | `$ARTIFACT_TOKEN`                        | The token for authenticating with the CSPM panel |
+| `CX_API_KEY`*        | `eIGNiD384Tg`                            | API key token to authenticate with Checkmarx API     |
+| `CX_PROJECT_NAMES`*  | `Accuknox/checkmarx:main`                | Comma-separated project names in format project:branch (e.g., org1/proj1,org2/proj2). If a branch is not specified for a project, the latest scan across all branches will be used.                  |
+| `AK_ENDPOINT`\*      | `https://cspm.demo.accuknox.com`         | AccuKnox CSPM API Endpoint                               |
+| `AK_LABEL`\*         | `$LABEL `                                | The label created in AccuKnox SaaS for associating scan results |
+| `AK_TENANT_ID`\*     | `$TENANT_ID$`                            |  The ID of the tenant associated with the CSPM panel   |
+| `AK_TOKEN`\*         | `$ARTIFACT_TOKEN`                        | The token for authenticating with the CSPM panel |
 
 > **Note:** Variables marked with `*` are mandatory.
 
