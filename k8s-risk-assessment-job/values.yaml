@@ -32,4 +32,4 @@ clusterName: ""
 clusterID: 0
 label: ""
 secretName: ""
-airgapped: false
+airgapped: true
