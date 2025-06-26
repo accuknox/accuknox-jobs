@@ -18,7 +18,21 @@ spec:
           initContainers:
             - name: job-init-container
               image: "{{ .Values.kubescape.image.repository }}:{{ .Values.kubescape.image.tag }}"
-              args: ["scan", "framework", "allcontrols,clusterscan,mitre,nsa", "--format", "json", "--cache-dir", "/data/kubescape-cache", "--output", "/data/report.json", "--cluster-name=$(CLUSTER_NAME)"]
+              args:
+                - scan
+                - framework
+                - allcontrols,clusterscan,mitre,nsa
+                - --format
+                - json
+                - --cache-dir
+                - /data/kubescape-cache
+                - --output
+                - /data/report.json
+                - --cluster-name=$(CLUSTER_NAME)
+                {{- if .Values.accuknox.airgapped }}
+                - --use-artifacts-from
+                - /opt/kubescape/artifacts
+                {{- end }}
               env:
                 - name: CLUSTER_NAME
                   value: {{ .Values.accuknox.clusterName }}

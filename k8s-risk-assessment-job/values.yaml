@@ -4,7 +4,7 @@
 
 kubescape:
   image:
-    repository: quay.io/kubescape/kubescape-cli
+    repository: public.ecr.aws/k9v9d5v2/k8s-risk-assessment
     tag: "v3.0.8"
 
 replicaCount: 1
@@ -21,4 +21,4 @@ accuknox:
   certBundlePath: ""  # Set this for cert local path if needed .
   certBundleURL: ""  # Set this for cert URL if needed (if certBundlePath is set as well certBundlePath will take precedent)
   useInsecureConnection: false  # Set to true if insecure connection is needed
-
+  airgapped: true
