@@ -22,7 +22,21 @@ spec:
           initContainers:
             - name: job-init-container
               image: "{{ include "kubescape.image" . }}"
-              args: ["scan", "framework", "allcontrols,clusterscan,mitre,nsa", "--format", "json", "--cache-dir", "/data/kubescape-cache", "--output", "/data/report.json", "--cluster-name=$(CLUSTER_NAME)"]
+              args:
+                - scan
+                - framework
+                - allcontrols,clusterscan,mitre,nsa
+                - --format
+                - json
+                - --cache-dir
+                - /data/kubescape-cache
+                - --output
+                - /data/report.json
+                - --cluster-name=$(CLUSTER_NAME)
+                {{- if .Values.airgapped }}
+                - --use-artifacts-from
+                - /opt/kubescape/artifacts
+                {{- end }}
               env:
                 - name: CLUSTER_NAME
                   value: {{ .Values.clusterName }}
