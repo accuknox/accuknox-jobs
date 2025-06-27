@@ -39,7 +39,6 @@ docker run --rm -it \
 ## ⚙️ Sample `.env` File
 ```
 CX_API_KEY=eyJh....
-# CX_PROJECT=[ {"*":"*"}, {"-*ayush":"*"} ]
 CX_PROJECT={"*":"*","-*Ayush*":"*"}
 CX_PRIMARY_BRANCH=true
 AK_ENDPOINT=https://cspm.accuknox.com/
