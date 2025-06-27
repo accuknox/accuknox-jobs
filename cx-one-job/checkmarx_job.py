@@ -4,6 +4,7 @@ import json
 import logging
 import math
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -74,7 +75,6 @@ class Checkmarx:
                 "client_id": "ast-app",
                 "refresh_token": self.env["CX_API_KEY"],
             }
-
             headers = {"Content-Type": "application/x-www-form-urlencoded"}
             try:
                 response = requests.post(url, data=payload, headers=headers, verify=False)
@@ -96,8 +96,9 @@ class Checkmarx:
 
     MAX_RETRIES = 3  # Maximum retry attempts
 
-    def _fetch_data(self, endpoint):
-        log.info(f"<info> Fetching data for endpoint: {endpoint} </info>")
+    def _fetch_data(self, endpoint, flag=True):
+        if flag:
+            log.info(f"<info> Fetching data for endpoint: {endpoint} </info>")
 
         url = f"{self.base_url}/{endpoint}"
         headers = {
@@ -143,45 +144,175 @@ class Checkmarx:
             else:
                 log.error(f"<error> Unknow error {response.json()} </error> ")
 
-    def _fetch_checkmarx_projects(self, project=None):
-        """
-        Fetch projects from Checkmarx API.
-        :return: JSON response containing project data
-        """
-        log.info(f"<info> Fetching projects details for {project} ... </info>")
+    def build_simple_or_regex(self, patterns):
+        if not patterns or "" in patterns:
+            return ".*"
 
-        limit = 10
-        offset = 0
-        endpoint = f"api/projects/?limit={limit}&offset={offset}&names={project}"
-        data = self._fetch_data(endpoint)
-        if isinstance(data, dict):
-            filteredTotalCount = data.get("filteredTotalCount")
-            if not filteredTotalCount:
-                log.info("<warning> Invalid project name </warning>")
-            if data.get("projects"):
-                project_data = data.get("projects")[0]
-                return project_data, project_data.get("id")
+        if isinstance(patterns, str):
+            patterns = [patterns]
+
+        regex_parts = []
+
+        for pat in patterns:
+            pat = pat.strip()
+            if "*" in pat and not pat.startswith("*") and not pat.endswith("*"):
+                # Case: abc*def → starts with abc and ends with def
+                parts = pat.split("*", 1)
+                prefix = re.escape(parts[0])
+                suffix = re.escape(parts[1])
+                regex_parts.append(f"{prefix}.*{suffix}")
+
+            elif pat.startswith("*") and pat.endswith("*"):
+                value = re.escape(pat.strip("*"))
+                regex_parts.append(f".*{value}.*")
+
+            elif pat.startswith("*"):
+                value = re.escape(pat.lstrip("*"))
+                regex_parts.append(f".*{value}$")
+
+            elif pat.endswith("*"):
+                value = re.escape(pat.rstrip("*"))
+                regex_parts.append(f"^{value}.*")
+
             else:
-                log.error(f"<error> Invalid project name: {project}. </error>")
-                return {}, None
-        else:
-            log.error(f"<Info> There is unknown issue: {data} </error>")
-            return {}, None
+                value = re.escape(pat)
+                regex_parts.append(f"^{value}$")
 
-    def _fetch_scan_id(self, project_id, scan_date):
-        log.info(
-            f"<info> Fetching latest scan id for project: {project_id} and date: {scan_date}</info>",
-        )
-        # Convert to RFC 3339 format
-        scan_date = scan_date.replace("+00:00", "Z")
-        endpoint = f"api/scans/?statuses=Completed&statuses=Partial&project-id={project_id}&from-date={scan_date}"
-        scans = self._fetch_data(endpoint)
-        scan_id = []
-        scan_detail = []
-        for scan in scans.get("scans", []):
-            scan_id.append(scan.get("id"))
-            scan_detail.append(scan)
-        return scan_id, scan_detail
+        combined = "|".join(regex_parts)
+        return combined
+
+    def build_combined_regex(self, patterns):
+        if not patterns:
+            return None, False
+
+        if isinstance(patterns, str):
+            patterns = [patterns]
+
+        # Trim all whitespace early
+        patterns = [p.strip() for p in patterns]
+
+        # Handle empty string logic
+        if "" in patterns:
+            if len(patterns) > 1:
+                patterns = [p for p in patterns if p != ""]
+            else:
+                return None, False # Only "" present
+
+        include = []
+        exclude = []
+        match_all = False
+        has_exclude = False
+
+        for pat in patterns:
+            if pat == "*":
+                match_all = True
+                continue
+
+            is_exclude = pat.startswith('-')
+            if is_exclude:
+                has_exclude = True
+            pat_core = pat.lstrip('-')
+
+            if pat_core.startswith("*") and pat_core.endswith("*"):
+                value = re.escape(pat_core.strip("*"))
+                look = f"(?!.*{value})" if is_exclude else f"(?=.*{value})"
+
+            elif pat_core.startswith("*"):
+                value = re.escape(pat_core.lstrip("*"))
+                look = f"(?!.*{value}$)" if is_exclude else f"(?=.*{value}$)"
+
+            elif pat_core.endswith("*"):
+                value = re.escape(pat_core.rstrip("*"))
+                look = f"(?!^{value})" if is_exclude else f"(?=^{value})"
+
+            else:
+                value = re.escape(pat_core)
+                look = f"(?!^{value}$)" if is_exclude else f"(?=^{value}$)"
+
+            (exclude if is_exclude else include).append(look)
+
+        # NEW RULE: if only excludes and no includes — inject match_all behavior
+        if not include and exclude:
+            match_all = True
+
+        regex = '^' + ''.join(exclude) + '.*$' if match_all else '^' + ''.join(include + exclude) + '.*$'
+        return re.compile(regex), has_exclude
+
+    def build_rule_sets(self, rule_dict):
+        exclude_patterns = []
+        include_project = []
+        empty_branch = True
+        rules = []
+        exclude_flag = True
+        try:
+            total_rule = len(rule_dict)
+            for proj, branch in rule_dict.items():
+                rule_dict = {
+                    "project":"",
+                    "branch":"",
+                    "is_exclude": False
+                    }
+                proj = proj.strip()
+                is_exclude = proj.startswith('-')
+                if is_exclude and total_rule > 1:
+                    exclude_flag = False
+                    pat_core = proj.lstrip('-')
+                    exclude_patterns.append(pat_core)
+
+
+                proj_branch, is_exclude_branch = self.build_combined_regex(branch)
+
+                if proj_branch and exclude_flag:
+                    exclude_flag = True
+                    rule_dict["branch"] = proj_branch
+                    rule_dict['is_exclude'] = is_exclude_branch
+                    empty_branch = False
+
+                if total_rule ==1:
+                    rule_dict["project"], _ = self.build_combined_regex(proj)
+                    rules.append(rule_dict)
+                if not is_exclude:
+                    include_project.append(proj)
+                    rule_dict["project"], _ = self.build_combined_regex(proj)
+                    rules.append(rule_dict)
+
+            include_project =  self.build_simple_or_regex(include_project)
+            exclude_patterns, _ = self.build_combined_regex(exclude_patterns)
+
+            return empty_branch, exclude_patterns, rules, include_project
+        except Exception as e:
+            raise ValueError(f"Invalid format CX_PROJECT: {e}")
+
+    def _fetch_all_project(self, name_regex=None):
+        """
+        Fetch all matching projects from Checkmarx API with optional name regex.
+        :param name_regex: Optional regex pattern to filter project names
+        :return: List of project dictionaries
+        """
+        log.info("<info> Fetching project details from server... </info>")
+
+        limit = 2
+        offset = 0
+        all_projects = []
+        endpoint = f"api/projects/?limit={limit}&offset={offset}"
+        if name_regex:
+            endpoint += f"&name-regex={name_regex}"
+
+        data = self._fetch_data(endpoint, flag=False)
+        total_count = data.get("totalCount")
+        if total_count is not None:
+            all_projects.extend(data.get("projects", []))
+
+        for offset in range(limit, total_count, limit):
+            endpoint = f"api/projects/?limit={limit}&offset={offset}"
+            if name_regex:
+                endpoint += f"&name-regex={name_regex}"
+            data = self._fetch_data(endpoint, flag=False)
+            if data.get("projects"):
+                all_projects.extend(data.get("projects", []))
+
+        return all_projects
+
 
     def _fetch_scan_detail(self, scan_id):
         endpoint = f"api/scans/{scan_id}"
@@ -199,141 +330,192 @@ class Checkmarx:
             time_main = f"{t}.{micro}"
         return datetime.fromisoformat(f"{date_part}T{time_main}+{offset}")
 
-    def _validate_branch_name(self, project_id, name):
-        endpoint = f"api/projects/branches?offset=0&project-ids={project_id}&branch-name={name}&limit=5"
-        branch_names =  self._fetch_data(endpoint)
-        if isinstance(branch_names, list) and name in branch_names:
-            return True
-        return False
+    def _fetch_last_scan_id(self, project_id, branch_names):
+        scan_ids = []
+        scan_details = []
 
+        if not branch_names:
+            branch_names = [None]  # So we loop once without appending any branch
+        for branch_name in branch_names:
+            api = f"api/projects/last-scan?offset=0&limit=20&project-ids={project_id}&"
+            if branch_name:
+                api += f"branch={branch_name}&"
+            scan_completed = self._fetch_data(api + "scan-status=Completed")
+            scan_partial = self._fetch_data(api + "scan-status=Partial")
+            try:
+                if not scan_completed and not scan_partial:
+                    log.info(f"<info> No completed or partial scans found for branch '{branch_name or 'default'}'. </info>",)
+                    continue
 
-    def _fetch_last_scan_id(self, project_id, branch_name):
-        api = f"api/projects/last-scan?offset=0&limit=20&project-ids={project_id}&"
-        if branch_name:
-            api += f"branch={branch_name}&"
-        endpoint_completed = api + "scan-status=Completed"
-        scan_completed = self._fetch_data(endpoint_completed)
+                key = None
 
-        endpoint_partial = api + "scan-status=Partial"
-        scan_partial = self._fetch_data(endpoint_partial)
-        try:
-            # If both are empty, return [], {}
-            log.info(
-                f"<info> scan_completed: {scan_completed}, scan_partial: {scan_partial}. </info>",
-            )
-            if not scan_completed and not scan_partial:
-                return [], []
+                dt_completed = dt_partial = None
 
-            key = None
+                if scan_completed:
+                    key = list(scan_completed.keys())[0]
+                    dt_completed = self._fix_isoformat(scan_completed[key]["createdAt"])
 
-            dt_completed = dt_partial = None
+                if scan_partial:
+                    key = list(scan_partial.keys())[0]
+                    dt_partial = self._fix_isoformat(scan_partial[key]["createdAt"])
 
-            if scan_completed:
-                key = list(scan_completed.keys())[0]
-                dt_completed = self._fix_isoformat(scan_completed[key]["createdAt"])
+                # Compare timestamps and decide which scan ID to use
+                if dt_completed and (not dt_partial or dt_completed > dt_partial):
+                    log.info("<info> Scan ID from completed scan. </info>")
+                    scan_id = scan_completed[key]["id"]
+                elif dt_partial:
+                    log.info("<info> Scan ID from partial scan. </info>")
+                    scan_id = scan_partial[key]["id"]
+                else:
+                    continue
 
-            if scan_partial:
-                key = list(scan_partial.keys())[0]
-                dt_partial = self._fix_isoformat(scan_partial[key]["createdAt"])
+                scan_detail = self._fetch_scan_detail(scan_id)
+                scan_ids.append(scan_id)
+                scan_details.append(scan_detail)
 
-            # Compare timestamps and decide which scan ID to use
-            if dt_completed and (not dt_partial or dt_completed > dt_partial):
-                log.info("<info> Scan ID from completed scan. </info>")
-                scan_id = scan_completed[key]["id"]
-            elif dt_partial:
-                log.info("<info> Scan ID from partial scan. </info>")
-                scan_id = scan_partial[key]["id"]
-            else:
-                return [], []
-
-            scan_detail = self._fetch_scan_detail(scan_id)
-            return [scan_id], [scan_detail]
-        except Exception as e:
-            log.error(f"<error> {e} </error> ")
-            return [], {}
+            except Exception as e:
+                log.error(f"<error> Branch: {branch_name or 'default'} {e} </error> ")
+        return scan_ids, scan_details
 
     def _get_result(self, scan_id):
         """
         Fetch all result for a scan_id.
         :return: JSON response containing scan data
         """
-        log.info(
-            f"<info> Fetching checkmarx scan result for a scan_id:{scan_id} </info>",
-        )
+        log.info(f"<info> Fetching checkmarx scan result for a scan_id:{scan_id} </info>")
 
-        all_result = {}
-        all_result["scan_id"] = scan_id
+        findings = []
         limit = 1000
         offset = 0
         endpoint = f"api/results/?limit={limit}&offset={offset}&scan-id={scan_id}"
         data = self._fetch_data(endpoint)
-        if isinstance(data, dict):
-            total_count = data.get("totalCount")
-            if total_count is not None:
-                all_result["finding"] = data.get("results", [])
-                offset = math.ceil(total_count / limit)
-            for count in range(1, offset):
-                endpoint = f"api/results/?limit={limit}&offset={count}&scan-id={scan_id}"
-                data = self._fetch_data(endpoint)
-                if isinstance(data, dict) and data.get("results"):
-                    all_result["finding"] += data.get("results", [])
+        total_count = data.get("totalCount")
+        if total_count is not None:
+            findings.extend(data.get("results", []))
 
-            query_desc = self._get_sast_query_detail(all_result)
-            all_result["query_desc"] = query_desc
-        return all_result
+        for offset in range(limit, total_count, limit):
+            endpoint = f"api/results/?limit={limit}&offset={offset}&scan-id={scan_id}"
+            data = self._fetch_data(endpoint)
+            if data.get("results"):
+                findings.extend(data.get("results", []))
+
+        result = {"scan_id": scan_id, "finding": findings, "query_desc": self._get_sast_query_detail(findings)}
+
+        return result
 
     def _get_sast_query_detail(self, data):
-        query_ids = set()
-        for item in data.get("finding", []):
-            if item.get("type", "") == "sast" and item.get("data", {}).get("queryId"):
-                query_ids.add(item.get("data", {}).get("queryId"))
+        query_ids = []
+        seen = set()
+        for item in data:
+            if item.get("type", "") == "sast":
+                qid = item.get("data", {}).get("queryId")
+                if qid and qid not in seen:
+                    seen.add(qid)
+                    query_ids.append(qid)
 
         query_description = {}
-        query_ids = list(query_ids)
-        batch_size = 500
-        for i in range(0, len(query_ids), batch_size):
-            batch = query_ids[i:i + batch_size]
-            query_params = "&".join(f"ids={qid}" for qid in batch)
-            api = f"api/queries/descriptions?{query_params}"
-            try:
-                query_data = self._fetch_data(api)
-                for item in query_data:
-                    if "queryId" in item:
-                        query_description[item["queryId"]] = item
-            except Exception as e:
-                log.error(f"Failed to fetch query descriptions for batch starting at index {i}: {e}")
+        for i in range(0, len(query_ids), 1000):
+            batch = query_ids[i : i + 1000]
+            query_string = "&".join(f"ids={qid}" for qid in batch)
+            api = f"api/queries/descriptions?{query_string}"
+            query_data = self._fetch_data(api, flag=False)
+
+            for item in query_data:
+                qid = item.get("queryId")
+                if qid:
+                    query_description[qid] = item
 
         return query_description
+
+    def _fetch_branches(self, project_id, branch_name = None):
+        offset = 0
+        limit = 1000
+        all_branches = []
+        api = f"api/projects/branches?project-id={project_id}"
+        if branch_name:
+            api += f"&branch-name={branch_name}"
+
+        while True:  # Return none if there is no data
+            endpoint = api + f"&offset={offset}&limit={limit}"
+            data = self._fetch_data(endpoint, flag=True)
+            if not data:  # Handles None, empty list, or empty dict
+                break
+            all_branches += data
+            offset += limit
+        return all_branches
+
+    def pre_process_project(self):
+        primary_branch = self.env.get("primary_branch")
+        empty_branch, exclude_patterns, rules, include_project = self.build_rule_sets(self.env["CX_PROJECT"])
+        projects = self._fetch_all_project(include_project)
+        project_result = []
+        log_info = {}
+        for item in projects:
+            name = item["name"]
+            project_id = item["id"]
+
+            if exclude_patterns and exclude_patterns.match(name):
+                continue
+
+            branches = []
+            branch_set = set()
+            matched_any = True
+
+            if primary_branch:
+                primary_branch_name = item.get("mainBranch")
+
+                if not primary_branch_name:
+                    continue
+
+                matched_any = False
+                branches = [primary_branch_name]
+            elif not empty_branch:
+                matched_any = False
+                branches = self._fetch_branches(project_id)
+
+            for branch in branches:
+                for rule in rules:
+                    if rule["project"].match(name):
+                        if rule["branch"] and rule["branch"].match(branch):
+                            matched_any = True
+                            if rule["is_exclude"] and branch in branch_set:
+                                branch_set.remove(branch)
+                            else:
+                                branch_set.add(branch)
+                        elif not rule["branch"]:
+                            matched_any = True
+
+            if matched_any:
+                item["branch_name"] = list(branch_set)
+                log_info[name] = item['branch_name']
+                project_result.append(item)
+        print("-"*30,"Following project will scan","-"*30)
+        for proj, branch  in log_info.items():
+            print(f"Project: {proj} -> Branch: {branch}")
+
+        return project_result
 
     def run(self):
         self.bearer_token = self._get_checkmarx_bearer_token()
         if not self.bearer_token:
             log.error("Failed to retrieve Checkmarx bearer token.")
             return
-        log_info = []
-        for project_name, branch_name in self.env["CX_PROJECT_NAMES"].items():
+        message = []
+        project_details = self.pre_process_project()
+        for item in project_details:
+            project_name = item.get("name")
+            branch_name = item.get("branch_name", [])
+            project_id =  item.get("id")
+            data = item
             print("-"*90)
-            data, project_id = self._fetch_checkmarx_projects(project=project_name)
-            if not project_id:
-                msg = f"Invalid Project Name '{project_name}'"
-                log.warning(f"<warning> {msg} </warning>")
-                log_info.append(msg)
-                continue
-            if branch_name:
-                if not self._validate_branch_name(project_id, name=branch_name):
-                    msg = f"Invalid branch name '{branch_name}' for project '{project_name}'"
-                    log.error(f"<error> {msg} </error>")
-                    log_info.append(msg)
-                    continue
-                log.info(f"Validated branch name '{branch_name}' for project '{project_name}'.")
 
-            scan_ids, scan_info = self._fetch_last_scan_id(project_id, branch_name=branch_name)
+            scan_ids, scan_info = self._fetch_last_scan_id(project_id, branch_names=branch_name)
             if not scan_ids:
                 msg = f"No scans found for project '{project_name}'"
                 if branch_name:
                     msg+=f" branch:{branch_name}"
                 log.warning(f"<warning> {msg} </warning>")
-                log_info.append(msg)
+                message.append(msg)
                 continue
 
             data["scan"] = scan_info
@@ -348,14 +530,14 @@ class Checkmarx:
                 msg = "Results uploaded for project '{project_name}'"
                 if branch_name:
                     msg+=f":{branch_name}"
-                log_info.append(msg)
+                message.append(msg)
                 ## remove the json file
                 if os.path.exists(issues_file):
                     os.remove(issues_file)
             except Exception as e:
                 log.error(f"Error while saving or uploading results for {project_name}: {e}")
         print("-"*30,"Result","-"*30)
-        print("\n".join(log_info))
+        print("\n".join(message))
 
     def upload_results(self, result_file):
         log.info(f"<info> Uploading the result to AccuKnox control plane... </info>")
@@ -368,7 +550,8 @@ class Checkmarx:
                 shutil.copyfileobj(f_in, f_out)
 
             with open(result_file, 'rb') as file:
-
+                data = file.read()
+                files = {"file": (result_file, data)}
                 url = f"{self.env["AK_ENDPOINT"]}/api/v1/artifact/"
                 headers={
                         "Tenant-Id": self.env["AK_TENANT_ID"],
@@ -380,7 +563,7 @@ class Checkmarx:
                         "save_to_s3": "false",
                         "label_id": self.env["AK_LABEL"],
                     }
-                files = {'file': (result_file, file)}
+
                 try:
                     response = requests.post(url=url, files=files, headers=headers, params= params, verify=False)
                 except SSLError:
@@ -401,7 +584,7 @@ class Checkmarx:
 
 
 REQUIRED_ENV_VARS = [
-    "CX_PROJECT_NAMES",
+    "CX_PROJECT",
     "CX_API_KEY",
     "AK_ENDPOINT",
     "AK_LABEL",
@@ -417,22 +600,16 @@ def get_env_config():
         sys.exit(1)
 
     config = {key: os.environ.get(key) for key in REQUIRED_ENV_VARS}
+    # Parse CX_PROJECT as from comma-separated string
+    raw_project_map =  os.environ.get("CX_PROJECT","").strip()
+    try:
+        project_name = json.loads(raw_project_map)
+    except Exception as e:
+        raise ValueError(f"Invalid format CX_PROJECT: {e}")
 
-    # Parse CX_PROJECT_NAMES as from comma-separated string
-    project_name =  os.environ.get("CX_PROJECT_NAMES","").strip()
-    project_map = {}
-    for item in project_name.split(","):
-        item = item.strip()
-        if not item:
-            continue
-        if ":" in item:
-            key, value = item.split(":", 1)
-            if key:
-                project_map[key.strip()] = value.strip()
-        else:
-            project_map[item] = ""  # No branch specified
+    config["CX_PROJECT"] = project_name
+    config["primary_branch"] = os.environ.get("CX_PRIMARY_BRANCH", "false").strip().lower() == "true"
 
-    config["CX_PROJECT_NAMES"] = project_map
     return config
 
 if __name__ == "__main__":
