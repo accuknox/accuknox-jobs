@@ -527,7 +527,7 @@ class Checkmarx:
                     json.dump(data, f, indent=2)
                 log.info(f"<info> Results written to {issues_file} </info>")
                 self.upload_results(issues_file)
-                msg = "Results uploaded for project '{project_name}'"
+                msg = f"Results uploaded for project '{project_name}'"
                 if branch_name:
                     msg+=f":{branch_name}"
                 message.append(msg)

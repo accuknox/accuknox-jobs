@@ -15,7 +15,7 @@ rm -f Checkmarx-*.json # Remove existing reports (optional cleanup)
 docker run --rm -it \
   --env-file .env \
   -v $PWD:/app/data/ \
-  accuknox/checkmarx-one-job:1.3
+  accuknox/checkmarx-one-job:1.4
 ```
 
 > This will generate `Checkmarx-*.json` files in the current directory, one per project/component found.
@@ -35,5 +35,18 @@ docker run --rm -it \
 | `AK_TOKEN`\*         | `$ARTIFACT_TOKEN`                        | The token for authenticating with the CSPM panel |
 
 > **Note:** Variables marked with `*` are mandatory.
+
+## ⚙️ Sample `.env` File
+```
+CX_API_KEY=eyJh....
+# CX_PROJECT=[ {"*":"*"}, {"-*ayush":"*"} ]
+CX_PROJECT={"*":"*","-*Ayush*":"*"}
+CX_PRIMARY_BRANCH=true
+AK_ENDPOINT=https://cspm.accuknox.com/
+AK_LABEL=$label
+AK_TENANT_ID=$tenant_id
+AK_TOKEN=eyJ0....
+```
+> **Note:** This will Scan all Projects with All Branches except Project Starts with Ayush.
 
 ---
