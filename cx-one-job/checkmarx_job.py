@@ -489,7 +489,7 @@ class Checkmarx:
                 item["branch_name"] = list(branch_set)
                 log_info[name] = item['branch_name']
                 project_result.append(item)
-        print("-"*30,"Following project will scan","-"*30)
+        print("-"*30,"Collecting Data from these Projects","-"*30)
         for proj, branch  in log_info.items():
             print(f"Project: {proj} -> Branch: {branch}")
 
