@@ -251,10 +251,10 @@ class Checkmarx:
         include_project = []
         empty_branch = True
         rule = []
-        exclude_flag = True
         try:
             total_rule = len(rules)
             for proj, branch in rules.items():
+                exclude_flag = True
                 rule_dict = {
                     "project":"",
                     "branch":"",
@@ -271,7 +271,6 @@ class Checkmarx:
                 proj_branch, is_exclude_branch = self.build_combined_regex(branch)
 
                 if proj_branch and exclude_flag:
-                    exclude_flag = True
                     rule_dict["branch"] = proj_branch
                     rule_dict['is_exclude'] = is_exclude_branch
                     empty_branch = False
