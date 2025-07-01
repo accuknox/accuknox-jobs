@@ -229,24 +229,32 @@ class Checkmarx:
                 value = re.escape(pat_core)
                 look = f"(?!^{value}$)" if is_exclude else f"(?=^{value}$)"
 
-            (exclude if is_exclude else include).append(look)
+            if is_exclude:
+                exclude.append(look)
+            else:
+                include.append(look)
 
         # NEW RULE: if only excludes and no includes — inject match_all behavior
         if not include and exclude:
             match_all = True
 
-        regex = '^' + ''.join(exclude) + '.*$' if match_all else '^' + ''.join(include + exclude) + '.*$'
+        if match_all:
+            regex = '^' + ''.join(exclude) + '.*$'
+        elif include:
+            regex = '^' + ''.join(exclude) + '.*(' + '|'.join(include) + ').*$'
+        else:
+            regex = '^' + ''.join(exclude) + '.*$'
         return re.compile(regex), has_exclude
 
-    def build_rule_sets(self, rule_dict):
+    def build_rule_sets(self, rules):
         exclude_patterns = []
         include_project = []
         empty_branch = True
-        rules = []
+        rule = []
         exclude_flag = True
         try:
-            total_rule = len(rule_dict)
-            for proj, branch in rule_dict.items():
+            total_rule = len(rules)
+            for proj, branch in rules.items():
                 rule_dict = {
                     "project":"",
                     "branch":"",
@@ -270,16 +278,19 @@ class Checkmarx:
 
                 if total_rule ==1:
                     rule_dict["project"], _ = self.build_combined_regex(proj)
-                    rules.append(rule_dict)
-                if not is_exclude:
+                    rule.append(rule_dict)
+                    if not is_exclude:
+                        include_project.append(proj)
+                        
+                elif not is_exclude:
                     include_project.append(proj)
                     rule_dict["project"], _ = self.build_combined_regex(proj)
-                    rules.append(rule_dict)
+                    rule.append(rule_dict)
 
             include_project =  self.build_simple_or_regex(include_project)
             exclude_patterns, _ = self.build_combined_regex(exclude_patterns)
 
-            return empty_branch, exclude_patterns, rules, include_project
+            return empty_branch, exclude_patterns, rule, include_project
         except Exception as e:
             raise ValueError(f"Invalid format CX_PROJECT: {e}")
 
