@@ -232,7 +232,7 @@ class Checkmarx:
         print("-" * 30, "Collecting Data from these Projects", "-" * 30)
         for proj in message:
             print(f"Project: {proj}")
-        return project_data
+        return project_data, pattern
 
     def _fetch_last_scan_id(self, project_id, project_name):
         log.info(
@@ -446,7 +446,11 @@ class Checkmarx:
 
         message_lock = threading.Lock()
         message = []
-        projects = self._fetch_checkmarx_projects()
+        projects, pattern = self._fetch_checkmarx_projects()
+        if not projects:
+            print(f"No project found with give env variable CX_PROJECT : {pattern}")
+            sys.exit(1)
+
         print("-" * 90)
 
         def process_project(project):
