@@ -26,16 +26,17 @@ Running LLM scan & Sending data to AccuKnox SaaS
 ```bash
 docker run --rm \
     -e endpoint_url=$your_model_endpoint \
-    -e secret_token=$your_secret_token  \
+    -e secret_token=$your_secret_token \
     -e request_template=your_api_payload \
     -e name=$app_name \
     -e model_id=$your_model_id \
-    -e model_type=$model_type \    
-    -e collector_name=$name_of_collector \     
-    -e stand_alone=True 
+    -e model_type=$model_type \
+    -e collector_name=$name_of_collector \
+    -e custom_prompts_file="" \
+    -e stand_alone=True \
     -e internal_tenant_id=$tenant_id \
-    -e CSPM_BASE_URL=https://cspm.demo.accuknox.com \ 
-    -e label=$label \  
-    -e ARTIFACT_TOKEN=$token \        
+    -e CSPM_BASE_URL=https://cspm.demo.accuknox.com \
+    -e label=$label \
+    -e ARTIFACT_TOKEN=$token \
     accuknox/llm_scan:v1
 ```
