@@ -13,12 +13,12 @@
 | `name`                 | Name of the model.                                                           | `my-llm-model`                                        |
 | `collector_name`       | Name of the collector.                                                       | `llm-scan-collector`                                  |
 | `model_id`             | Unique identifier for the model.                                             | `meta-llama/Llama-3.2-1B`                             |
-| `label`                | Label name defined in Accuknox SaaS.                                         | `llm-red-teaming`                                     |
-| `CSPM_BASE_URL`        | Accuknox Base URL.                                              | `https://cspm.demo.accuknox.com`                     |
-| `internal_tenant_id`   | Tenant ID from your Accuknox SaaS account.                                   | `123`                                                 |
 | `model_type`           | Type of the model. Use `custom` for on-prem or `openai` for OpenAI models.   | `custom`                                              |
 | `custom_prompts_file`  | (Optional) Path to a custom prompt JSON file. Leave empty if not used.       | `/path/to/custom_prompts.json` or `""`                |
 | `stand_alone` | Boolean flag for on-prem deployments. Set to `True` for on-prem.             | `True`                                                |
+| `label`                | Label name defined in Accuknox SaaS.                                         | `llmscan`                                     |
+| `CSPM_BASE_URL`        | Accuknox Base URL.                                              | `https://cspm.demo.accuknox.com`                     |
+| `internal_tenant_id`   | Tenant ID from your Accuknox SaaS account.                                   | `123`                                                 |
 | `ARTIFACT_TOKEN`       | Artifact token from Accuknox SaaS.                                           | `abc123xyz456token`                                   |
 
 ## Command for executing LLM Scan:
