@@ -335,6 +335,8 @@ class Checkmarx:
             endpoint += f"&name-regex={name_regex}"
 
         data = await self._fetch_data(endpoint, flag=False)
+        if isinstance(data, dict) and not data.get("projects"):
+            return all_projects
         total_count = data.get("totalCount")
         if total_count is not None:
             all_projects.extend(data.get("projects", []))
@@ -409,10 +411,10 @@ class Checkmarx:
 
                 # Compare timestamps and decide which scan ID to use
                 if dt_completed and (not dt_partial or dt_completed > dt_partial):
-                    log.info("['{project_name}']  Scan ID from completed scan. ")
+                    log.info(f"['{project_name}']  Scan ID from completed scan. ")
                     scan_id = scan_completed[key]["id"]
                 elif dt_partial:
-                    log.info("['{project_name}']  Scan ID from partial scan. ")
+                    log.info("f['{project_name}']  Scan ID from partial scan. ")
                     scan_id = scan_partial[key]["id"]
                 else:
                     continue
@@ -559,6 +561,10 @@ class Checkmarx:
         for proj, branch in log_info.items():
             print(f"Project: {proj} -> Branch: {branch}")
 
+        if not project_result:
+            print("No project found")
+            sys.exit(1)
+            
         return project_result
 
     def run(self):
