@@ -562,7 +562,7 @@ class Checkmarx:
             print(f"Project: {proj} -> Branch: {branch}")
 
         if not project_result:
-            print("No project found")
+            print(f"No project found with give env variable {self.env["CX_PROJECT"]}")
             sys.exit(1)
             
         return project_result
