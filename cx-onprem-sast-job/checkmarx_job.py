@@ -448,7 +448,8 @@ class Checkmarx:
         message = []
         projects, pattern = self._fetch_checkmarx_projects()
         if not projects:
-            print(f"No project found with give env variable {pattern}")
+            print(f"No project found with give env variable CX_PROJECT : {pattern}")
+            sys.exit(1)
 
         print("-" * 90)
 
