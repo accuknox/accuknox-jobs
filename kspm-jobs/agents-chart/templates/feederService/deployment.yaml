@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "feederService.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "feederService.name" . }}
+spec:
+  replicas: {{ .Values.feederService.replicaCount | default 0 }}
+  selector:
+    matchLabels:
+      app: {{ include "feederService.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "feederService.name" . }}
+    spec:
+      serviceAccountName: {{ include "kmux.name" . }}
+      containers:
+      - name: {{ include "feederService.name" . }}
+        image: "{{ include "feeder.image" . }}"
+        imagePullPolicy: Always
+        resources:
+        {{- if .Values.feederService.resources }}
+          {{- toYaml .Values.feederService.resources | nindent 10 }}
+        {{- else }}
+          limits:
+            cpu: 200m
+            memory: 500Mi
+          requests:
+            cpu: 50m
+            memory: 50Mi
+        {{- end }}
+        env:
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: KMUX_ENABLED
+          value: "true"
+        - name: IGNORE_SUMMARY_EVENTS
+          value: "Network:AF_UNIX,AF_NETLINK"
+        - name: SPIRE_AGENT_URL
+          value: "{{ include "agentsOperator.name" . }}.{{ .Release.Namespace }}.svc.cluster.local:9091"
+        - name: DEPLOY_MODE
+          value: "k8s" 
+        {{- if .Values.feederService.metrics.enabled }}
+        - name: METRICS_ENABLED
+          value: "true"
+        - name: METRICS_PORT
+          value: "2131"
+        {{- end }}
+        {{- include "discoveryEngine.details" . | nindent 8 }}     
+        {{- include "spire.details" . | nindent 8 }}      
+        {{- include "splunk.details" . | nindent 8 }}
+        {{- include "azureSentinel.details" . | nindent 8 }}    
+        {{- include "kubearmor.details" . | nindent 8 }}  
+        {{- include "onboarding.details" . | nindent 8 }}
+        {{- include "cilium.details" . | nindent 8 }}
+        ports:
+        - name: metrics
+          containerPort: 2131
+          protocol: TCP
+        volumeMounts:  
+        {{- with .Values.feederService.volumeMounts -}}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}  
+        {{- if .Values.feederService.liveness }}
+        livenessProbe:
+          exec:
+            command:
+            - curl
+            - -Iv
+            - "{{ include "agents.spireHost" . }}:{{ .Values.agentsOperator.ports.health | default 9090 }}/live"
+          initialDelaySeconds: 60
+          failureThreshold: 1
+          periodSeconds: 20
+          successThreshold: 1
+          timeoutSeconds: 15   
+        {{- end}}
+      {{- if .Values.registry.secretName }}
+      imagePullSecrets:
+      - name: {{ .Values.registry.secretName | quote }}
+      {{- end }}
+      volumes:    
+      {{- with .Values.feederService.volumeMounts -}}
+      {{- toYaml . | nindent 8 }}
+      {{- end }}         

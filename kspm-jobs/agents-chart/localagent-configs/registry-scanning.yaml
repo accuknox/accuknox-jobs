@@ -1,0 +1,248 @@
+
+
+namespaceOverride: ""
+namespace: ""
+
+operatorRole: registry-operator-role
+operatorRoleBinding: registry-operator-role-binding
+configPath: /var/lib/operator/config.yaml
+registryScanId: ""
+scheduledDate: ""
+
+serviceAccount:
+  create: true
+  name: registry-scanning-sa
+#  name: registry-scanning-sa
+
+
+hash: ""
+registry:
+  id: ""
+  name: ""
+
+cronjob:
+  schedule: ""
+  concurrencyPolicy: Forbid
+
+environment: local
+
+image:
+  repository: public.ecr.aws/k9v9d5v2/registry-operator
+  pullPolicy: Always
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "v0.3.0"
+  name: "operator"
+  secretName: {{ .Values.registry.secretName }}
+
+imagePullSecrets:
+  - name: imagepull
+
+job:
+  #name: "analyzer"
+  kueue:
+    enabled: false
+    queueName: "registry-scan-jobs-queue"
+  ttlSecondsAfterFinished: 600
+
+# dynamic
+component: "operator"
+
+#dynamic, needs to be set while going helm install for cron job
+secrets:
+  registry: "registry-secret"
+
+spire: 
+  isk8s: true
+  isEnabled: true
+  agent: agents-operator.agents.svc.cluster.local:9091
+
+rabbitmq:
+  username: ""
+  password: ""
+
+operator:
+  kueue:
+    enabled: false
+  knoxGwConfigPath: /var/lib/knox-gw/kmux/sink/config.yaml
+  knoxGwRoutingKeys:
+    - registry-scanning
+  registryScanKnoxGwRoutingKey: registry-scanning
+  # Spire config which will be used only for local-registry scanning
+  spire: 
+    isk8s: true
+    isEnabled: true
+    agent: agents-operator.agents.svc.cluster.local:9091
+  helm:
+    chart:
+      name: oci://public.ecr.aws/k9v9d5v2/registry-scan
+      version: "v0.3.0"
+  resources:
+    limits:
+      memory: 1000Mi
+      cpu: 1000m
+    requests:
+      memory: 100Mi
+      cpu: 100m
+  restartPolicy: Never
+  backoffLimit: 20
+  parallelism: 1
+
+analyzer:
+  enabled: true
+  environment: local
+  image:
+    repository: public.ecr.aws/k9v9d5v2/registry-analyzer
+    pullPolicy: Always
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "v0.3.0"
+    name: "analyzer"
+  resources:
+    requests:
+      memory: 100Mi
+      cpu: 100m
+  restartPolicy: Never
+  backoffLimit: 20
+  debug: true
+  parallelism: 1
+  workers: 100
+  analysisThreshold: 100000
+  analysisRoutingKey: ""
+  registryScanKnoxGwRoutingKey: registry-scanning
+  registryScanId: ""
+  dockerSockPath: {{ .Values.localRegistryAgent.dockerSockPath | default "/var/run/docker.sock" }}
+  registryConfigPath: "/var/lib/registry/config.yaml"
+  knoxGwConfigPath: /var/lib/knox-gw/kmux/sink/config.yaml
+  knoxGwRoutingKeys:
+    - registry-scanning
+  scheduledDate: 25-06-2024
+
+  # Spire config which will be used only for local-registry scanning
+  spire:
+    isk8s: true
+    isEnabled: true
+    agent: agents-operator.agents.svc.cluster.local:9091
+
+  kmux:
+    stream: rabbitmq
+    sink:
+      - routingKey: ""
+        mountPath: "/var/lib/analysis/kmux/sink/"
+        configMapName: "kmux-sink-analysis"
+        app: "analyzer"
+        volumeName: "analysis-volume"
+
+scanner:
+  enabled: true
+  image:
+    repository: public.ecr.aws/k9v9d5v2/registry-scanner
+    pullPolicy: Always
+    # Overrides the image tag whose default is the chart appVersion.
+    tag: "v0.3.0"
+    name: "scanner"
+  resources:
+    requests:
+      memory: 100Mi
+      cpu: 100m
+  restartPolicy: Never
+  backoffLimit: 20
+  registryConfigPath: "/var/lib/registry/config.yaml"
+  analyzerEndpoint: ""
+  analysisBindingKey: ""
+  parallelism: 1
+  registryScanId: ""
+  metadata:
+    tenantId: ""
+  memoryThreshold: 4194304 #4GB
+  dockerSockPath: {{ .Values.localRegistryAgent.dockerSockPath | default "/var/run/docker.sock" }}
+  registryScanKnoxGwRoutingKey: registry-scanning
+  knoxGwConfigPath: /var/lib/knox-gw/kmux/sink/config.yaml
+  knoxGwRoutingKeys:
+    - registry-scanning
+  scheduledDate: 25-06-2024
+
+# Spire config which will be used only for local-registry scanning
+  spire:
+    isk8s: true
+    isEnabled: true
+    agent: agents-operator.agents.svc.cluster.local:9091
+
+  HTTPConfig:
+    certificate:
+      insecureTLS: true
+      customCAPath: ""
+
+  artifactAPI:
+    domain: "https://{{- include "cspm-host" . | trim}}/api/v1/artifact/?tenant_id="
+    endpoint: "\"&data_type=TR&save_to_s3=true\""
+    labelPrefix: ""
+    token:
+      endpoint: "https://{{- include "cspm-host" . | trim}}/api/v1/token"
+      requestName: "vs-token"
+      key: "token"
+      emailKey: "TOKEN_EMAIL"
+      passwordKey: "TOKEN_PASSWORD"
+
+  trivy:
+    dbRepository: ghcr.io/aquasecurity/trivy-db:2,public.ecr.aws/aquasecurity/trivy-db:2
+    redis:
+      enabled: false
+      server: "redis://redis-service.redis.svc.cluster.local:6379"
+      TTL: 1296000s
+    timeout: 10m
+
+  kmux:
+    stream: rabbitmq
+    source:
+      - configMapName: "kmux-source-analysis"
+        volumeName: "analysis-volume"
+        bindingKey: ""
+        queue: ""
+        mountPath: "/var/lib/analysis/kmux/source/"
+
+
+kmux:
+  analysisSink:
+    sink:
+      stream: rabbitmq
+    rabbitmq:
+      server: "rabbitmq.agents.svc.cluster.local:5672"
+      username: ""
+      password: ""
+      exchange:
+        name: "" # exchange name
+        type: "direct" # exchange type
+        durable: true
+        auto-delete: true
+      queue:
+        name: ""# exchange name
+        type: "direct" # exchange type
+        durable: true
+        auto-delete: true
+      debug: false
+
+  analysisSource:
+    source:
+      stream: rabbitmq
+      
+    rabbitmq:
+      server: "rabbitmq.agents.svc.cluster.local:5672"
+      username: ""
+      password: ""
+      exchange:
+        name: "" # exchange name
+        type: "direct" # exchange type
+        durable: true
+        auto-delete: true
+      queue:
+        name: ""# exchange name
+        type: "direct" # exchange type
+        durable: true
+        auto-delete: true
+      debug: false
+
+  knoxGatewaySink:
+    sink:
+      stream: knox-gateway
+
+    knoxGateway:
+      server: {{ include "agents.knoxGatewayHost" . }}

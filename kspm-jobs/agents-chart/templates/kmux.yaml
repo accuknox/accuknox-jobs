@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: {{ include "kmux.name" . }} 
+  namespace: {{ .Release.Namespace }}
+data:
+  config.yaml: |-
+    kmux:
+      sink:
+        stream: knox-gateway
+      source:
+        stream: rabbitmq
+      security: spire
+        
+    knox-gateway:
+      server: {{ include "agents.knoxGatewayHost" . }}
+    
+    spire: 
+      spiffeID:
+        format: "spiffe://<domainName>/<WSID>/<ClusterID>/<componentName>"
+
+
+    rabbitmq:
+      server: "discovery-engine.{{ .Release.Namespace }}.svc.cluster.local:5672"
+      exchange:
+        name: "dev2" 
+        type: "direct"
+        durable: true
+        auto-delete: true
+      queue:
+        name: ""
+        durable: true
+        auto-delete: true
+      consumer-tag: "kmux"
+      debug: false   

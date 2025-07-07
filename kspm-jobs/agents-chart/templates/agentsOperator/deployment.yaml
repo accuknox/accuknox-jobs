@@ -1,0 +1,88 @@
+{{- if (eq (include "condition-feeder" .) "false") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "agentsOperator.name" . }}
+  labels:
+    app: {{ include "agentsOperator.name" . }}
+spec:
+  replicas: {{ .Values.agentsOperator.replicaCount | default 1 }}
+  strategy:
+    type: {{ .Values.agentsOperator.strategy.type | default "RollingUpdate" }}
+  selector:
+    matchLabels:
+      app: {{ include "agentsOperator.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "agentsOperator.name" . }}
+      annotations:
+        checksum/secret: {{ include (print $.Template.BasePath "/agentsOperator/secret.yaml") . | sha256sum }}
+    spec:
+      serviceAccountName: {{ include "agentsOperator.name" . }}
+      containers:
+      - image: "{{ include "agentsOperator.image" . }}"
+        imagePullPolicy: Always
+        name: {{ include "agentsOperator.name" . }}   
+        env:
+        - name: join_token
+          valueFrom:
+            secretKeyRef:
+              name: token-secret
+              key: join_token
+        - name: access_token
+          valueFrom:
+            secretKeyRef:
+              name: token-secret
+              key: access_token
+        - name: spire_address
+          value: "{{ include "agents.spireHost" . }}"
+        - name: spire_port  
+          value: "{{ .Values.agentsOperator.ports.spire }}"
+        - name: spire_enable
+          value: {{ .Values.spireEnable | default "true" | quote }}
+        {{- include "spire.details" . | nindent 8 }}
+        {{- include "onboarding.details" . | nindent 8 }}
+        resources:
+        {{- if .Values.agentsOperator.resources }}
+          {{- toYaml .Values.agentsOperator.resources | nindent 10 }}
+        {{- else }}
+          limits: 
+            cpu: 100m
+            memory: 250Mi
+          requests:
+            cpu: 50m
+            memory: 50Mi
+        {{- end }}
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 9090
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 1
+        volumeMounts:
+        - mountPath: /conf
+          name: {{ include "agentsOperator.name" . }}
+          readOnly: true
+        - mountPath: /run/spire/agent
+          name: spire-agent
+        {{- with .Values.agentsOperator.volumeMounts -}}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      {{- if .Values.registry.secretName }}
+      imagePullSecrets:
+      - name: {{ .Values.registry.secretName | quote }}
+      {{- end }}
+      volumes:
+      - configMap:
+          name: {{ include "agentsOperator.name" . }}
+        name: {{ include "agentsOperator.name" . }}
+      - emptyDir: {}
+        name: spire-agent  
+      {{- with .Values.agentsOperator.volumes -}}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}  
+{{- end }}

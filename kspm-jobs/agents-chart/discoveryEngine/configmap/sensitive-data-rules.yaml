@@ -1,0 +1,1155 @@
+# Regex and locations need to be validated
+
+# Name must be unique
+- name: finance-pan-card
+  description: PAN Card Number
+  regex: >-
+    [A-Z]{5}[0-9]{4}[A-Z]{1}
+  locations: # Allowed values: RequestBody, ResponseBody, RequestHeaders, ResponseHeaders
+    - RequestBody
+    - ResponseBody
+  severity: CRITICAL
+  tags:
+    - FINANCE
+
+- name: pii-us-ssn
+  description: US Social Security Number
+  regex: >-
+    \b\d{3}[- ]\d{2}[- ]\d{4}\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: CRITICAL
+  tags:
+    - PII
+
+- name: pii-iban
+  description: IBAN
+  regex: >-
+    \b[A-Z]{2}[- ]?[0-9]{2}([- ]?[A-Z0-9]){9,30}\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: Medium
+  tags:
+    - PII
+
+- name: pii-us-credit-card
+  description: Credit card number
+  regex: >-
+    \b(?:4[0-9]{12}(?:[0-9]{3})?|[25][1-7][0-9]{14}|6(?:011|5[0-9][0-9])[0-9]{12}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11})\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: CRITICAL
+  tags:
+    - PII
+    - FINANCE
+
+- name: pii-us-telephone-number
+  description: US Telephone number
+  regex: >-
+    ^(?:\+?1[- ]?)?(?:\(?\d{3}\)?[- ]?)?\d{3}[- ]?\d{4}$|^(?:\+?\d{1,3}[- ]?)?(?:\d{2,3}\)?[- ]?)?\d{2,4}[- ]?\d{2,4}[- ]?\d{2,4}$
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - PII
+
+- name: private-ip
+  description: Private IP address in headers
+  regex: >-
+    (^192\.168\.([0-9]|[0-9][0-9]|[0-2][0-5][0-5])\.([0-9]|[0-9][0-9]|[0-2][0-5][0-5])$)|(^172\.([1][6-9]|[2][0-9]|[3][0-1])\.([0-9]|[0-9][0-9]|[0-2][0-5][0-5])\.([0-9]|[0-9][0-9]|[0-2][0-5][0-5])$)|(^10\.([0-9]|[0-9][0-9]|[0-2][0-5][0-5])\.([0-9]|[0-9][0-9]|[0-2][0-5][0-5])\.([0-9]|[0-9][0-9]|[0-2][0-5][0-5])$)
+  locations:
+    - RequestHeaders
+    - ResponseHeaders
+  severity: Medium
+
+- name: password keyword in flow data
+  description: password keyword in flow data
+  regex: >-
+    (?i)password
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: Medium
+
+- name: information about backend
+  description: HTTP Headers contains information about backend
+  regex: >-
+    (?i)x-powered-by
+  locations:
+    - RequestHeaders
+    - ResponseHeaders
+  severity: Medium
+
+- name: information about running server
+  description: HTTP Headers contains information about running server
+  regex: >-
+    (?i)server
+  locations:
+    - RequestHeaders
+    - ResponseHeaders
+  severity: Medium
+
+- name: username keyword in flow data
+  description: username keyword in flow data
+  regex: >-
+    (?i)username
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: Medium
+
+- name: API Key keyword in Request Headers
+  description: API Key keyword in Request Headers
+  regex: >-
+    (?i)api-?key
+  locations:
+    - RequestHeaders
+  severity: HIGH
+
+- name: token
+  regex: >-
+    .*token.*
+  locations:
+    - RequestBody
+    - ResponseBody
+  severity: CRITICAL
+  tags:
+    - AUTHENTICATION
+    - TOKEN
+
+- name: secret
+  regex: >-
+    (?i)\bsecrets\b
+  locations:
+    - RequestBody
+    - ResponseBody
+  severity: CRITICAL
+  tags:
+    - TOKEN
+
+- name: database
+  regex: >-
+    (?i)\\bdatabase\\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - DATABASE
+    - CREDENTIALS
+
+- name: birth
+  regex: >-
+    .*(?i)birth.*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - PII
+
+- name: date-of-birth
+  regex: >-
+    .*(?i)dob.*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - PII
+
+- name: auth
+  regex: >-
+    .*(?i)auth.*
+  locations:
+    - RequestBody
+    - ResponseBody
+  severity: CRITICAL
+  tags:
+    - AUTHENTICATION
+    - TOKEN
+
+- name: contact
+  regex: >-
+    .*(?i)contact.*
+  locations:
+    - RequestBody
+    - ResponseBody
+  severity: HIGH
+  tags:
+    - PII
+
+- name: address
+  regex: >-
+    .*\b(?i)address\b.*
+  locations:
+    - RequestBody
+    - ResponseBody
+  severity: MEDIUM
+  tags:
+    - PII
+
+- name: us-address
+  regex: >-
+    ^\d+\s+[A-Za-z0-9\s]+(?:\s+(?:Avenue|Ave|Street|St|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Court|Ct|Place|Pl|Way|Trail|Trl|Terrace|Ter|Circle|Cir))\b(?:\s+\#?\d+)?$
+  locations:
+    - RequestBody
+    - ResponseBody
+  severity: MEDIUM
+  tags:
+    - PII
+
+- name: uk-address
+  regex: >-
+    ^\d+\s[\w\s]+,\s[\w\s]+,\s(?:[A-Z]{1,2}\d[A-Z\d]? \d[A-Z]{2})$
+  locations:
+    - RequestBody
+    - ResponseBody
+  severity: MEDIUM
+  tags:
+    - PII
+
+- name: street-line
+  regex: >-
+    .*(?i)streetLine.*
+  locations:
+    - RequestBody
+    - ResponseBody
+  severity: MEDIUM
+  tags:
+    - PII
+
+- name: licence
+  regex: >-
+    .*(?i)licence.*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: CRITICAL
+  tags:
+    - PII
+
+- name: passport
+  regex: >-
+    .*(?i)passport.*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: CRITICAL
+  tags:
+    - PII
+
+- name: bank
+  regex: >-
+    .*(?i)bank.*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: CRITICAL
+  tags:
+    - PII
+    - FINANCE
+
+- name: pin
+  regex: >-
+    (?i)\bpin\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: CRITICAL
+  tags:
+    - PII
+    - FINANCIAL
+
+- name: employer-identification-number
+  regex: >-
+    (?i)\bein\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: MEDIUM
+  tags:
+    - PII
+
+- name: invoice
+  regex: >-
+    .*(?i)invoice.*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - FINANCIAL
+
+- name: session-name
+  regex: >-
+    .*(?i)sessionid.*
+  locations:
+    - RequestBody
+    - ResponseBody
+  severity: HIGH
+  tags:
+    - SESSION CREDENTIALS
+
+- name: encrypt
+  regex: >-
+    .*(?i)encrypt.*
+  locations:
+    - RequestBody
+    - ResponseBody
+  severity: LOW
+  tags:
+    - SECURITY
+
+- name: aws-access-key-name
+  regex: >-
+    \\b((AKIA|ABIA|ACCA)[0-9A-Z]{16})\\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+    - AWS
+
+- name: gcp-api-key
+  regex: >-
+    AIza[0-9A-Za-z\\-_]{35}
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+    - GCP
+
+- name: mailchimp-api-key
+  regex: >-
+    [0-9a-f]{32}-us[0-9]{1,2}
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: MEDIUM
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: npm-access
+  regex: >-
+    npm_[0-9a-zA-Z]{36}
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: mongodb-connection-string
+  regex: >-
+    \\b(mongodb(\\+srv)?:\/\/[\\S]{3,50}:([\\S]{3,88})@[-.%\\w\/:]+)\\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - MONGODB
+    - DATABASE
+    - URL
+
+- name: ngrok api
+  regex: >-
+    \b2[a-zA-Z0-9]{26}_\d[a-zA-Z0-9]{20}\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: okta domain
+  regex: >-
+    .*[a-z0-9-]{1,40}\.okta(?:preview|-emea){0,1}\.com.*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - OKTA
+    - URL
+
+- name: github access
+  regex: >-
+    \b((?:ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9_]{36,255})\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: gitlab access
+  regex: >-
+    \b(glpat-[a-zA-Z0-9\-=_]{20,22})\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: anthropic api
+  regex: >-
+    \b(sk-ant-api03-[\w\-]{93}AA)\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: auth0 domain
+  regex: >-
+    .*[a-zA-Z0-9\-]{2,16}\.[a-zA-Z0-9_-]{2,3}\.auth0\.com.*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - AUTHENTICATION
+    - URL
+    - AUTH0
+
+- name: azure batch url
+  regex: >-
+    https://(.{1,50})\.(.{1,50})\.batch\.azure\.com
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - AZURE
+    - URL
+    - RESOURCE
+
+- name: azure container registry url
+  regex: >-
+    ([a-zA-Z0-9-]{1,100})\.azurecr\.io
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - AZURE
+    - URL
+    - RESOURCE
+- name: azure function key url
+  regex: >-
+    \bhttps://([a-zA-Z0-9-]{2,30})\.azurewebsites\.net/(api/)?([a-zA-Z0-9-]{2,30})/([a-zA-Z0-9-]{2,30})\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - AZURE
+    - URL
+    - RESOURCE
+
+- name: azure search query key url
+  regex: >-
+    .*https://([0-9a-z]{5,40})\.search\.windows\.net/indexes/([0-9a-z]{5,40}).*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: MEDIUM
+  tags:
+    - AZURE
+    - URL
+    - RESOURCE
+
+- name: databricks domain
+  regex: >-
+    .*([a-z0-9-]+(?:\.[a-z0-9-]+)*\.(cloud\.databricks\.com|gcp\.databricks\.com|azuredatabricks\.net)).*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - URL
+    - RESOURCE
+
+- name: digital ocean v2 secret key
+  regex: >-
+    \b((?:dop|doo|dor)_v1_[a-f0-9]{64})\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: discord bot token
+  regex: >-
+    \b([A-Za-z0-9_-]{24}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27})\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: discord webhook url
+  regex: >-
+    https://discord\.com/api/webhooks/[0-9]{18}/[0-9a-zA-Z-]{68}
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - URL
+    - RESOURCE
+
+- name: dockerhub access token
+  regex: >-
+    \bdckr_pat_[a-zA-Z0-9_-]{27}\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - DOCKER
+    - API KEY
+    - TOKEN
+
+- name: dropbox access token
+  regex: >-
+    (sl\.[A-Za-z0-9\-_]{130,140})
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: MEDIUM
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: figma
+  regex: >-
+    \b(fig[d|((u|o)(r|h)?)]_[a-z0-9A-Z_-]{40})\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: grafana
+  regex: >-
+    \b(glc_[A-Za-z0-9+/]{50,150}\={0,2})
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: huggingface
+  regex: >-
+    \b(?:hf_|api_org_)[a-zA-Z0-9]{34}\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: ms teams webhook url
+  regex: >-
+    (https://[a-zA-Z-0-9]+\.office\.com/webhook/[a-zA-Z-0-9]{8}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{12}\@[a-zA-Z-0-9]{8}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{12}/IncomingWebhook/[a-zA-Z-0-9]{32}/[a-zA-Z-0-9]{8}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{12})
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - MICROSOFT
+    - URL
+    - RESOURCE
+
+- name: notion api token
+  regex: >-
+    \b(secret_[A-Za-z0-9]{43})\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: openai token
+  regex: >-
+    \b(sk-[A-Za-z0-9]{20}T3BlbkFJ[A-Za-z0-9]{20})\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - OPENAI
+    - API KEY
+    - TOKEN
+
+- name: aws s3 bucket url
+  regex: >-
+    ^https://s3\.[a-z0-9\-]+\.amazonaws\.com/[a-z0-9\-\.]+/?$
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - AWS
+    - URL
+    - RESOURCE
+
+- name: aws arn connect instance
+  regex: >-
+    ^arn:aws:connect:\w+(?:-\w+)+:\d{12}:instance/[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+$
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - AWS
+    - URL
+    - RESOURCE
+
+- name: aws sqs url
+  regex: >-
+    ^https://sqs\.[a-z0-9\-]+\.amazonaws\.com/[0-9]{12}/[a-zA-Z0-9_\-]+/?$
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - AWS
+    - URL
+    - RESOURCE
+
+- name: aws rds url
+  regex: >-
+    ^.*\.rds\.amazonaws\.com/[a-zA-Z0-9\-]+$
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - AWS
+    - URL
+    - RESOURCE
+
+- name: aws docdb url
+  regex: >-
+    ^.*\.docdb\.amazonaws\.com/[a-zA-Z0-9\-]+$
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - AWS
+    - URL
+    - RESOURCE
+
+- name: aws dynamodb url
+  regex: >-
+    ^https://dynamodb\.[a-z0-9\-]+\.amazonaws\.com/?[a-zA-Z0-9\-]+/?$
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - AWS
+    - URL
+    - RESOURCE
+
+- name: postgres connection string
+  regex: >-
+    \b(?i)postgres(?:ql)?://\S+\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - DATABASE
+    - URL
+    - RESOURCE
+
+- name: postman key
+  regex: >-
+    \b(PMAK-[a-zA-Z-0-9]{59})\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - POSTMAN
+    - TOKEN
+
+- name: razorpay key
+  regex: >-
+    (?i)\brzp_live_[A-Za-z0-9]{14}\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - RAZORPAY
+    - API KEY
+    - TOKEN
+
+- name: redis uri secret
+  regex: >-
+    .*redi[s]{1,2}://[\S]{3,50}:([\S]{3,50})@[-.%\w/:]+.*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - TOKEN
+    - REDIS
+    - SECRET
+
+- name: azure redis cache instance
+  regex: >-
+    \b([\w\d.-]{1,100}\.redis\.cache\.windows\.net:6380),password=([^,]{44}),ssl=True,abortConnect=False\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - AZURE
+    - URL
+    - RESOURCE
+
+- name: salesforce domain
+  regex: >-
+    \bhttps://[0-9a-zA-Z-\.]{1,100}\.my\.salesforce\.com\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: MEDIUM
+  tags:
+    - SALESFORCE
+    - URL
+    - RESOURCE
+
+- name: shutterstock api access token
+  regex: >-
+    \b(v2/[0-9A-Za-z]{388})\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: MEDIUM
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: slack bot token
+  regex: >-
+    xoxb\-[0-9]{10,13}\-[0-9]{10,13}[a-zA-Z0-9\-]*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: MEDIUM
+  tags:
+    - TOKEN
+    - API KEY
+
+- name: slack user token
+  regex: >-
+    xoxp\-[0-9]{10,13}\-[0-9]{10,13}[a-zA-Z0-9\-]*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: MEDIUM
+  tags:
+    - TOKEN
+    - API KEY
+
+- name: slack workspace access token
+  regex: >-
+    xoxa\-[0-9]{10,13}\-[0-9]{10,13}[a-zA-Z0-9\-]*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: MEDIUM
+  tags:
+    - TOKEN
+    - API KEY
+
+- name: slack workspace refresh token
+  regex: >-
+    xoxr\-[0-9]{10,13}\-[0-9]{10,13}[a-zA-Z0-9\-]*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: MEDIUM
+  tags:
+    - TOKEN
+    - API KEY
+
+- name: slack webhook url
+  regex: >-
+    (https://hooks\.slack\.com/services/T[A-Z0-9]+/B[A-Z0-9]+/[A-Za-z0-9]{23,25})
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: MEDIUM
+  tags:
+    - RESOURCE
+    - URL
+
+- name: square access token
+  regex: >-
+    (EAAA[a-zA-Z0-9\-\+\=]{60})
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: hashicorp access token
+  regex: >-
+    \b([A-Za-z0-9]{14}.atlasv1.[A-Za-z0-9]{67})\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: twilio account sid
+  regex: >-
+    \bAC[0-9a-f]{32}\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - SESSION CREDENTIALS
+
+- name: stripe token
+  regex: >-
+    [rs]k_live_[a-zA-Z0-9]{20,247}
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: alibaba token
+  regex: >-
+    \b(LTAI[a-zA-Z0-9]{17,21})[\'';\s]*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: zapier webhook url
+  regex: >-
+    .*https://hooks\.zapier\.com/hooks/catch/[A-Za-z0-9/]{16}.*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - URL
+    - RESOURCE
+
+- name: shopify shared secret
+  regex: >-
+    shpss_[a-fA-F0-9]{32}
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: openvpn domain
+  regex: >-
+    \b(https?://[A-Za-z0-9-]+\.api\.openvpn\.com)\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: MEDIUM
+  tags:
+    - URL
+    - RESOURCE
+
+- name: rabbitmq uri
+  regex: >-
+    \b(?:amqp:)?//[\S]{3,50}:([\S]{3,50})@[-.%\w/:]+\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - TOKEN
+    - API KEY
+
+- name: square oauth secret
+  regex: >-
+    q0csp-[ 0-9A-Za-z-_]{43}
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - AUTHENTICATION
+    - API KEY
+    - TOKEN
+
+- name: amazon advertising services url
+  regex: >-
+    .*(https?://)(www\.)?advertising-api\.amazon\.com/?.*
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - AWS
+    - URL
+    - RESOURCE
+
+- name: google firebase domain
+  regex: >-
+    ([a-z0-9-]){1,30}(.firebaseapp.com)
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - URL
+    - GOOGLE
+    - RESOURCE
+
+- name: google firebase database url
+  regex: >-
+    (http|https)://([a-z0-9-]){1,30}(\.firebaseio\.com)|(http|https)://([a-z0-9-]){1,30}(\.firebaseio\.com)|([a-z0-9-]){1,30}-(default-rtdb).((asia|europe|us|australia)|((north|south)(america|africa)))-((east|west|central|north|south)|((north|south)(east)))[0-9]{1,2}(\.firebasedatabase\.app)
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - URL
+    - RESOURCE
+    - GOOGLE
+
+- name: facebook access token
+  regex: >-
+    EAACEdEose0cBA[0-9A-Za-z]+
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - API KEY
+    - TOKEN
+
+- name: ms sql server connection string
+  regex: >-
+    (?i)Server\s*=\s*[^;]+;Database\s*=\s*[^;]+;(?:User\s*Id\s*=\s*[^;]+;Password\s*=\s*[^;]+;|Integrated\s*Security\s*=\s*True;)
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: HIGH
+  tags:
+    - DATABASE
+    - URL
+    - RESOURCE
+
+- name: heroku
+  regex: >-
+    \b(messingupintentionally[0-9Aa-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b
+  locations:
+    - RequestBody
+    - ResponseBody
+    - RequestHeaders
+    - ResponseHeaders
+  severity: MEDIUM
+  tags:
+    - API KEY
+    - TOKEN

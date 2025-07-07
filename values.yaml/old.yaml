@@ -1,0 +1,3219 @@
+Release "agents" has been upgraded. Happy Helming!
+NAME: agents
+LAST DEPLOYED: Thu Jul  3 11:00:12 2025
+NAMESPACE: agents
+STATUS: pending-upgrade
+REVISION: 2
+TEST SUITE: None
+USER-SUPPLIED VALUES:
+agents:
+  enabled: true
+joinToken: a34a0c60-2cfd-4e0f-8656-ecd96d93bf3c
+knoxGateway: knox-gw.dev.accuknox.com:3000
+ppsHost: pps.dev.accuknox.com
+spireHost: spire.dev.accuknox.com
+
+COMPUTED VALUES:
+accessKey: ""
+admissionController:
+  enabled: false
+agents:
+  enableKnoxGateway: false
+  enablePps: false
+  enableSpire: false
+  enabled: true
+  url: ""
+agentsOperator:
+  image: ""
+  owner: public.ecr.aws/k9v9d5v2
+  ports:
+    health: 9090
+    spire: 8081
+  replicaCount: 1
+  repository: agents-operator
+  resources: {}
+  spireVars:
+    SPIRE_ENABLED: true
+  strategy:
+    type: Recreate
+  tag: v0.4.2
+  volumeMounts: []
+  volumes: []
+clusterName: ""
+cspmHost: ""
+discoveryEngine:
+  discover:
+    appConfig:
+      discover:
+        aggregation:
+          enabled: true
+          threshold: 10
+        consumer:
+          buffer-limit:
+            network: 10000
+            system: 10000
+          time-limit: 10
+          topic: summary-v2
+        k8s:
+          enable: true
+        policy:
+          host: false
+          workload: true
+        policy-client:
+          server: 127.0.0.1:8090
+        processor:
+          cores: 50
+          cron-job-interval: 0h10m00s
+          delay-cron-job: 0h03m00s
+          npu: 1
+          spu: 1
+        ruleConfig:
+          rules: process,network
+        sink:
+          channel-size: 1000
+          topic: policy-v1
+        tls:
+          enabled: false
+      logging:
+        level: info
+    enabled: true
+    image: ""
+    kmuxConfig:
+      kmux:
+        sink:
+          stream: rabbitmq
+        source:
+          stream: rabbitmq
+      rabbitmq:
+        consumer-tag: discover
+        exchange:
+          auto-delete: true
+          durable: true
+          name: dev2
+          type: direct
+        queue:
+          auto-delete: true
+          durable: true
+          name: ""
+        server: 127.0.0.1:5672
+    resources:
+      limits:
+        cpu: 100m
+        memory: 100Mi
+      requests:
+        cpu: 50m
+        memory: 50Mi
+  hardening:
+    appConfig:
+      hardening:
+        cron-job-time-interval: 1h00m00s
+        delay-cron-job: 0h05m00s
+        download-templates: false
+        enabled: true
+        exclude-namespaces:
+          kube-system: true
+          kubearmor: true
+        filter-enabled: true
+        k8s:
+          enable: true
+        recommend-host-policy: true
+        state-agent:
+          port: "32771"
+        template-version: 0.2.6
+        topic: policy-v1
+    enabled: false
+    image: ""
+    kmuxConfig:
+      kmux:
+        sink:
+          stream: rabbitmq
+      rabbitmq:
+        consumer-tag: hardening
+        exchange:
+          auto-delete: true
+          durable: true
+          name: dev2
+          type: direct
+        queue:
+          auto-delete: true
+          durable: true
+          name: ""
+        server: localhost:5672
+    resources:
+      limits:
+        cpu: 100m
+        memory: 100Mi
+      requests:
+        cpu: 50m
+        memory: 50Mi
+  imagebase: public.ecr.aws/k9v9d5v2/discovery-engine
+  offloader:
+    appConfig:
+      database:
+        credentials: local
+        driver: sqlite
+        name:
+          policy-db: /Offloader/policy.db
+          summary-db: /Offloader/summary.db
+      offloader:
+        policy:
+          enabled: true
+          merge_policy: false
+          retention:
+            enabled: true
+            interval: 7
+          topic: policy-v1
+        server:
+          enabled: true
+          host: 0.0.0.0
+          port: 8090
+        summary:
+          enabled: true
+          retention:
+            enabled: true
+            interval: 1
+          topic: summary-v2
+    enabled: false
+    image: ""
+    kmuxConfig:
+      kmux:
+        source:
+          stream: rabbitmq
+      rabbitmq:
+        consumer-tag: offloader
+        exchange:
+          auto-delete: true
+          durable: true
+          name: dev2
+          type: direct
+        queue:
+          auto-delete: true
+          durable: true
+          name: ""
+        server: localhost:5672
+    resources:
+      limits:
+        cpu: 100m
+        memory: 100Mi
+      requests:
+        cpu: 50m
+        memory: 50Mi
+  owner: public.ecr.aws/k9v9d5v2
+  rabbitmq:
+    enabled: true
+    image:
+      repository: rabbitmq
+      tag: 3.12.2-management
+    name: rabbitmq
+    resources:
+      limits:
+        cpu: 200m
+        memory: 200Mi
+      requests:
+        cpu: 100m
+        memory: 100Mi
+  replicaCount: 1
+  repository: discovery-engine
+  summaryEngine:
+    appConfig:
+      summary-engine:
+        k8s:
+          enable: true
+        kubearmor:
+          cron-interval: 0h05m0s
+          enabled: true
+          exclude-events:
+            operation:
+              file: false
+              network: false
+              process: false
+          exclude-namespaces:
+            kubearmor: true
+          file-aggregation: true
+          threshold: 10000
+        sentryflow:
+          cron-interval: 0h0m30s
+          decode-jwt: false
+          enabled: false
+          include-bodies: false
+          redact-sensitive-data: true
+          sensitive-rules-files-path:
+          - /var/lib/sumengine/sensitive-data-rules.yaml
+          threshold: 10000
+        splunk:
+          certificate: ""
+          enabled: false
+          index: ""
+          maxRetries: 3
+          skipTls: false
+          source: ""
+          sourcetype: ""
+          token: ""
+          url: ""
+        topic:
+          summary-event: summary-v2
+      watcher:
+        kubearmor:
+          allowList:
+            enabled: true
+            operations:
+            - CONNECT
+            - ACCEPT
+            - BIND
+            - CREATE
+            protocolFamily:
+            - TCP
+            - AF_INET
+            - AF_INET6
+          denyList:
+            enabled: true
+            ports:
+            - 53
+            urls:
+            - localhost
+            - 127.0.0.1
+            - ::1
+          enabled: true
+          event-type:
+            alerts: true
+            logs: true
+          relay:
+            enabled: false
+            name: relay-1
+            port: ""
+            url: ""
+        sentryflow:
+          enabled: false
+          event-type:
+            access-log: true
+            metric: false
+          service:
+            enabled: false
+            name: sentryflow
+            port: ""
+            url: ""
+    enabled: true
+    image: ""
+    kmuxConfig:
+      kmux:
+        sink:
+          stream: rabbitmq
+      rabbitmq:
+        exchange:
+          auto-delete: true
+          durable: true
+          name: dev2
+          type: direct
+        server: localhost:5672
+    resources:
+      limits:
+        cpu: 100m
+        memory: 200Mi
+      requests:
+        cpu: 50m
+        memory: 50Mi
+  tag: v0.3.6
+feederService:
+  azureSentinelVars:
+    AZURE_SENTINEL_ALERTS_ENABLED: "false"
+    AZURE_SENTINEL_ENABLED: "false"
+    AZURE_SENTINEL_GROUP_NAME: ""
+    AZURE_SENTINEL_GROUP_VALUE: ""
+    AZURE_SENTINEL_LOGS_ENABLED: "false"
+    AZURE_SENTINEL_URL: ""
+  ciliumVars:
+    HUBBLE_ENABLED: "false"
+    HUBBLE_PORT: 80
+    HUBBLE_URL: hubble-relay.kube-system.svc.cluster.local
+  discoveryEngineVars:
+    DISCOVERYENGINE_ENABLED: "true"
+    DISCOVERYENGINE_PORT: "9089"
+    DISCOVERYENGINE_VERSION: "2"
+  image: ""
+  kubearmorVars:
+    KUBEARMOR_ALERTS: false
+    KUBEARMOR_ENABLED: true
+    KUBEARMOR_LOGS: sdf
+    KUBEARMOR_PORT: 32767
+    KUBEARMOR_URL: kubearmor.kube-system.svc.cluster.local
+  liveness: true
+  metrics:
+    enabled: false
+    serviceMonitor:
+      additionalLabels: {}
+      enabled: false
+  owner: public.ecr.aws/k9v9d5v2
+  replicaCount: 1
+  repository: feeder-service
+  resources: {}
+  splunkVars:
+    SPLUNK_ALERTS_ENABLED: "false"
+    SPLUNK_FEEDER_ENABLED: "false"
+    SPLUNK_FEEDER_INDEX: ""
+    SPLUNK_FEEDER_SOURCE: ""
+    SPLUNK_FEEDER_SOURCE_TYPE: ""
+    SPLUNK_FEEDER_TOKEN: ""
+    SPLUNK_FEEDER_URL: ""
+    SPLUNK_LOGS_ENABLED: "false"
+  tag: v0.10.0
+  volumeMounts: []
+  volumes: []
+install:
+  Feeder: false
+  localRegistryAgent: false
+joinToken: a34a0c60-2cfd-4e0f-8656-ecd96d93bf3c
+knoxGateway: knox-gw.dev.accuknox.com:3000
+kyverno:
+  enabled: false
+localRegistryAgent:
+  args: /var/lib/local-agent/config.yaml
+  configmaps:
+    kmux-local-registry-agent-spire-cfg:
+      enabled: true
+      file: localagent-configs/kmux-spire.yaml
+      name: kmux-local-registry-agent
+    local-registry-agent:
+      enabled: true
+      file: localagent-configs/config.yaml
+      name: local-registry-agent
+    registry-operator:
+      enabled: true
+      file: localagent-configs/registry-scanning.yaml
+      name: registry-operator-configmap
+  dockerSockPath: ""
+  image: ""
+  name: local-registry-agent
+  owner: public.ecr.aws/k9v9d5v2
+  replicaCount: 1
+  repository: registry-local-agent
+  resources: {}
+  tag: v0.3.0
+  volumeMounts:
+  - mountPath: /var/lib/local-agent/config.yaml
+    name: local-registry-agent
+    readOnly: true
+    subPath: config.yaml
+  - mountPath: /var/lib/local-agent/kmux/spire/config.yaml
+    name: kmux-local-registry-agent-spire
+    readOnly: true
+    subPath: config.yaml
+  - mountPath: /var/lib/registry-operator/config.yaml
+    name: registry-operator-config
+    readOnly: true
+    subPath: config.yaml
+  volumes:
+  - configMap:
+      name: local-registry-agent
+    name: local-registry-agent
+  - configMap:
+      name: kmux-local-registry-agent
+    name: kmux-local-registry-agent-spire
+  - configMap:
+      name: registry-operator-configmap
+    name: registry-operator-config
+policyEnforcementAgent:
+  image: ""
+  liveness: true
+  owner: public.ecr.aws/k9v9d5v2
+  replicaCount: 1
+  repository: policy-enforcement-agent
+  resources: {}
+  tag: v0.7.2
+  volumeMounts: []
+  volumes: []
+ppsHost: pps.dev.accuknox.com
+rabbitmq:
+  enabled: true
+  image:
+    repository: rabbitmq
+    tag: 3.12.2-management
+  password: 1E758F90-0092-4400-8713-EAD9FF591F75
+  replicaCount: 1
+  service:
+    port: 5672
+    type: ClusterIP
+  username: rabbitmq-user
+registry:
+  preserveUpstream: true
+  secretName: ""
+  url: ""
+sharedInformerAgent:
+  auditWebhook:
+    enabled: false
+    port: 8080
+  image: ""
+  liveness: true
+  owner: public.ecr.aws/k9v9d5v2
+  replicaCount: 1
+  repository: shared-informer-agent
+  resources: {}
+  tag: v0.8.2
+  volumeMounts: []
+  volumes: []
+spireHost: spire.dev.accuknox.com
+tokenURL: ""
+
+HOOKS:
+MANIFEST:
+---
+# Source: agents-chart/templates/agentsOperator/roles.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: agents-operator
+  namespace: agents
+---
+# Source: agents-chart/templates/discoveryEngine/serviceaccount.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: discovery-engine
+  namespace: agents
+---
+# Source: agents-chart/templates/feederService/roles.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name:  kmux
+  namespace: agents
+---
+# Source: agents-chart/templates/policyEnforcementAgent/roles.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: policy-enforcement-agent
+  namespace: agents
+---
+# Source: agents-chart/templates/sharedInformerAgent/roles.yaml
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: shared-informer-agent
+  namespace: agents
+---
+# Source: agents-chart/templates/agentsOperator/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: spire-agent-secret
+  namespace: agents
+# This is expected to be empty by default and is used by
+# agents-operator/spire-agent. Adding data to this will fail the startup of
+# spire-agent
+data: {}
+---
+# Source: agents-chart/templates/agentsOperator/secret.yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: token-secret
+  namespace: agents
+data:
+  join_token: "YTM0YTBjNjAtMmNmZC00ZTBmLTg2NTYtZWNkOTZkOTNiZjNj"
+  access_token: ""
+---
+# Source: agents-chart/templates/agentsOperator/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agents-operator
+  namespace: agents
+data:
+  conf.yaml: |-
+    agent:
+    - name: feeder-service
+      container: 
+      - resource:
+        - type: cpu
+          request:
+            - value: (n/5 + 1)*10
+            - upper-bound: 100
+          limit:
+            - value: (n/5 + 1)*100
+            - upper-bound: 10000
+        - type: memory
+          request:
+            - value: (n/5 + 1)*20
+            - upper-bound: 150
+          limit:
+            - value: (n/5 + 1)*200
+            - upper-bound: 20000
+    - name: shared-informer-agent
+      container: 
+      - resource:
+        - type: cpu
+          request:
+            - value: (n/5 + 1)*10
+            - upper-bound: 100
+          limit:
+            - value: (n/5 + 1)*50
+            - upper-bound: 5000
+        - type: memory
+          request:
+            - value: (n/5 + 1)*20
+            - upper-bound: 200
+          limit:
+            - value: (n/5 + 1)*100
+            - upper-bound: 10000
+    - name: policy-enforcement-agent
+      container: 
+      - resource:
+        - type: cpu
+          request:
+            - value: (n/5 + 1)*10
+            - upper-bound: 100
+          limit:
+            - value: (n/5 + 1)*30
+            - upper-bound: 3000
+        - type: memory
+          request:
+            - value: (n/5 + 1)*10
+            - upper-bound: 100
+          limit:
+            - value: (n/5 + 1)*50
+            - upper-bound: 5000
+            
+
+    global-ns: "agents"
+    agent-configmap: "agents-operator"  
+    healthPort: "9090"  
+    tokenURL: 
+      base: "https://"
+      path: "/access-token/api/v1/process"
+    scaleAgents:
+      - discovery-engine
+      - policy-enforcement-agent
+      - shared-informer-agent
+      - feeder-service
+      - local-registry-agent
+
+  spire.conf: |
+    agent {
+      data_dir = "/run/spire/agent"
+      log_level = "DEBUG"
+      agent_address = "0.0.0.0"
+      agent_port = "9091"
+      socket_path = "/run/spire/agent/agent.sock"
+      trust_domain = "accuknox.com"
+    }
+
+    plugins {
+      
+      NodeAttestor "join_token" {
+      }
+
+      KeyManager "keymanager-k8s" {
+        plugin_cmd = "/config/plugin/keymanager-k8s"
+        plugin_data {
+          namespace = "agents"
+          secretname = "spire-agent-secret"
+        }
+      }
+
+      WorkloadAttestor "k8s_sat" {
+        plugin_cmd = "/config/plugin/k8s-sat"
+        plugin_data {
+        }
+      }
+    }
+
+    health_checks {
+      listener_enabled = true
+      bind_address = "0.0.0.0"
+      bind_port = "9090"
+      live_path = "/live"
+      ready_path = "/ready"
+    }
+---
+# Source: agents-chart/templates/azure.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: azuresentinel-vars
+  namespace: agents
+data:
+  AZURE_SENTINEL_ALERTS_ENABLED: "false"
+  AZURE_SENTINEL_ENABLED: "false"
+  AZURE_SENTINEL_GROUP_NAME:  ""
+  AZURE_SENTINEL_GROUP_VALUE:  ""
+  AZURE_SENTINEL_LOGS_ENABLED: "false"
+  AZURE_SENTINEL_URL:  ""
+---
+# Source: agents-chart/templates/cilium.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cilium-vars
+  namespace: agents
+data:
+  HUBBLE_ENABLED: "false"
+  HUBBLE_PORT: "80"
+  HUBBLE_URL: "hubble-relay.kube-system.svc.cluster.local"
+---
+# Source: agents-chart/templates/discovery-engine.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: discovery-engine-vars
+  namespace: agents
+data:
+  DISCOVERYENGINE_URL: "discovery-engine.agents.svc.cluster.local"
+  DISCOVERYENGINE_ENABLED: "true"
+  DISCOVERYENGINE_PORT: "9089"
+  DISCOVERYENGINE_VERSION: "2"
+---
+# Source: agents-chart/templates/discoveryEngine/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: discovery-engine-sumengine
+  namespace: agents
+data:
+  app.yaml: |-
+    
+    summary-engine:
+      k8s:
+        enable: true
+      kubearmor:
+        cron-interval: 0h05m0s
+        enabled: true
+        exclude-events:
+          operation:
+            file: false
+            network: false
+            process: false
+        exclude-namespaces:
+          kubearmor: true
+        file-aggregation: true
+        threshold: 10000
+      sentryflow:
+        cron-interval: 0h0m30s
+        decode-jwt: false
+        enabled: false
+        include-bodies: false
+        redact-sensitive-data: true
+        sensitive-rules-files-path:
+        - /var/lib/sumengine/sensitive-data-rules.yaml
+        threshold: 10000
+      splunk:
+        certificate: ""
+        enabled: false
+        index: ""
+        maxRetries: 3
+        skipTls: false
+        source: ""
+        sourcetype: ""
+        token: ""
+        url: ""
+      topic:
+        summary-event: summary-v2
+    watcher:
+      kubearmor:
+        allowList:
+          enabled: true
+          operations:
+          - CONNECT
+          - ACCEPT
+          - BIND
+          - CREATE
+          protocolFamily:
+          - TCP
+          - AF_INET
+          - AF_INET6
+        denyList:
+          enabled: true
+          ports:
+          - 53
+          urls:
+          - localhost
+          - 127.0.0.1
+          - ::1
+        enabled: true
+        event-type:
+          alerts: true
+          logs: true
+        relay:
+          enabled: false
+          name: relay-1
+          port: ""
+          url: ""
+      sentryflow:
+        enabled: false
+        event-type:
+          access-log: true
+          metric: false
+        service:
+          enabled: false
+          name: sentryflow
+          port: ""
+          url: ""
+  kmux.yaml: |-
+    
+    kmux:
+      sink:
+        stream: rabbitmq
+    rabbitmq:
+      exchange:
+        auto-delete: true
+        durable: true
+        name: dev2
+        type: direct
+      server: localhost:5672
+  sensitive-data-rules.yaml: |-
+    
+    # Regex and locations need to be validated
+    
+    # Name must be unique
+    - name: finance-pan-card
+      description: PAN Card Number
+      regex: >-
+        [A-Z]{5}[0-9]{4}[A-Z]{1}
+      locations: # Allowed values: RequestBody, ResponseBody, RequestHeaders, ResponseHeaders
+        - RequestBody
+        - ResponseBody
+      severity: CRITICAL
+      tags:
+        - FINANCE
+    
+    - name: pii-us-ssn
+      description: US Social Security Number
+      regex: >-
+        \b\d{3}[- ]\d{2}[- ]\d{4}\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: CRITICAL
+      tags:
+        - PII
+    
+    - name: pii-iban
+      description: IBAN
+      regex: >-
+        \b[A-Z]{2}[- ]?[0-9]{2}([- ]?[A-Z0-9]){9,30}\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: Medium
+      tags:
+        - PII
+    
+    - name: pii-us-credit-card
+      description: Credit card number
+      regex: >-
+        \b(?:4[0-9]{12}(?:[0-9]{3})?|[25][1-7][0-9]{14}|6(?:011|5[0-9][0-9])[0-9]{12}|3[47][0-9]{13}|3(?:0[0-5]|[68][0-9])[0-9]{11}|(?:2131|1800|35\d{3})\d{11})\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: CRITICAL
+      tags:
+        - PII
+        - FINANCE
+    
+    - name: pii-us-telephone-number
+      description: US Telephone number
+      regex: >-
+        ^(?:\+?1[- ]?)?(?:\(?\d{3}\)?[- ]?)?\d{3}[- ]?\d{4}$|^(?:\+?\d{1,3}[- ]?)?(?:\d{2,3}\)?[- ]?)?\d{2,4}[- ]?\d{2,4}[- ]?\d{2,4}$
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - PII
+    
+    - name: private-ip
+      description: Private IP address in headers
+      regex: >-
+        (^192\.168\.([0-9]|[0-9][0-9]|[0-2][0-5][0-5])\.([0-9]|[0-9][0-9]|[0-2][0-5][0-5])$)|(^172\.([1][6-9]|[2][0-9]|[3][0-1])\.([0-9]|[0-9][0-9]|[0-2][0-5][0-5])\.([0-9]|[0-9][0-9]|[0-2][0-5][0-5])$)|(^10\.([0-9]|[0-9][0-9]|[0-2][0-5][0-5])\.([0-9]|[0-9][0-9]|[0-2][0-5][0-5])\.([0-9]|[0-9][0-9]|[0-2][0-5][0-5])$)
+      locations:
+        - RequestHeaders
+        - ResponseHeaders
+      severity: Medium
+    
+    - name: password keyword in flow data
+      description: password keyword in flow data
+      regex: >-
+        (?i)password
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: Medium
+    
+    - name: information about backend
+      description: HTTP Headers contains information about backend
+      regex: >-
+        (?i)x-powered-by
+      locations:
+        - RequestHeaders
+        - ResponseHeaders
+      severity: Medium
+    
+    - name: information about running server
+      description: HTTP Headers contains information about running server
+      regex: >-
+        (?i)server
+      locations:
+        - RequestHeaders
+        - ResponseHeaders
+      severity: Medium
+    
+    - name: username keyword in flow data
+      description: username keyword in flow data
+      regex: >-
+        (?i)username
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: Medium
+    
+    - name: API Key keyword in Request Headers
+      description: API Key keyword in Request Headers
+      regex: >-
+        (?i)api-?key
+      locations:
+        - RequestHeaders
+      severity: HIGH
+    
+    - name: token
+      regex: >-
+        .*token.*
+      locations:
+        - RequestBody
+        - ResponseBody
+      severity: CRITICAL
+      tags:
+        - AUTHENTICATION
+        - TOKEN
+    
+    - name: secret
+      regex: >-
+        (?i)\bsecrets\b
+      locations:
+        - RequestBody
+        - ResponseBody
+      severity: CRITICAL
+      tags:
+        - TOKEN
+    
+    - name: database
+      regex: >-
+        (?i)\\bdatabase\\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - DATABASE
+        - CREDENTIALS
+    
+    - name: birth
+      regex: >-
+        .*(?i)birth.*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - PII
+    
+    - name: date-of-birth
+      regex: >-
+        .*(?i)dob.*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - PII
+    
+    - name: auth
+      regex: >-
+        .*(?i)auth.*
+      locations:
+        - RequestBody
+        - ResponseBody
+      severity: CRITICAL
+      tags:
+        - AUTHENTICATION
+        - TOKEN
+    
+    - name: contact
+      regex: >-
+        .*(?i)contact.*
+      locations:
+        - RequestBody
+        - ResponseBody
+      severity: HIGH
+      tags:
+        - PII
+    
+    - name: address
+      regex: >-
+        .*\b(?i)address\b.*
+      locations:
+        - RequestBody
+        - ResponseBody
+      severity: MEDIUM
+      tags:
+        - PII
+    
+    - name: us-address
+      regex: >-
+        ^\d+\s+[A-Za-z0-9\s]+(?:\s+(?:Avenue|Ave|Street|St|Road|Rd|Boulevard|Blvd|Lane|Ln|Drive|Dr|Court|Ct|Place|Pl|Way|Trail|Trl|Terrace|Ter|Circle|Cir))\b(?:\s+\#?\d+)?$
+      locations:
+        - RequestBody
+        - ResponseBody
+      severity: MEDIUM
+      tags:
+        - PII
+    
+    - name: uk-address
+      regex: >-
+        ^\d+\s[\w\s]+,\s[\w\s]+,\s(?:[A-Z]{1,2}\d[A-Z\d]? \d[A-Z]{2})$
+      locations:
+        - RequestBody
+        - ResponseBody
+      severity: MEDIUM
+      tags:
+        - PII
+    
+    - name: street-line
+      regex: >-
+        .*(?i)streetLine.*
+      locations:
+        - RequestBody
+        - ResponseBody
+      severity: MEDIUM
+      tags:
+        - PII
+    
+    - name: licence
+      regex: >-
+        .*(?i)licence.*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: CRITICAL
+      tags:
+        - PII
+    
+    - name: passport
+      regex: >-
+        .*(?i)passport.*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: CRITICAL
+      tags:
+        - PII
+    
+    - name: bank
+      regex: >-
+        .*(?i)bank.*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: CRITICAL
+      tags:
+        - PII
+        - FINANCE
+    
+    - name: pin
+      regex: >-
+        (?i)\bpin\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: CRITICAL
+      tags:
+        - PII
+        - FINANCIAL
+    
+    - name: employer-identification-number
+      regex: >-
+        (?i)\bein\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: MEDIUM
+      tags:
+        - PII
+    
+    - name: invoice
+      regex: >-
+        .*(?i)invoice.*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - FINANCIAL
+    
+    - name: session-name
+      regex: >-
+        .*(?i)sessionid.*
+      locations:
+        - RequestBody
+        - ResponseBody
+      severity: HIGH
+      tags:
+        - SESSION CREDENTIALS
+    
+    - name: encrypt
+      regex: >-
+        .*(?i)encrypt.*
+      locations:
+        - RequestBody
+        - ResponseBody
+      severity: LOW
+      tags:
+        - SECURITY
+    
+    - name: aws-access-key-name
+      regex: >-
+        \\b((AKIA|ABIA|ACCA)[0-9A-Z]{16})\\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+        - AWS
+    
+    - name: gcp-api-key
+      regex: >-
+        AIza[0-9A-Za-z\\-_]{35}
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+        - GCP
+    
+    - name: mailchimp-api-key
+      regex: >-
+        [0-9a-f]{32}-us[0-9]{1,2}
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: MEDIUM
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: npm-access
+      regex: >-
+        npm_[0-9a-zA-Z]{36}
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: mongodb-connection-string
+      regex: >-
+        \\b(mongodb(\\+srv)?:\/\/[\\S]{3,50}:([\\S]{3,88})@[-.%\\w\/:]+)\\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - MONGODB
+        - DATABASE
+        - URL
+    
+    - name: ngrok api
+      regex: >-
+        \b2[a-zA-Z0-9]{26}_\d[a-zA-Z0-9]{20}\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: okta domain
+      regex: >-
+        .*[a-z0-9-]{1,40}\.okta(?:preview|-emea){0,1}\.com.*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - OKTA
+        - URL
+    
+    - name: github access
+      regex: >-
+        \b((?:ghp|gho|ghu|ghs|ghr|github_pat)_[a-zA-Z0-9_]{36,255})\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: gitlab access
+      regex: >-
+        \b(glpat-[a-zA-Z0-9\-=_]{20,22})\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: anthropic api
+      regex: >-
+        \b(sk-ant-api03-[\w\-]{93}AA)\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: auth0 domain
+      regex: >-
+        .*[a-zA-Z0-9\-]{2,16}\.[a-zA-Z0-9_-]{2,3}\.auth0\.com.*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - AUTHENTICATION
+        - URL
+        - AUTH0
+    
+    - name: azure batch url
+      regex: >-
+        https://(.{1,50})\.(.{1,50})\.batch\.azure\.com
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - AZURE
+        - URL
+        - RESOURCE
+    
+    - name: azure container registry url
+      regex: >-
+        ([a-zA-Z0-9-]{1,100})\.azurecr\.io
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - AZURE
+        - URL
+        - RESOURCE
+    - name: azure function key url
+      regex: >-
+        \bhttps://([a-zA-Z0-9-]{2,30})\.azurewebsites\.net/(api/)?([a-zA-Z0-9-]{2,30})/([a-zA-Z0-9-]{2,30})\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - AZURE
+        - URL
+        - RESOURCE
+    
+    - name: azure search query key url
+      regex: >-
+        .*https://([0-9a-z]{5,40})\.search\.windows\.net/indexes/([0-9a-z]{5,40}).*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: MEDIUM
+      tags:
+        - AZURE
+        - URL
+        - RESOURCE
+    
+    - name: databricks domain
+      regex: >-
+        .*([a-z0-9-]+(?:\.[a-z0-9-]+)*\.(cloud\.databricks\.com|gcp\.databricks\.com|azuredatabricks\.net)).*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - URL
+        - RESOURCE
+    
+    - name: digital ocean v2 secret key
+      regex: >-
+        \b((?:dop|doo|dor)_v1_[a-f0-9]{64})\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: discord bot token
+      regex: >-
+        \b([A-Za-z0-9_-]{24}\.[A-Za-z0-9_-]{6}\.[A-Za-z0-9_-]{27})\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: discord webhook url
+      regex: >-
+        https://discord\.com/api/webhooks/[0-9]{18}/[0-9a-zA-Z-]{68}
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - URL
+        - RESOURCE
+    
+    - name: dockerhub access token
+      regex: >-
+        \bdckr_pat_[a-zA-Z0-9_-]{27}\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - DOCKER
+        - API KEY
+        - TOKEN
+    
+    - name: dropbox access token
+      regex: >-
+        (sl\.[A-Za-z0-9\-_]{130,140})
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: MEDIUM
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: figma
+      regex: >-
+        \b(fig[d|((u|o)(r|h)?)]_[a-z0-9A-Z_-]{40})\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: grafana
+      regex: >-
+        \b(glc_[A-Za-z0-9+/]{50,150}\={0,2})
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: huggingface
+      regex: >-
+        \b(?:hf_|api_org_)[a-zA-Z0-9]{34}\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: ms teams webhook url
+      regex: >-
+        (https://[a-zA-Z-0-9]+\.office\.com/webhook/[a-zA-Z-0-9]{8}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{12}\@[a-zA-Z-0-9]{8}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{12}/IncomingWebhook/[a-zA-Z-0-9]{32}/[a-zA-Z-0-9]{8}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{4}-[a-zA-Z-0-9]{12})
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - MICROSOFT
+        - URL
+        - RESOURCE
+    
+    - name: notion api token
+      regex: >-
+        \b(secret_[A-Za-z0-9]{43})\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: openai token
+      regex: >-
+        \b(sk-[A-Za-z0-9]{20}T3BlbkFJ[A-Za-z0-9]{20})\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - OPENAI
+        - API KEY
+        - TOKEN
+    
+    - name: aws s3 bucket url
+      regex: >-
+        ^https://s3\.[a-z0-9\-]+\.amazonaws\.com/[a-z0-9\-\.]+/?$
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - AWS
+        - URL
+        - RESOURCE
+    
+    - name: aws arn connect instance
+      regex: >-
+        ^arn:aws:connect:\w+(?:-\w+)+:\d{12}:instance/[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+$
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - AWS
+        - URL
+        - RESOURCE
+    
+    - name: aws sqs url
+      regex: >-
+        ^https://sqs\.[a-z0-9\-]+\.amazonaws\.com/[0-9]{12}/[a-zA-Z0-9_\-]+/?$
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - AWS
+        - URL
+        - RESOURCE
+    
+    - name: aws rds url
+      regex: >-
+        ^.*\.rds\.amazonaws\.com/[a-zA-Z0-9\-]+$
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - AWS
+        - URL
+        - RESOURCE
+    
+    - name: aws docdb url
+      regex: >-
+        ^.*\.docdb\.amazonaws\.com/[a-zA-Z0-9\-]+$
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - AWS
+        - URL
+        - RESOURCE
+    
+    - name: aws dynamodb url
+      regex: >-
+        ^https://dynamodb\.[a-z0-9\-]+\.amazonaws\.com/?[a-zA-Z0-9\-]+/?$
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - AWS
+        - URL
+        - RESOURCE
+    
+    - name: postgres connection string
+      regex: >-
+        \b(?i)postgres(?:ql)?://\S+\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - DATABASE
+        - URL
+        - RESOURCE
+    
+    - name: postman key
+      regex: >-
+        \b(PMAK-[a-zA-Z-0-9]{59})\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - POSTMAN
+        - TOKEN
+    
+    - name: razorpay key
+      regex: >-
+        (?i)\brzp_live_[A-Za-z0-9]{14}\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - RAZORPAY
+        - API KEY
+        - TOKEN
+    
+    - name: redis uri secret
+      regex: >-
+        .*redi[s]{1,2}://[\S]{3,50}:([\S]{3,50})@[-.%\w/:]+.*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - TOKEN
+        - REDIS
+        - SECRET
+    
+    - name: azure redis cache instance
+      regex: >-
+        \b([\w\d.-]{1,100}\.redis\.cache\.windows\.net:6380),password=([^,]{44}),ssl=True,abortConnect=False\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - AZURE
+        - URL
+        - RESOURCE
+    
+    - name: salesforce domain
+      regex: >-
+        \bhttps://[0-9a-zA-Z-\.]{1,100}\.my\.salesforce\.com\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: MEDIUM
+      tags:
+        - SALESFORCE
+        - URL
+        - RESOURCE
+    
+    - name: shutterstock api access token
+      regex: >-
+        \b(v2/[0-9A-Za-z]{388})\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: MEDIUM
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: slack bot token
+      regex: >-
+        xoxb\-[0-9]{10,13}\-[0-9]{10,13}[a-zA-Z0-9\-]*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: MEDIUM
+      tags:
+        - TOKEN
+        - API KEY
+    
+    - name: slack user token
+      regex: >-
+        xoxp\-[0-9]{10,13}\-[0-9]{10,13}[a-zA-Z0-9\-]*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: MEDIUM
+      tags:
+        - TOKEN
+        - API KEY
+    
+    - name: slack workspace access token
+      regex: >-
+        xoxa\-[0-9]{10,13}\-[0-9]{10,13}[a-zA-Z0-9\-]*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: MEDIUM
+      tags:
+        - TOKEN
+        - API KEY
+    
+    - name: slack workspace refresh token
+      regex: >-
+        xoxr\-[0-9]{10,13}\-[0-9]{10,13}[a-zA-Z0-9\-]*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: MEDIUM
+      tags:
+        - TOKEN
+        - API KEY
+    
+    - name: slack webhook url
+      regex: >-
+        (https://hooks\.slack\.com/services/T[A-Z0-9]+/B[A-Z0-9]+/[A-Za-z0-9]{23,25})
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: MEDIUM
+      tags:
+        - RESOURCE
+        - URL
+    
+    - name: square access token
+      regex: >-
+        (EAAA[a-zA-Z0-9\-\+\=]{60})
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: hashicorp access token
+      regex: >-
+        \b([A-Za-z0-9]{14}.atlasv1.[A-Za-z0-9]{67})\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: twilio account sid
+      regex: >-
+        \bAC[0-9a-f]{32}\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - SESSION CREDENTIALS
+    
+    - name: stripe token
+      regex: >-
+        [rs]k_live_[a-zA-Z0-9]{20,247}
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: alibaba token
+      regex: >-
+        \b(LTAI[a-zA-Z0-9]{17,21})[\'';\s]*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: zapier webhook url
+      regex: >-
+        .*https://hooks\.zapier\.com/hooks/catch/[A-Za-z0-9/]{16}.*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - URL
+        - RESOURCE
+    
+    - name: shopify shared secret
+      regex: >-
+        shpss_[a-fA-F0-9]{32}
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: openvpn domain
+      regex: >-
+        \b(https?://[A-Za-z0-9-]+\.api\.openvpn\.com)\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: MEDIUM
+      tags:
+        - URL
+        - RESOURCE
+    
+    - name: rabbitmq uri
+      regex: >-
+        \b(?:amqp:)?//[\S]{3,50}:([\S]{3,50})@[-.%\w/:]+\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - TOKEN
+        - API KEY
+    
+    - name: square oauth secret
+      regex: >-
+        q0csp-[ 0-9A-Za-z-_]{43}
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - AUTHENTICATION
+        - API KEY
+        - TOKEN
+    
+    - name: amazon advertising services url
+      regex: >-
+        .*(https?://)(www\.)?advertising-api\.amazon\.com/?.*
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - AWS
+        - URL
+        - RESOURCE
+    
+    - name: google firebase domain
+      regex: >-
+        ([a-z0-9-]){1,30}(.firebaseapp.com)
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - URL
+        - GOOGLE
+        - RESOURCE
+    
+    - name: google firebase database url
+      regex: >-
+        (http|https)://([a-z0-9-]){1,30}(\.firebaseio\.com)|(http|https)://([a-z0-9-]){1,30}(\.firebaseio\.com)|([a-z0-9-]){1,30}-(default-rtdb).((asia|europe|us|australia)|((north|south)(america|africa)))-((east|west|central|north|south)|((north|south)(east)))[0-9]{1,2}(\.firebasedatabase\.app)
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - URL
+        - RESOURCE
+        - GOOGLE
+    
+    - name: facebook access token
+      regex: >-
+        EAACEdEose0cBA[0-9A-Za-z]+
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - API KEY
+        - TOKEN
+    
+    - name: ms sql server connection string
+      regex: >-
+        (?i)Server\s*=\s*[^;]+;Database\s*=\s*[^;]+;(?:User\s*Id\s*=\s*[^;]+;Password\s*=\s*[^;]+;|Integrated\s*Security\s*=\s*True;)
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: HIGH
+      tags:
+        - DATABASE
+        - URL
+        - RESOURCE
+    
+    - name: heroku
+      regex: >-
+        \b(messingupintentionally[0-9Aa-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\b
+      locations:
+        - RequestBody
+        - ResponseBody
+        - RequestHeaders
+        - ResponseHeaders
+      severity: MEDIUM
+      tags:
+        - API KEY
+        - TOKEN
+---
+# Source: agents-chart/templates/discoveryEngine/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: discovery-engine-offloader
+  namespace: agents
+data:
+  app.yaml: |-
+    
+    database:
+      credentials: local
+      driver: sqlite
+      name:
+        policy-db: /Offloader/policy.db
+        summary-db: /Offloader/summary.db
+    offloader:
+      policy:
+        enabled: true
+        merge_policy: false
+        retention:
+          enabled: true
+          interval: 7
+        topic: policy-v1
+      server:
+        enabled: true
+        host: 0.0.0.0
+        port: 8090
+      summary:
+        enabled: true
+        retention:
+          enabled: true
+          interval: 1
+        topic: summary-v2
+  kmux.yaml: |-
+    
+    kmux:
+      source:
+        stream: rabbitmq
+    rabbitmq:
+      consumer-tag: offloader
+      exchange:
+        auto-delete: true
+        durable: true
+        name: dev2
+        type: direct
+      queue:
+        auto-delete: true
+        durable: true
+        name: ""
+      server: localhost:5672
+---
+# Source: agents-chart/templates/discoveryEngine/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: discovery-engine-hardening
+  namespace: agents
+data:
+  app.yaml: |-
+    
+    hardening:
+      cron-job-time-interval: 1h00m00s
+      delay-cron-job: 0h05m00s
+      download-templates: false
+      enabled: true
+      exclude-namespaces:
+        kube-system: true
+        kubearmor: true
+      filter-enabled: true
+      k8s:
+        enable: true
+      recommend-host-policy: true
+      state-agent:
+        port: "32771"
+      template-version: 0.2.6
+      topic: policy-v1
+  kmux.yaml: |-
+    
+    kmux:
+      sink:
+        stream: rabbitmq
+    rabbitmq:
+      consumer-tag: hardening
+      exchange:
+        auto-delete: true
+        durable: true
+        name: dev2
+        type: direct
+      queue:
+        auto-delete: true
+        durable: true
+        name: ""
+      server: localhost:5672
+---
+# Source: agents-chart/templates/discoveryEngine/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: discovery-engine-discover
+  namespace: agents
+data:
+  app.yaml: |-
+    
+    discover:
+      aggregation:
+        enabled: true
+        threshold: 10
+      consumer:
+        buffer-limit:
+          network: 10000
+          system: 10000
+        time-limit: 10
+        topic: summary-v2
+      k8s:
+        enable: true
+      policy:
+        host: false
+        workload: true
+      policy-client:
+        server: 127.0.0.1:8090
+      processor:
+        cores: 50
+        cron-job-interval: 0h10m00s
+        delay-cron-job: 0h03m00s
+        npu: 1
+        spu: 1
+      ruleConfig:
+        rules: process,network
+      sink:
+        channel-size: 1000
+        topic: policy-v1
+      tls:
+        enabled: false
+    logging:
+      level: info
+  kmux.yaml: |-
+    
+    kmux:
+      sink:
+        stream: rabbitmq
+      source:
+        stream: rabbitmq
+    rabbitmq:
+      consumer-tag: discover
+      exchange:
+        auto-delete: true
+        durable: true
+        name: dev2
+        type: direct
+      queue:
+        auto-delete: true
+        durable: true
+        name: ""
+      server: 127.0.0.1:5672
+---
+# Source: agents-chart/templates/kmux.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: kmux 
+  namespace: agents
+data:
+  config.yaml: |-
+    kmux:
+      sink:
+        stream: knox-gateway
+      source:
+        stream: rabbitmq
+      security: spire
+        
+    knox-gateway:
+      server: knox-gw.dev.accuknox.com:3000
+    
+    spire: 
+      spiffeID:
+        format: "spiffe://<domainName>/<WSID>/<ClusterID>/<componentName>"
+
+
+    rabbitmq:
+      server: "discovery-engine.agents.svc.cluster.local:5672"
+      exchange:
+        name: "dev2" 
+        type: "direct"
+        durable: true
+        auto-delete: true
+      queue:
+        name: ""
+        durable: true
+        auto-delete: true
+      consumer-tag: "kmux"
+      debug: false
+---
+# Source: agents-chart/templates/kubearmor.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubearmor-vars
+  namespace: agents
+data:
+  KUBEARMOR_ALERTS:  ""
+  KUBEARMOR_ENABLED: "true"
+  KUBEARMOR_LOGS: "sdf"
+  KUBEARMOR_PORT: "32767"
+  KUBEARMOR_URL: "kubearmor.kube-system.svc.cluster.local"
+---
+# Source: agents-chart/templates/onboard.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: onboarding-vars
+data:
+  CLUSTER_NAME: abc
+  cluster_name: abc  
+  cluster_id: abc
+  tenant_id: abc
+  workspace_id: abc
+---
+# Source: agents-chart/templates/policyEnforcementAgent/configmap.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: policy-enforcement-agent
+  namespace: agents 
+data:
+  application.yaml: |-
+    endpoint:
+      urlendpoint: /pps/api/v1/policy-provider/fetch-policy
+      baseurlendpoint: https://pps.dev.accuknox.com
+
+    statusendpoint:
+      endpoint: https://pps.dev.accuknox.com/pps/api/v1/policy-provider/change-status-policy
+      
+    secret:
+      key2: 511dfbdb941561cbea02ffaf1043df6b47512e01f75d5ae5932cd9a36b4f07c0
+
+    syncuptime:
+      t: 5
+
+    annotation:
+      statusendpoint: /pps/api/v1/policy-provider/update-annotation-status
+      annotationendpoint: /pps/api/v1/policy-provider/fetch-annotations
+      basepath: https://pps.dev.accuknox.com
+
+    spire:
+      enable: true
+      agent: "agents-operator.agents.svc.cluster.local:9091"
+
+    psaLabels:
+      basePath: https://pps.dev.accuknox.com
+      fetchPSALabels: /pps/api/v1/security-admission/fetch-psa-labels
+      updatePSALabelStatus: /pps/api/v1/security-admission/update-psa-labels-status
+
+    policy-watcher:
+      enable: true
+      topic: discovery/custom-policy-v1
+      watchers: 
+      - "KubeArmorPolicy"
+      - "KubeArmorHostPolicy"
+      - "NetworkPolicy"
+    deployMode: "k8s"
+
+    reconciler:
+      enable: true
+      interval: 30m
+    
+    log-level: info
+---
+# Source: agents-chart/templates/sharedInformerAgent/configmap.yaml
+apiVersion: v1 
+kind: ConfigMap 
+metadata: 
+  name: shared-informer-agent
+  namespace: agents
+data: 
+  app.yaml: |-
+    spire:
+      enable: true
+
+      agent: "agents-operator.agents.svc.cluster.local:9091"
+    kmux-topic: cluster-entity/shared-event    
+    kmux-topic-prefix: 
+
+    heartbeat:
+      interval: 5m
+    
+    resource-refresh:
+      interval: 30m
+      resync: 30m
+
+    psa:
+      violation-topic: admissionevents
+      audit-webhook-port: 8080
+    knoxguard:
+      topic: knoxguardevents
+    deployMode: "k8s"
+
+    k8s:
+      enable: true
+
+    informers:
+      service: false
+      statefulset: true
+      deployment: true
+      daemonset: true
+      replicaset: true
+      job: true
+      cronjob: true
+      pod: true
+      namespace: true
+      node: true
+
+    log:
+      level: info
+
+    metrics:
+      enable: false
+      port: 2122
+---
+# Source: agents-chart/templates/splunk.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: splunk-vars
+data:
+  SPLUNK_ALERTS_ENABLED: "false"
+  SPLUNK_FEEDER_ENABLED: "false"
+  SPLUNK_FEEDER_INDEX:  ""
+  SPLUNK_FEEDER_SOURCE:  ""
+  SPLUNK_FEEDER_SOURCE_TYPE:  ""
+  SPLUNK_FEEDER_TOKEN:  ""
+  SPLUNK_FEEDER_URL:  ""
+  SPLUNK_LOGS_ENABLED: "false"
+---
+# Source: agents-chart/templates/discoveryEngine/crd.yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.11.1
+  name: discoveredpolicies.security.kubearmor.com
+spec:
+  group: security.kubearmor.com
+  names:
+    kind: DiscoveredPolicy
+    listKind: DiscoveredPolicyList
+    plural: discoveredpolicies
+    shortNames:
+      - dsp
+    singular: discoveredpolicy
+  scope: Namespaced
+  versions:
+    - additionalPrinterColumns:
+        - jsonPath: .status.phase
+          name: Status
+          type: string
+        - jsonPath: .spec.status
+          name: Policy_Status
+          type: string
+        - jsonPath: .status.kind
+          name: Policy_Type
+          type: string
+      name: v1
+      schema:
+        openAPIV3Schema:
+          description: DiscoveredPolicy is the Schema for the discoveredpolicies API
+          properties:
+            apiVersion:
+              description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+              type: string
+            kind:
+              description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+              type: string
+            metadata:
+              type: object
+            spec:
+              description: DiscoveredPolicySpec defines the desired state of DiscoveredPolicy
+              properties:
+                policy:
+                  x-kubernetes-preserve-unknown-fields: true
+                status:
+                  default: Inactive
+                  enum:
+                    - Inactive
+                    - inactive
+                    - Active
+                    - active
+                    - PendingUpdates
+                  type: string
+              required:
+                - status
+              type: object
+            status:
+              description: DiscoveredPolicyStatus defines the observed state of DiscoveredPolicy
+              properties:
+                kind:
+                  type: string
+                lastUpdatedTime:
+                  format: date-time
+                  type: string
+                message:
+                  type: string
+                phase:
+                  enum:
+                    - Validated
+                    - Success
+                    - Failed
+                    - Unknown
+                  type: string
+                reason:
+                  type: string
+              type: object
+          type: object
+      served: true
+      storage: true
+      subresources:
+        status: {}
+---
+# Source: agents-chart/templates/agentsOperator/roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: agents-operator
+rules:
+- apiGroups: [""]
+  resources: [ "nodes", "configmaps","secrets"]
+  verbs: [ "get", "list", "watch","update","create"]
+- apiGroups: ["*"]
+  resources: [ "deployments", "pods", "secrets","tokenreviews"]
+  verbs: [ "get", "list", "watch", "patch","update", "create"]
+---
+# Source: agents-chart/templates/discoveryEngine/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: view-cluster-resources
+rules:
+  - apiGroups:
+      - '*'
+    resources:
+      - pods
+      - services
+      - deployments
+      - namespaces
+      - nodes
+      - replicasets
+      - statefulsets
+      - daemonsets
+      - configmaps
+      - jobs
+      - cronjobs
+    verbs:
+      - get
+      - list
+      - watch
+---
+# Source: agents-chart/templates/discoveryEngine/clusterrole.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manage-policies
+rules:
+  - apiGroups:
+      - cilium.io
+    resources:
+      - ciliumnetworkpolicies
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - networkpolicies
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - security.kubearmor.com
+    resources:
+      - discoveredpolicies
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - security.kubearmor.com
+    resources:
+      - discoveredpolicies/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - security.kubearmor.com
+    resources:
+      - discoveredpolicies/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - security.kubearmor.com
+    resources:
+      - kubearmorpolicies
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+---
+# Source: agents-chart/templates/feederService/roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kmux
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["cilium.io"]
+  resources: ["ciliumnetworkpolicies"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["security.kubearmor.com"]
+  resources: ["kubearmorpolicies", "kubearmorhostpolicies"]
+  verbs: ["get", "list", "watch"]
+---
+# Source: agents-chart/templates/policyEnforcementAgent/roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: policy-enforcement-agent
+rules:
+  - apiGroups: ["cilium.io"]
+    resources: ["ciliumnetworkpolicies"]
+    verbs: ["get", "list", "watch","create","update","delete"]
+  - apiGroups: ["networking.k8s.io"]
+    resources: ["networkpolicies"]
+    verbs: ["get", "list", "watch","create","update","delete"]
+  - apiGroups: ["security.kubearmor.com"]
+    resources: ["kubearmorpolicies", "kubearmorhostpolicies", "kubearmorclusterpolicies"]
+    verbs: ["get", "list", "watch","create","update","delete"]
+  - apiGroups: ["kyverno.io"]
+    resources: ["clusterpolicies"]
+    verbs: ["get", "list", "watch","create","update","delete"]  
+  - apiGroups: ["admission.accuknox.com"]
+    resources: ["admissionpolicies"]
+    verbs: ["get", "list", "watch","create","update","delete"]    
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "watch"]
+---
+# Source: agents-chart/templates/sharedInformerAgent/roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: shared-informer-agent
+rules:
+- apiGroups: [""]
+  resources: ["nodes", "pods", "namespaces", "services"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list", "watch"] 
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets", "daemonsets"]
+  verbs: ["get", "list", "watch"] 
+- apiGroups: ["batch"]
+  resources: ["cronjobs","jobs"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch"]
+---
+# Source: agents-chart/templates/agentsOperator/roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: agents-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: agents-operator
+subjects:
+- kind: ServiceAccount
+  name: agents-operator
+  namespace: agents
+---
+# Source: agents-chart/templates/discoveryEngine/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: view-cluster-resources
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: view-cluster-resources
+subjects:
+  - kind: ServiceAccount
+    name: discovery-engine
+    namespace: agents
+---
+# Source: agents-chart/templates/discoveryEngine/clusterrolebinding.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: manage-policies
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: manage-policies
+subjects:
+  - kind: ServiceAccount
+    name: discovery-engine
+    namespace: agents
+---
+# Source: agents-chart/templates/feederService/roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kmux
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kmux 
+subjects:
+- kind: ServiceAccount
+  name: kmux 
+  namespace: agents
+---
+# Source: agents-chart/templates/policyEnforcementAgent/roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: policy-enforcement-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: policy-enforcement-agent 
+subjects:
+- kind: ServiceAccount
+  name: policy-enforcement-agent
+  namespace: agents
+---
+# Source: agents-chart/templates/sharedInformerAgent/roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: shared-informer-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: shared-informer-agent 
+subjects:
+- kind: ServiceAccount
+  name: shared-informer-agent
+  namespace: agents
+---
+# Source: agents-chart/templates/feederService/roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kmux
+  namespace: agents
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list", "watch"]
+---
+# Source: agents-chart/templates/feederService/roles.yaml
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: kmux
+  namespace: agents
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: kmux 
+subjects:
+- kind: ServiceAccount
+  name: kmux
+---
+# Source: agents-chart/templates/agentsOperator/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: agents-operator
+  labels:
+    app: agents-operator
+spec:
+  ports:
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: health-check
+  - port: 9091
+    targetPort: 9091
+    protocol: TCP
+    name: spire-agent
+  selector:
+    app: agents-operator
+---
+# Source: agents-chart/templates/discoveryEngine/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: discovery-engine
+  name: discovery-engine
+  namespace: agents
+spec:
+  ports:
+    - name: grpc
+      port: 8090
+      protocol: TCP
+      targetPort: 8090
+    - name: amqp  
+      port: 5672
+      protocol: TCP
+      targetPort: 5672  
+  selector:
+    app: discovery-engine
+---
+# Source: agents-chart/templates/sharedInformerAgent/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: shared-informer-agent
+  name: shared-informer-agent
+  namespace: agents
+spec:
+  selector:
+    app: shared-informer-agent
+  ports:
+    - name: audit-webhook
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: NodePort
+---
+# Source: agents-chart/templates/agentsOperator/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: agents-operator
+  labels:
+    app: agents-operator
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: agents-operator
+  template:
+    metadata:
+      labels:
+        app: agents-operator
+      annotations:
+        checksum/secret: f59efe8d5d944cf863b9592a9f6b0025dd475f127b29eb5bff9960a077ef42e1
+    spec:
+      serviceAccountName: agents-operator
+      containers:
+      - image: "public.ecr.aws/k9v9d5v2/agents-operator:v0.4.2"
+        imagePullPolicy: Always
+        name: agents-operator   
+        env:
+        - name: join_token
+          valueFrom:
+            secretKeyRef:
+              name: token-secret
+              key: join_token
+        - name: access_token
+          valueFrom:
+            secretKeyRef:
+              name: token-secret
+              key: access_token
+        - name: spire_address
+          value: ""
+        - name: spire_port  
+          value: "8081"
+        - name: spire_enable
+          value: "true"
+        
+        - name: SPIRE_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: spire-vars
+              key: SPIRE_ENABLED
+        
+        - name: CLUSTER_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: CLUSTER_NAME
+        - name: cluster_name
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: cluster_name
+        - name: cluster_id
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: cluster_id
+        - name: tenant_id
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: tenant_id
+        - name: workspace_id
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: workspace_id
+        resources:
+          limits: 
+            cpu: 100m
+            memory: 250Mi
+          requests:
+            cpu: 50m
+            memory: 50Mi
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 9090
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 1
+        volumeMounts:
+        - mountPath: /conf
+          name: agents-operator
+          readOnly: true
+        - mountPath: /run/spire/agent
+          name: spire-agent
+      volumes:
+      - configMap:
+          name: agents-operator
+        name: agents-operator
+      - emptyDir: {}
+        name: spire-agent
+---
+# Source: agents-chart/templates/discoveryEngine/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: discovery-engine
+  name: discovery-engine
+  namespace: agents
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: discovery-engine
+  template:
+    metadata:
+      labels:
+        app: discovery-engine
+    spec:
+      serviceAccountName: discovery-engine
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: summary-engine
+          image: "public.ecr.aws/k9v9d5v2/discovery-engine-sumengine:v0.3.6"  #"public.ecr.aws/k9v9d5v2/discovery-engine-sumengine:v0.3.6"
+          imagePullPolicy: Always
+          args: ["--config", "/var/lib/sumengine/app.yaml", "--kmux-config", "/var/lib/sumengine/kmux.yaml"]
+          resources:
+            limits:
+              cpu: 100m
+              memory: 200Mi
+            requests:
+              cpu: 50m
+              memory: 50Mi
+          volumeMounts:
+          - mountPath: /var/lib/sumengine/
+            name: config-sumengine
+            readOnly: true
+        - name: rabbitmq
+          image: rabbitmq:3.12.2-management
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5672
+              name: amqp
+            - containerPort: 15672
+              name: management
+          resources:
+            limits:
+              cpu: 200m
+              memory: 200Mi
+            requests:
+              cpu: 100m
+              memory: 100Mi
+        - name: discover
+          image: "public.ecr.aws/k9v9d5v2/discovery-engine-discover:v0.3.6"   # "public.ecr.aws/k9v9d5v2/discovery-engine-discover:v0.3.6"
+          imagePullPolicy: Always
+          args: ["--config", "/var/lib/discover/app.yaml", "--kmux-config", "/var/lib/discover/kmux.yaml"]
+          env:
+          - name: ENABLE_GRPC
+            value: "false"
+          ports:
+          - containerPort: 8090
+            name: grpc
+          resources:
+            limits:
+              cpu: 100m
+              memory: 100Mi
+            requests:
+              cpu: 50m
+              memory: 50Mi
+          volumeMounts:
+          - mountPath: /var/lib/discover/
+            name: config-discover
+            readOnly: true
+      volumes:
+      - configMap:
+          name: discovery-engine-sumengine
+        name: config-sumengine
+      - configMap:
+          name: discovery-engine-discover
+        name: config-discover
+---
+# Source: agents-chart/templates/feederService/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: feeder-service
+  namespace: agents
+  labels:
+    app: feeder-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: feeder-service
+  template:
+    metadata:
+      labels:
+        app: feeder-service
+    spec:
+      serviceAccountName: kmux
+      containers:
+      - name: feeder-service
+        image: "public.ecr.aws/k9v9d5v2/feeder-service:v0.10.0"
+        imagePullPolicy: Always
+        resources:
+          limits:
+            cpu: 200m
+            memory: 500Mi
+          requests:
+            cpu: 50m
+            memory: 50Mi
+        env:
+        - name: LOG_LEVEL
+          value: "INFO"
+        - name: KMUX_ENABLED
+          value: "true"
+        - name: IGNORE_SUMMARY_EVENTS
+          value: "Network:AF_UNIX,AF_NETLINK"
+        - name: SPIRE_AGENT_URL
+          value: "agents-operator.agents.svc.cluster.local:9091"
+        - name: DEPLOY_MODE
+          value: "k8s"
+        
+        - name: DISCOVERYENGINE_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: discovery-engine-vars
+              key: DISCOVERYENGINE_ENABLED
+        - name: DISCOVERYENGINE_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: discovery-engine-vars
+              key: DISCOVERYENGINE_PORT
+        - name: DISCOVERYENGINE_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: discovery-engine-vars
+              key: DISCOVERYENGINE_VERSION
+        
+        - name: SPIRE_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: spire-vars
+              key: SPIRE_ENABLED
+        
+        - name: SPLUNK_ALERTS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: splunk-vars
+              key: SPLUNK_ALERTS_ENABLED
+        - name: SPLUNK_FEEDER_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: splunk-vars
+              key: SPLUNK_FEEDER_ENABLED
+        - name: SPLUNK_FEEDER_INDEX
+          value: ""
+        - name: SPLUNK_FEEDER_SOURCE
+          value: ""
+        - name: SPLUNK_FEEDER_SOURCE_TYPE
+          value: ""
+        - name: SPLUNK_FEEDER_TOKEN
+          value: ""
+        - name: SPLUNK_FEEDER_URL
+          value: ""
+        - name: SPLUNK_LOGS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: splunk-vars
+              key: SPLUNK_LOGS_ENABLED
+        
+        - name: AZURE_SENTINEL_ALERTS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: azuresentinel-vars
+              key: AZURE_SENTINEL_ALERTS_ENABLED
+        - name: AZURE_SENTINEL_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: azuresentinel-vars
+              key: AZURE_SENTINEL_ENABLED
+        - name: AZURE_SENTINEL_GROUP_NAME
+          value: ""
+        - name: AZURE_SENTINEL_GROUP_VALUE
+          value: ""
+        - name: AZURE_SENTINEL_LOGS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: azuresentinel-vars
+              key: AZURE_SENTINEL_LOGS_ENABLED
+        - name: AZURE_SENTINEL_URL
+          value: ""
+        
+        - name: KUBEARMOR_ALERTS
+          value: ""
+        - name: KUBEARMOR_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: kubearmor-vars
+              key: KUBEARMOR_ENABLED
+        - name: KUBEARMOR_LOGS
+          valueFrom:
+            configMapKeyRef:
+              name: kubearmor-vars
+              key: KUBEARMOR_LOGS
+        - name: KUBEARMOR_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: kubearmor-vars
+              key: KUBEARMOR_PORT
+        - name: KUBEARMOR_URL
+          valueFrom:
+            configMapKeyRef:
+              name: kubearmor-vars
+              key: KUBEARMOR_URL
+        
+        - name: CLUSTER_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: CLUSTER_NAME
+        - name: cluster_name
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: cluster_name
+        - name: cluster_id
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: cluster_id
+        - name: tenant_id
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: tenant_id
+        - name: workspace_id
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: workspace_id
+        
+        - name: HUBBLE_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: cilium-vars
+              key: HUBBLE_ENABLED
+        - name: HUBBLE_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: cilium-vars
+              key: HUBBLE_PORT
+        - name: HUBBLE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: cilium-vars
+              key: HUBBLE_URL
+        ports:
+        - name: metrics
+          containerPort: 2131
+          protocol: TCP
+        volumeMounts:
+        livenessProbe:
+          exec:
+            command:
+            - curl
+            - -Iv
+            - "localhost:9090/live"
+
+          initialDelaySeconds: 60
+          failureThreshold: 1
+          periodSeconds: 20
+          successThreshold: 1
+          timeoutSeconds: 15
+      volumes:
+---
+# Source: agents-chart/templates/policyEnforcementAgent/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-enforcement-agent
+  namespace: agents
+  labels:
+    app: policy-enforcement-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: policy-enforcement-agent
+  template:
+    metadata:
+      labels:
+        app: policy-enforcement-agent
+    spec:
+      serviceAccountName: policy-enforcement-agent
+      containers:
+      - name: policy-enforcement-agent
+        image: "public.ecr.aws/k9v9d5v2/policy-enforcement-agent:v0.7.2"   #":v0.7.2"
+        imagePullPolicy: Always
+        args:
+        - --config-path=/var/lib/pea
+        volumeMounts:
+        - mountPath: /var/lib/pea/application.yaml
+          name: policy-enforcement-agent
+          subPath: application.yaml     
+        resources:
+          limits:
+            cpu: 100m
+            memory: 300Mi
+          requests:
+            cpu: 50m
+            memory: 50Mi
+        env:
+        
+        - name: CLUSTER_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: CLUSTER_NAME
+        - name: cluster_name
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: cluster_name
+        - name: cluster_id
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: cluster_id
+        - name: tenant_id
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: tenant_id
+        - name: workspace_id
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: workspace_id
+        livenessProbe:
+          exec:
+            command:
+            - curl
+            - -Iv
+            - "localhost:9090/live"
+          initialDelaySeconds: 60
+          failureThreshold: 1
+          periodSeconds: 20
+          successThreshold: 1
+          timeoutSeconds: 15
+      volumes:
+      - configMap:
+          defaultMode: 484
+          name: policy-enforcement-agent
+        name: policy-enforcement-agent
+---
+# Source: agents-chart/templates/sharedInformerAgent/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:  
+  name: shared-informer-agent
+  namespace: agents
+  labels:
+    app: shared-informer-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shared-informer-agent
+  template:
+    metadata:
+      labels:
+        app: shared-informer-agent
+    spec:
+      serviceAccountName: shared-informer-agent
+      containers:
+      - name: shared-informer-agent   
+        image: "public.ecr.aws/k9v9d5v2/shared-informer-agent:v0.8.2"  #":v0.8.2"
+        args:
+        - -config-path=/home/sia/conf/
+        imagePullPolicy: Always
+        volumeMounts:
+        - mountPath: /home/sia/conf/app.yaml
+          name: shared-informer-agent
+          subPath: app.yaml   
+        resources:
+          limits:
+            cpu: 200m
+            memory: 500Mi
+          requests:
+            cpu: 50m
+            memory: 50Mi
+        env:
+        
+        - name: CLUSTER_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: CLUSTER_NAME
+        - name: cluster_name
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: cluster_name
+        - name: cluster_id
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: cluster_id
+        - name: tenant_id
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: tenant_id
+        - name: workspace_id
+          valueFrom:
+            configMapKeyRef:
+              name: onboarding-vars
+              key: workspace_id
+        livenessProbe:
+          exec:
+            command:
+            - curl
+            - -Iv
+            - "localhost:9090/live"
+          initialDelaySeconds: 60
+          failureThreshold: 1
+          periodSeconds: 20
+          successThreshold: 1
+          timeoutSeconds: 15
+      volumes:
+      - configMap:
+          defaultMode: 484
+          name: shared-informer-agent
+        name: shared-informer-agent
+

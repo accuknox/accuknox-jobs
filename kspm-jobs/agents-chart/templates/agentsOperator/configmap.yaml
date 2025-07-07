@@ -1,0 +1,113 @@
+{{- if (eq (include "condition-feeder" .) "false") }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "agentsOperator.name" . }}
+  namespace: {{ .Release.Namespace }}
+data:
+  conf.yaml: |-
+    agent:
+    - name: feeder-service
+      container: 
+      - resource:
+        - type: cpu
+          request:
+            - value: (n/5 + 1)*10
+            - upper-bound: 100
+          limit:
+            - value: (n/5 + 1)*100
+            - upper-bound: 10000
+        - type: memory
+          request:
+            - value: (n/5 + 1)*20
+            - upper-bound: 150
+          limit:
+            - value: (n/5 + 1)*200
+            - upper-bound: 20000
+    - name: shared-informer-agent
+      container: 
+      - resource:
+        - type: cpu
+          request:
+            - value: (n/5 + 1)*10
+            - upper-bound: 100
+          limit:
+            - value: (n/5 + 1)*50
+            - upper-bound: 5000
+        - type: memory
+          request:
+            - value: (n/5 + 1)*20
+            - upper-bound: 200
+          limit:
+            - value: (n/5 + 1)*100
+            - upper-bound: 10000
+    - name: policy-enforcement-agent
+      container: 
+      - resource:
+        - type: cpu
+          request:
+            - value: (n/5 + 1)*10
+            - upper-bound: 100
+          limit:
+            - value: (n/5 + 1)*30
+            - upper-bound: 3000
+        - type: memory
+          request:
+            - value: (n/5 + 1)*10
+            - upper-bound: 100
+          limit:
+            - value: (n/5 + 1)*50
+            - upper-bound: 5000
+            
+
+    global-ns: "{{ .Release.Namespace }}"
+    agent-configmap: "{{ include "agentsOperator.name" . }}"  
+    healthPort: "{{ .Values.agentsOperator.ports.health | default 9090 }}"  
+    tokenURL: 
+      base: "https://{{ .Values.agents.tokenURL }}"
+      path: "/access-token/api/v1/process"
+    scaleAgents:
+      - discovery-engine
+      - policy-enforcement-agent
+      - shared-informer-agent
+      - feeder-service
+      - local-registry-agent
+
+  spire.conf: |
+    agent {
+      data_dir = "/run/spire/agent"
+      log_level = "DEBUG"
+      agent_address = "0.0.0.0"
+      agent_port = "9091"
+      socket_path = "/run/spire/agent/agent.sock"
+      trust_domain = "accuknox.com"
+    }
+
+    plugins {
+      
+      NodeAttestor "join_token" {
+      }
+
+      KeyManager "keymanager-k8s" {
+        plugin_cmd = "/config/plugin/keymanager-k8s"
+        plugin_data {
+          namespace = "{{ .Release.Namespace }}"
+          secretname = "spire-agent-secret"
+        }
+      }
+
+      WorkloadAttestor "k8s_sat" {
+        plugin_cmd = "/config/plugin/k8s-sat"
+        plugin_data {
+        }
+      }
+    }
+
+    health_checks {
+      listener_enabled = true
+      bind_address = "0.0.0.0"
+      bind_port = "9090"
+      live_path = "/live"
+      ready_path = "/ready"
+    }            
+{{- end }}            

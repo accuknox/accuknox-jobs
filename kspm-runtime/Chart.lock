@@ -1,0 +1,24 @@
+dependencies:
+- name: agents-chart
+  repository: file://../kspm-jobs/agents-chart
+  version: 0.1.0
+- name: kubearmor-operator
+  repository: https://kubearmor.github.io/charts
+  version: v1.5.7
+- name: cis-k8s-job
+  repository: file://../kspm-jobs/cis-k8s-job
+  version: 0.1.0
+- name: k8s-risk-assessment-job
+  repository: file://../kspm-jobs/k8s-risk-assessment-job
+  version: 0.1.0
+- name: kiem-job
+  repository: file://../kspm-jobs/kiem-job
+  version: 0.1.0
+- name: knoxguard-chart
+  repository: oci://public.ecr.aws/k9v9d5v2
+  version: v0.2.1
+- name: kyverno
+  repository: https://kyverno.github.io/kyverno/
+  version: 3.3.7
+digest: sha256:99a04a886508c65274f9bc22d387816396d5131cc90a68da717fc41c763a6916
+generated: "2025-07-08T03:45:13.490796474+05:30"

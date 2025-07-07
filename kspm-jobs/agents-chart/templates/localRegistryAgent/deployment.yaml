@@ -1,0 +1,57 @@
+{{- if .Values.install.localRegistryAgent}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "localRegistryAgent.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "localRegistryAgent.name" . }}
+spec:
+  replicas: {{ .Values.localRegistryAgent.replicaCount | default 0 }}
+  selector:
+    matchLabels:
+      app: {{ include "localRegistryAgent.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "localRegistryAgent.name" . }}
+    spec:
+      serviceAccountName: {{ include "localRegistryAgent.name" . }}
+      containers:
+      - name: {{ include "localRegistryAgent.name" . }}
+        image: "{{ include "localRegistryAgent.image" . }}" #"{{ .Values.localRegistryAgent.image }}:{{ .Values.localRegistryAgent.tag }}"
+        imagePullPolicy: Always
+        args: ["--config","{{ .Values.localRegistryAgent.args}}"]
+        volumeMounts:
+        {{- with .Values.localRegistryAgent.volumeMounts -}}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}  
+        {{- if .Values.registry.secretName }} 
+        - name: docker-config
+          mountPath: /home/default/.docker/
+        {{- end }} 
+        resources:
+        {{- if .Values.localRegistryAgent.resources }}
+          {{- toYaml .Values.localRegistryAgent.resources | nindent 10 }}
+        {{- else }}
+          requests:
+            cpu: 50m
+            memory: 50Mi
+        {{- end }}
+      {{- if .Values.registry.secretName }} 
+      imagePullSecrets:
+      - name: {{ .Values.registry.secretName | quote }}
+      {{- end }}
+      volumes:
+      {{- with .Values.localRegistryAgent.volumes -}}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}  
+      {{- if .Values.registry.secretName }} 
+      - name: docker-config
+        secret:
+          secretName: {{ .Values.registry.secretName | quote }}
+          items:
+            - key: .dockerconfigjson
+              path: config.json
+      {{- end }}
+{{- end }}      

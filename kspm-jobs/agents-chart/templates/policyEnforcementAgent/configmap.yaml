@@ -1,0 +1,51 @@
+{{- if  (eq (include "condition-feeder" .) "false") }}
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: {{ include "policyEnforcementAgent.name" . }}
+  namespace: {{ .Release.Namespace }} 
+data:
+  application.yaml: |-
+    endpoint:
+      urlendpoint: /pps/api/v1/policy-provider/fetch-policy
+      baseurlendpoint: https://{{ include "agents.ppsHost" . }}
+
+    statusendpoint:
+      endpoint: https://{{ include "agents.ppsHost" . }}/pps/api/v1/policy-provider/change-status-policy
+      
+    secret:
+      key2: 511dfbdb941561cbea02ffaf1043df6b47512e01f75d5ae5932cd9a36b4f07c0
+
+    syncuptime:
+      t: 5
+
+    annotation:
+      statusendpoint: /pps/api/v1/policy-provider/update-annotation-status
+      annotationendpoint: /pps/api/v1/policy-provider/fetch-annotations
+      basepath: https://{{ include "agents.ppsHost" . }}
+
+    spire:
+      enable: {{ .Values.agentsOperator.spireVars.SPIRE_ENABLED }}
+      agent: "agents-operator.{{ .Release.Namespace }}.svc.cluster.local:9091"
+
+    psaLabels:
+      basePath: https://{{ include "agents.ppsHost" . }}
+      fetchPSALabels: /pps/api/v1/security-admission/fetch-psa-labels
+      updatePSALabelStatus: /pps/api/v1/security-admission/update-psa-labels-status
+
+    policy-watcher:
+      enable: true
+      topic: discovery/custom-policy-v1
+      watchers: 
+      - "KubeArmorPolicy"
+      - "KubeArmorHostPolicy"
+      - "NetworkPolicy"
+    deployMode: "k8s"
+
+    reconciler:
+      enable: true
+      interval: 30m
+    
+    log-level: info
+
+{{- end }}

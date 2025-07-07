@@ -4,7 +4,7 @@ metadata:
   name: k8s-risk-assessment-job
   namespace: {{ .Release.Namespace }}
 spec:
-  schedule: "{{ .Values.global.accuknox.cronTab }}"
+  schedule: "{{ .Values.global.cronTab }}"
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
 
@@ -15,22 +15,36 @@ spec:
     spec:
       template:
         spec:
-        {{- if .Values.imagePullSecrets.name }}
+        {{- if .Values.registry.secretName }}
           imagePullSecrets:
-          - name: {{ .Values.imagePullSecrets.name }}
+          - name: {{ .Values.registry.secretName }}
         {{- end }}        
           initContainers:
             - name: job-init-container
-              image: "{{ .Values.kubescape.image.repository }}:{{ .Values.kubescape.image.tag }}"
-              args: ["scan", "framework", "allcontrols,clusterscan,mitre,nsa", "--format", "json", "--cache-dir", "/data/kubescape-cache", "--output", "/data/report.json", "--cluster-name=$(CLUSTER_NAME)"]
+              image: "{{ include "kubescape.image" . }}"
+              args:
+                - scan
+                - framework
+                - allcontrols,clusterscan,mitre,nsa
+                - --format
+                - json
+                - --cache-dir
+                - /data/kubescape-cache
+                - --output
+                - /data/report.json
+                - --cluster-name=$(CLUSTER_NAME)
+                {{- if .Values.airgapped }}
+                - --use-artifacts-from
+                - /opt/kubescape/artifacts
+                {{- end }}
               env:
                 - name: CLUSTER_NAME
-                  value: {{ .Values.global.accuknox.clusterName }}
+                  value: {{ .Values.global.clusterName }}
               volumeMounts:
                 - name: datapath
                   mountPath: /data
           containers:
-            - image: "{{ .Values.accuknoxJob.image.repository }}:{{ .Values.accuknoxJob.image.tag }}"
+            - image: "{{ include "cluster_job.image" . }}"
               name: artifact-api-container
               command:
                 - '/bin/sh'
@@ -40,21 +54,21 @@ spec:
                   valueFrom:
                     secretKeyRef:
                       key: AUTH_TOKEN
-                      {{- if (.Values.global.accuknox.secretName | empty) }}
+                      {{- if (.Values.global.secretName | empty) }}
                       name: k8s-risk-assessment-job-auth-token
                       {{- else }}
-                      name: {{ .Values.global.accuknox.secretName }}
+                      name: {{ .Values.global.secretName }}
                       {{- end }}
                 - name: URL
-                  value: {{ .Values.global.accuknox.url }}
+                  value: {{ include "global.jobURL" . }}
                 - name: TENANT_ID
-                  value: {{ .Values.global.accuknox.tenantId | quote }}
+                  value: {{ .Values.global.tenantId | quote }}
                 - name: CLUSTER_NAME
-                  value: {{ .Values.global.accuknox.clusterName }}
+                  value: {{ .Values.global.clusterName }}
                 - name: CLUSTER_ID
-                  value: {{ .Values.global.accuknox.clusterID | quote }}
+                  value: {{ .Values.global.clusterID | quote }}
                 - name: LABEL_NAME
-                  value: {{ .Values.global.accuknox.label }}
+                  value: {{ .Values.global.label }}
               volumeMounts:
                 - mountPath: /data
                   name: datapath

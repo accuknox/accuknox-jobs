@@ -1,0 +1,19 @@
+{{- if .Values.install.localRegistryAgent}}
+{{ $ctx := .}}
+{{- $namespace := include "namespace" . }}
+{{- range $configMap,$fields := .Values.localRegistryAgent.configmaps | default dict }}
+{{- if (and (hasKey $fields "enabled") ($fields.enabled)) }}
+apiVersion: v1
+kind: ConfigMap
+metadata: 
+  name: {{ $fields.name }}
+  namespace: {{ $namespace }}
+data:
+  config.yaml: |-
+{{ tpl ($.Files.Get  $fields.file) $ctx | nindent 4 }}
+{{- end }}
+---
+{{- end }}
+{{- end }}
+
+

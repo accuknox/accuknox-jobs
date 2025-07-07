@@ -2,23 +2,25 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-
-accuknoxJob:
-  image:
-    repository: accuknox/accuknox-job
-    tag: "latest"
+cluster_job:
+  owner: public.ecr.aws/k9v9d5v2
+  repository: cluster-job
+  tag: "latest"
+  image: ""
 
 kubeBench:
-  image:
-    repository: docker.io/aquasec/kube-bench
-    tag: "v0.9.1"
+  owner: docker.io/aquasec
+  repository: kube-bench
+  tag: "v0.9.1"
+  image: ""
 
-# To use existing secret updated {imagePullSecrets.name} with your secret name.
-imagePullSecrets:
-  name: ""
-  registry: ""
+# To use existing secret updated {registry.secretName} with your secret name.
+registry: 
+  url: ""
+  secretName: ""
   username: ""
   password: ""
+  preserveUpstream: true
 
 toolConfig:
   platform: ""
@@ -28,11 +30,11 @@ toolConfig:
   check: ""
   skip: ""
 
-accuknox:
-  authToken: "{{ .Values.global.accuknox.authToken }}"
-  URL: "{{ .Values.global.accuknox.url }}"
-  tenantID: "{{ .Values.global.accuknox.tenantId }}"
-  cronTab: "{{ .Values.global.accuknox.cronTab }}"
-  clusterName: "{{ .Values.global.accuknox.clusterName }}"
-  label: "{{ .Values.global.accuknox.label }}"
-  secretName: "{{ .Values.global.accuknox.secretName }}"
+global:
+  authToken: ""
+  enableJobsUrl: false
+  tenantID: ""
+  cronTab: ""
+  clusterName: ""
+  label: ""
+  secretName: ""

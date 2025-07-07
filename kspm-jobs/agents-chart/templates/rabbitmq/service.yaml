@@ -1,0 +1,16 @@
+{{- if and (.Values.rabbitmq.enabled) (.Values.install.localRegistryAgent)}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: rabbitmq
+spec:
+  type: {{ .Values.rabbitmq.service.type }}
+  ports:
+    - port: {{ .Values.rabbitmq.service.port }}
+      targetPort: {{ .Values.rabbitmq.service.port }}
+  selector:
+    app: rabbitmq
+{{- end }}

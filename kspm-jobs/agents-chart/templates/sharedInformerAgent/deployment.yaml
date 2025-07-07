@@ -1,0 +1,72 @@
+{{- if (eq (include "condition-feeder" .) "false") }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:  
+  name: {{ include "sharedInformerAgent.name" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: {{ include "sharedInformerAgent.name" . }}
+spec:
+  replicas: {{ .Values.sharedInformerAgent.replicaCount | default 0 }}
+  selector:
+    matchLabels:
+      app: {{ include "sharedInformerAgent.name" . }}
+  template:
+    metadata:
+      labels:
+        app: {{ include "sharedInformerAgent.name" . }}
+    spec:
+      serviceAccountName: {{ include "sharedInformerAgent.name" . }}
+      containers:
+      - name: {{ include "sharedInformerAgent.name" . }}   
+        image: "{{ include "sharedInformerAgent.image" . }}"  #"{{ .Values.sharedInformerAgent.image }}:{{ .Values.sharedInformerAgent.tag }}"
+        args:
+        - -config-path=/home/sia/conf/
+        imagePullPolicy: Always
+        volumeMounts:
+        - mountPath: /home/sia/conf/app.yaml
+          name: {{ include "sharedInformerAgent.name" . }}
+          subPath: app.yaml
+        {{- with .Values.sharedInformerAgent.volumesMounts -}}
+        {{- toYaml . | nindent 6 }}
+        {{- end }}   
+        resources:
+        {{- if .Values.agentsOperator.resources }}
+          {{- toYaml .Values.agentsOperator.resources | nindent 10 }}
+        {{- else }}
+          limits:
+            cpu: 200m
+            memory: 500Mi
+          requests:
+            cpu: 50m
+            memory: 50Mi
+        {{- end }}
+        env:
+        {{- include "onboarding.details" . | nindent 8 }}
+        {{- if .Values.sharedInformerAgent.liveness }}
+        livenessProbe:
+          exec:
+            command:
+            - curl
+            - -Iv
+            - "{{ include "agents.spireHost" . }}:{{ .Values.agentsOperator.ports.health | default 9090 }}/live"
+          initialDelaySeconds: 60
+          failureThreshold: 1
+          periodSeconds: 20
+          successThreshold: 1
+          timeoutSeconds: 15  
+        {{- end}}
+      {{- if .Values.registry.secretName }}
+      imagePullSecrets:
+      - name: {{ .Values.registry.secretName | quote }}
+      {{- end }}
+      volumes:
+      - configMap:
+          defaultMode: 484
+          name: {{ include "sharedInformerAgent.name" . }}
+        name: {{ include "sharedInformerAgent.name" . }}
+      {{- with .Values.sharedInformerAgent.volumes -}}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}   
+{{- end }}   
+     
