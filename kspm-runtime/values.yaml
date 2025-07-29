@@ -14,9 +14,9 @@ global:
     enabled: false
     joinToken: ""
     accessKey: ""
-    enableSpire: false
-    enablePps: false
-    enableKnoxGateway: false
+    enableSpire: true
+    enablePps: true
+    enableKnoxGateway: true
     url: ""
 
 #OnlyChartsNeedsToBeInstall
