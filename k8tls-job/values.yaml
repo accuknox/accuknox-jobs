@@ -29,3 +29,6 @@ clusterName: ""
 label: ""
 URL: "cspm.domain-url.com"
 secretName: ""
+certBundlePath: ""  # Set this for cert local path if needed .
+certBundleURL: ""  # Set this for cert URL if needed (if certBundlePath is set as well certBundlePath will take precedent)
+useInsecureConnection: false  # Set to true if insecure connection is needed

@@ -69,6 +69,14 @@ spec:
                   value: {{ .Values.clusterID | quote }}
                 - name: LABEL_NAME
                   value: {{ .Values.label }}
+                - name: CERT_BUNDLE_PATH
+                  value: {{ .Values.certBundlePath | quote }}
+                - name: CERT_BUNDLE_URL
+                  value: {{ .Values.certBundleURL }}
+                - name: USE_INSECURE_CONNECTION
+                  value: {{ .Values.useInsecureConnection | quote }}
+                - name: DATA_TYPE
+                  value: "KS"
               volumeMounts:
                 - mountPath: /data
                   name: datapath

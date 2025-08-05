@@ -22,7 +22,7 @@ spec:
       containers:
       - image: "{{ include "cluster_job.image" . }}"
         command: ["/bin/sh", "-c"]
-        args: ['/bin/sh entrypoint.sh && curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KB&label_id=${LABEL_NAME}&save_to_s3=true" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"./data/report.json\"" && cat /data/report.json']
+        args: ['/bin/sh entrypoint.sh && ./curl_command.sh']
         name: cis-k8s-cronjob
         resources: {}
         env:
@@ -45,6 +45,14 @@ spec:
             value: {{ .Values.tenantId | quote}}
           - name: URL
             value: {{ .Values.url }}
+          - name: CERT_BUNDLE_PATH
+            value: {{ .Values.certBundlePath | quote }}
+          - name: CERT_BUNDLE_URL
+            value: {{ .Values.certBundleURL }}
+          - name: USE_INSECURE_CONNECTION
+            value: {{ .Values.useInsecureConnection | quote }}
+          - name: DATA_TYPE
+            value: "KB"
         volumeMounts:
         - mountPath: /data
           name: datapath
