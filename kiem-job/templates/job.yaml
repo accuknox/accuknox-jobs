@@ -27,32 +27,38 @@ spec:
               mountPath: /data
       containers:
         - image: "{{ include "cluster_job.image" . }}"
-          command: ['sh', '-c', 'curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KIEM&save_to_s3=true&label_id=${LABEL_NAME}" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"/data/report.json\""']
+          args:
+          - -config 
+          - /jobs/conf/app.yaml
           name: accuknox-kiem-job
-          resources: {}
-          env:
-            - name: AUTH_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  key: AUTH_TOKEN
-                  {{- if (.Values.secretName | empty) }}
-                  name: kiem-job-auth-token
-                  {{- else }}
-                  name: {{ .Values.secretName }}
-                  {{- end }}
-            - name: URL
-              value: {{ .Values.URL }}
-            - name: TENANT_ID
-              value: {{ .Values.tenantID | quote }}
-            - name: CLUSTER_NAME
-              value: {{ .Values.clusterName }}
-            - name: LABEL_NAME
-              value: {{ .Values.label | quote}}
           volumeMounts:
             - mountPath: /data
-              name: datapath      
+              name: datapath  
+            - name: secret-volume
+              mountPath: /secrets/tokens
+              readOnly: true
+            {{- if .Values.joinToken }}    
+            - name: config
+              mountPath: /jobs/spire/
+              subPath: agent.conf 
+            - name: spirepath
+              mountPath: /run/spire/agent
+            - name: config
+              mountPath: /jobs/conf/
+              subPath: app.yaml
+            {{- end }}         
       volumes:
         - name: datapath
           emptyDir: {}
+        - name: secret-volume
+          secret:
+            secretName: {{ .Values.secretName | default "kiem-job-auth-token" }}
+        {{- if .Values.joinToken }} 
+        - name: spirepath
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: kiem-config-{{ .Release.Name }}
+        {{- end }}
       restartPolicy: OnFailure
       serviceAccount: kiem-service-account

@@ -51,3 +51,11 @@
 {{- define "kubescape.image" -}}
   {{ include "image-name" (dict "url" .Values.registry.url "owner" .Values.kubescape.owner "repoName" .Values.kubescape.repository "tag" .Values.kubescape.tag "preserve" .Values.registry.preserveUpstream "image" .Values.kubescape.image ) }}
 {{- end -}}
+
+{{- define "spire.enabled" -}}
+  {{- if .Values.joinToken -}}
+    true
+  {{- else -}}
+    false
+  {{- end -}}
+{{- end -}}

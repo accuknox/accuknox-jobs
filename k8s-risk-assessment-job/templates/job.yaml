@@ -42,39 +42,42 @@ spec:
       containers:
         - image: "{{ include "cluster_job.image" . }}"
           name: artifact-api-container
-          command:
-            - '/bin/sh'
-            - '/script/augment-and-push-results.sh'
-          env:
-            - name: AUTH_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  key: AUTH_TOKEN
-                  {{- if (.Values.secretName | empty) }}
-                  name: k8s-risk-assessment-job-auth-token
-                  {{- else }}
-                  name: {{ .Values.secretName }}
-                  {{- end }}
-            - name: URL
-              value: {{ .Values.URL }}
-            - name: TENANT_ID
-              value: {{ .Values.tenantID | quote }}
-            - name: CLUSTER_NAME
-              value: {{ .Values.clusterName }}
-            - name: CLUSTER_ID
-              value: {{ .Values.clusterID | quote }}
-            - name: LABEL_NAME
-              value: {{ .Values.label }}
+          args: 
+          - -config 
+          - /jobs/conf/app.yaml
           volumeMounts:
             - mountPath: /data
               name: datapath
             - mountPath: /script
               name: scriptpath
+            - name: secret-volume
+              mountPath: /secrets/tokens
+              readOnly: true
+            {{- if .Values.joinToken }}    
+            - name: config
+              mountPath: /jobs/spire/
+              subPath: agent.conf 
+            - name: spirepath
+              mountPath: /run/spire/agent
+            - name: config
+              mountPath: /jobs/conf/
+              subPath: app.yaml
+            {{- end }}
       volumes:
         - name: datapath
           emptyDir: {}
         - name: scriptpath
           configMap:
             name: k8s-risk-assessment-job-script-configmap
+        - name: secret-volume
+          secret:
+            secretName: {{ .Values.secretName | default "k8s-risk-assessment-job-token" }}
+        {{- if .Values.joinToken }} 
+        - name: spirepath
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: risk-assessment-config-{{ .Release.Name }}
+        {{- end }}
       restartPolicy: OnFailure
       serviceAccount: k8s-risk-assessment-job-service-account

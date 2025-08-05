@@ -256,3 +256,12 @@ tolerations:
 {{- define "kubeBench.image" -}}
   {{ include "image-name" (dict "url" .Values.registry.url "owner" .Values.kubeBench.owner "repoName" .Values.kubeBench.repository "tag" .Values.kubeBench.tag "preserve" .Values.registry.preserveUpstream "image" .Values.kubeBench.image ) }}
 {{- end -}}
+
+
+{{- define "spire.enabled" -}}
+  {{- if .Values.joinToken -}}
+    true
+  {{- else -}}
+    false
+  {{- end -}}
+{{- end -}}

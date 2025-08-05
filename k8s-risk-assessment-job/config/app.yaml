@@ -1,0 +1,22 @@
+jobs:
+  authTokenFile: {{ .Values.authTokenPath }}
+  url: https://{{ .Values.url }}/api/v1/artifact/?tenant_id={{ .Values.tenantId }}&data_type=KS&label_id={{ .Values.label }}&save_to_s3=true"
+  tenantID: {{ .Values.tenantId }}
+  clusterName: {{ .Values.clusterName }}
+  labelName: {{ .Values.label }}
+  dataType: "KS"
+  saveToS3: true
+  reportFile: "/data/report.json"
+  clusterID: {{ .Values.clusterId }}
+  printData: true
+
+spire:
+  enabled: {{ include "spire.enabled" . }}
+  server: {{ .Values.spireServer }}
+  port: {{ .Values.spirePort }}
+  secretName: "spire-agent-secret-{{ .Release.Name }}"
+  joinTokenFile: {{ .Values.joinTokenPath }}
+  namespace: "{{ .Release.Namespace }}"
+  gatewayServer: {{ .Values.gatewayServer }}
+  directory: ""
+  configFile: {{ .Values.spireConfigFile }}
