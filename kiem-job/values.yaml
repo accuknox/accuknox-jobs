@@ -43,3 +43,10 @@ spirePort: 8081
 joinToken: ""
 knoxGateway: "kgw:8080"
 spireConfigFile: "/jobs/spire/agent.conf"
+
+
+configPaths:
+- "/data/kubescape-cache/allcontrols.json"
+- "/data/kubescape-cache/clusterscan.json"
+- "/data/kubescape-cache/mitre.json"
+- "/data/kubescape-cache/nsa.json"

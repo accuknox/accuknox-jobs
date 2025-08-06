@@ -20,3 +20,8 @@ spire:
   gatewayServer: {{ .Values.knoxGateway }}
   directory: ""
   configFile: {{ .Values.spireConfigFile }}
+
+configPaths:
+{{- range .Values.configPaths }}
+  - {{ . }}
+{{- end }}

@@ -57,15 +57,15 @@ spec:
                 - name: secret-volume
                   mountPath: /secrets/tokens
                   readOnly: true
+                - name: config
+                  mountPath: /jobs/conf/app.yaml
+                  subPath: app.yaml
                 {{- if .Values.joinToken }}    
                 - name: config
                   mountPath: /jobs/spire/agent.conf
                   subPath: agent.conf 
                 - name: spirepath
                   mountPath: /run/spire/agent
-                - name: config
-                  mountPath: /jobs/conf/app.yaml
-                  subPath: app.yaml
                 {{- end }}
           volumes:
             - name: datapath
@@ -74,14 +74,14 @@ spec:
               configMap:
                 name: k8s-risk-assessment-job-script-configmap
             - name: secret-volume
-             secret:
-               secretName: {{ .Values.secretName | default "k8s-risk-assessment-job-token" }}
-            {{- if .Values.joinToken }} 
-            - name: spirepath
-              emptyDir: {}
+              secret:
+                secretName: {{ .Values.secretName | default "k8s-risk-assessment-job-token" }}
             - name: config
               configMap:
                 name: risk-assessment-config-{{ .Release.Name }}
+            {{- if .Values.joinToken }} 
+            - name: spirepath
+              emptyDir: {}
             {{- end }}
           restartPolicy: OnFailure
           serviceAccount: k8s-risk-assessment-job-service-account
