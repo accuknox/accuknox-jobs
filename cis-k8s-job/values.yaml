@@ -43,8 +43,8 @@ secretName: ""
 authTokenPath: "/secrets/tokens/AUTH_TOKEN"
 joinTokenPath: "/secrets/tokens/JOIN_TOKEN"
 
-spireServer: "localhost"
+spireHost: "localhost"
 spirePort: 8081
 joinToken: ""
-GatewayServer: "kgw:8080"
+knoxGateway: "kgw:8080"
 spireConfigFile: "/jobs/spire/agent.conf"

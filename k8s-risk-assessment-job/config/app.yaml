@@ -1,22 +1,22 @@
 jobs:
   authTokenFile: {{ .Values.authTokenPath }}
-  url: https://{{ .Values.url }}/api/v1/artifact/?tenant_id={{ .Values.tenantId }}&data_type=KS&label_id={{ .Values.label }}&save_to_s3=true"
-  tenantID: {{ .Values.tenantId }}
+  url: https://{{ .Values.URL }}/api/v1/artifact/?tenant_id={{ .Values.tenantID }}&data_type=KS&label_id={{ .Values.label }}&save_to_s3=true
+  tenantID: {{ .Values.tenantID }}
   clusterName: {{ .Values.clusterName }}
   labelName: {{ .Values.label }}
   dataType: "KS"
   saveToS3: true
   reportFile: "/data/report.json"
-  clusterID: {{ .Values.clusterId }}
+  clusterID: {{ .Values.clusterID }}
   printData: true
 
 spire:
   enabled: {{ include "spire.enabled" . }}
-  server: {{ .Values.spireServer }}
+  server: {{ .Values.spireHost }}
   port: {{ .Values.spirePort }}
   secretName: "spire-agent-secret-{{ .Release.Name }}"
   joinTokenFile: {{ .Values.joinTokenPath }}
   namespace: "{{ .Release.Namespace }}"
-  gatewayServer: {{ .Values.gatewayServer }}
+  gatewayServer: {{ .Values.knoxGateway }}
   directory: ""
   configFile: {{ .Values.spireConfigFile }}

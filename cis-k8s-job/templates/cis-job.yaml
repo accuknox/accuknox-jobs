@@ -34,12 +34,12 @@ spec:
           readOnly: true
         {{- if .Values.joinToken }}    
         - name: config
-          mountPath: /jobs/spire/
+          mountPath: /jobs/spire/agent.conf
           subPath: agent.conf 
         - name: spirepath
           mountPath: /run/spire/agent
         - name: config
-          mountPath: /jobs/conf/
+          mountPath: /jobs/conf/app.yaml
           subPath: app.yaml
         {{- end }}
       initContainers:

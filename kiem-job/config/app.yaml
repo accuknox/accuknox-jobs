@@ -1,7 +1,7 @@
 jobs:
   authTokenFile: {{ .Values.authTokenPath }}
-  url: https://{{ .Values.url }}/api/v1/artifact/?tenant_id={{ .Values.tenantId }}&data_type=KIEM&label_id={{ .Values.label }}&save_to_s3=true"
-  tenantID: {{ .Values.tenantId }}
+  url: https://{{ .Values.URL }}/api/v1/artifact/?tenant_id={{ .Values.tenantID }}&data_type=KIEM&label_id={{ .Values.label }}&save_to_s3=true
+  tenantID: {{ .Values.tenantID }}
   clusterName: {{ .Values.clusterName }}
   labelName: {{ .Values.label }}
   dataType: "KIEM"
@@ -12,11 +12,11 @@ jobs:
 
 spire:
   enabled: {{ include "spire.enabled" . }}
-  server: {{ .Values.spireServer }}
+  server: {{ .Values.spireHost }}
   port: {{ .Values.spirePort }}
   secretName: "spire-agent-secret-{{ .Release.Name }}"
   joinTokenFile: {{ .Values.joinTokenPath }}
   namespace: "{{ .Release.Namespace }}"
-  gatewayServer: {{ .Values.gatewayServer }}
+  gatewayServer: {{ .Values.knoxGateway }}
   directory: ""
   configFile: {{ .Values.spireConfigFile }}
