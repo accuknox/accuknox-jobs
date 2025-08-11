@@ -1,5 +1,7 @@
 jobs:
+  {{- if .Values.authToken }}
   authTokenFile: {{ .Values.authTokenPath }}
+  {{- end }}
   url: https://{{ .Values.URL }}/api/v1/artifact/?tenant_id={{ .Values.tenantID }}&data_type=KB&label_id={{ .Values.label }}&save_to_s3=true
   tenantID: {{ .Values.tenantID }}
   clusterName: {{ .Values.clusterName }}
