@@ -1,6 +1,0 @@
-apiVersion: v2
-appVersion: v1.5.7
-description: A Helm chart for kubearmor operator
-name: kubearmor-operator
-type: application
-version: v1.5.7

@@ -40,13 +40,13 @@ global:
     enabled: false 
 
 # Values specific to KubeArmorOperator sub-chart
-  kubearmor:
-    enabled: false
-    autoDeploy: false
+kubearmor-operator:
+  enabled: false
+  autoDeploy: false
 
 # Values specific to knoxguard and kyverno sub-charts
-  admissionController:
-    enabled: false
+admissionController:
+  enabled: false
 
-  kyverno:
-    enabled: false
+kyverno:
+  enabled: false
