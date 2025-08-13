@@ -9,7 +9,7 @@ Instruction to perform CIS Benchmark on Cluster via AccuKnox CIS K8s Job
 | Variable              | Sample Value                      | Description                          |
 | --------------------- | --------------------------------- | ------------------------------------ |
 | url                   | cspm.domain-url.com               | AccuKnox CSPM Endpoint URL           |
-| tenantId              | 2                                 | AccuKnox Tenant ID                   |
+| tenantID             | 2                                 | AccuKnox Tenant ID                   |
 | label                 | CIS                               | AccuKnox Label                       |
 | authToken             | $token                            | AccuKnox Token                       |
 | clusterName           | $clusterName                      | Cluster Name                         |
@@ -32,7 +32,7 @@ git clone https://github.com/accuknox/accuknox-jobs.git && cd accuknox-jobs/cis-
 ```sh
 helm upgrade --install accuknox-cis-k8s . \
     --set url="cspm.<domain-url>.com" \
-    --set tenantId="$tenantId" \
+    --set tenantID="$tenantID" \
     --set label="$label" \
     --set authToken="$token" \
     --set clusterName="$clusterName" \
@@ -71,8 +71,8 @@ cat <<<$(jq '. += {
 
  - Sending output file to AccuKnox SaaS
 ```sh
-curl --location --request POST 'https://cspm.domain-url.com/api/v1/artifact/?tenant_id=$tenantId&data_type=KB&save_to_s3=true' --header 'Tenant-Id: $tenantId' --header "Authorization: Bearer $token" --form 'file=@"./results.json"'
+curl --location --request POST 'https://cspm.domain-url.com/api/v1/artifact/?tenant_id=$tenantID&data_type=KB&save_to_s3=true' --header 'Tenant-Id: $tenantID' --header "Authorization: Bearer $token" --form 'file=@"./results.json"'
 ```
-> Replace value of `$tenantId` from AccuKnox Tenant ID & `$token` from AccuKnox Token
+> Replace value of `$tenantID` from AccuKnox Tenant ID & `$token` from AccuKnox Token
 
  - You should be able to see a successful message as **{"detail":"File received successfully"}**

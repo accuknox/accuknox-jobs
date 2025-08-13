@@ -34,7 +34,24 @@ authToken: "NO-TOKEN-SET"
 cronTab: "30 9 * * *"
 clusterName: ""
 label: ""
-clusterId: ""
-tenantId: ""
-url: "cspm.domain-url.com"
+clusterID: ""
+tenantID: ""
+URL: "cspm.domain-url.com"
 secretName: ""
+
+
+authTokenPath: "/secrets/tokens/AUTH_TOKEN"
+joinTokenPath: "/secrets/tokens/JOIN_TOKEN"
+
+spireHost: "localhost"
+spirePort: 8081
+joinToken: ""
+knoxGateway: "kgw:8080"
+spireConfigFile: "/jobs/spire/agent.conf"
+
+
+configPaths:
+- "/data/kubescape-cache/allcontrols.json"
+- "/data/kubescape-cache/clusterscan.json"
+- "/data/kubescape-cache/mitre.json"
+- "/data/kubescape-cache/nsa.json"

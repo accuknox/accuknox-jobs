@@ -17,35 +17,31 @@ spec:
           imagePullSecrets:
           - name: {{ .Values.registry.secretName | quote }}
           {{- end }}
+          {{- if .Values.joinToken }}
+          serviceAccount: cis-service-account
+          {{- end }}
           containers:
           - image: "{{ include "cluster_job.image" . }}"
-            command: ["/bin/sh", "-c"]
-            args: ['/bin/sh entrypoint.sh && curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KB&label_id=${LABEL_NAME}&save_to_s3=true" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"./data/report.json\"" && cat /data/report.json']
+            args: 
+            - -config 
+            - /jobs/conf/app.yaml
             name: cis-k8s-cronjob
-            resources: {}
-            env:
-              - name: AUTH_TOKEN
-                valueFrom:
-                  secretKeyRef:
-                    key: AUTH_TOKEN
-                    {{- if (.Values.secretName | empty) }}
-                    name: cis-k8s-job-auth-token
-                    {{- else }}
-                    name: {{ .Values.secretName }}
-                    {{- end }}
-              - name: CLUSTER_NAME
-                value: {{ .Values.clusterName }}
-              - name: LABEL_NAME
-                value: {{ .Values.label }}
-              - name: CLUSTER_ID
-                value: {{ .Values.clusterId }}
-              - name: TENANT_ID
-                value: {{ .Values.tenantId | quote}}
-              - name: URL
-                value: {{ .Values.url }}
             volumeMounts:
             - mountPath: /data
               name: datapath
+            - name: secret-volume
+              mountPath: /secrets/tokens
+              readOnly: true
+            - name: config
+              mountPath: /jobs/conf/app.yaml
+              subPath: app.yaml
+            {{- if .Values.joinToken }}    
+            - name: config
+              mountPath: /jobs/spire/agent.conf
+              subPath: agent.conf 
+            - name: spirepath
+              mountPath: /run/spire/agent
+            {{- end }}
           initContainers:
           - image: "{{ include "kubeBench.image" . }}"
             command:
@@ -56,6 +52,16 @@ spec:
           hostPID: true
           restartPolicy: Never
           volumes:
+           - name: secret-volume
+             secret:
+               secretName: {{ .Values.secretName | default "cis-k8s-job-token" }}
+           - name: config
+             configMap:
+               name: cis-config-{{ .Release.Name }}
+           {{- if .Values.joinToken }} 
+           - name: spirepath
+             emptyDir: {}
+           {{- end }}
           {{- include "volumes" .Values.toolConfig | trim | nindent 11 }}
 
   schedule: "{{ .Values.cronTab }}"

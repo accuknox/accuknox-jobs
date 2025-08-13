@@ -115,3 +115,12 @@ Create the name of the service account to use
 {{- define "kiem.image" -}}
   {{ include "image-name" (dict "url" .Values.registry.url "owner" .Values.kiem.owner "repoName" .Values.kiem.repository "tag" .Values.kiem.tag "preserve" .Values.registry.preserveUpstream "image" .Values.kiem.image ) }}
 {{- end -}}
+
+
+{{- define "spire.enabled" -}}
+  {{- if .Values.joinToken -}}
+    true
+  {{- else -}}
+    false
+  {{- end -}}
+{{- end -}}

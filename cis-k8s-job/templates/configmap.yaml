@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cis-config-{{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+data:
+  app.yaml : |
+    {{ tpl ( .Files.Get "config/app.yaml" ) . | nindent 4 }}
+  {{- if .Values.joinToken }}
+  agent.conf: |
+    {{ tpl ( .Files.Get "config/agent.conf" ) . | nindent 4 }}
+  {{- end }}
