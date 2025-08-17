@@ -1,0 +1,53 @@
+name: build accuknox-job image workflow
+
+on:
+  push:
+    tags:
+    - '*'
+    branches:
+    - "main"
+
+jobs:
+  push_to_registry:
+    name: Push Docker image to Docker Hub
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+        
+      - name: Set up AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+          
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+
+      - name: Login to AWS ECR
+        run: |
+          aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/k9v9d5v2
+    
+         
+      - name: Determine version
+        id: vars
+        run: |
+          if [ ${{ github.ref }} == "refs/heads/main" ]; then
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Set git ssh private key
+        run: echo "${{ secrets.GIT_KEY }}" > GIT-KEY
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          # equivalent of make docker-build
+          context: .
+          file: Dockerfile
+          push: true
+          tags: public.ecr.aws/k9v9d5v2/cluster-job:${{ steps.vars.outputs.tag }}

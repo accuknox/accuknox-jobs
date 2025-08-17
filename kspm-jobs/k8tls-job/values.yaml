@@ -1,0 +1,32 @@
+# Default values for k8tls-job.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+cluster_job:
+  owner: public.ecr.aws/k9v9d5v2
+  repository: cluster-job
+  tag: "latest"
+  image: ""
+
+k8tls:
+  owner: kubearmor
+  repository: k8tls
+  tag: "latest"
+  image: ""
+
+# To use existing secret updated {registry.secretName} with your secret name.
+registry: 
+  url: ""
+  secretName: ""
+  username: ""
+  password: ""
+  preserveUpstream: true
+
+global:
+  authToken: ""
+  enableJobsUrl: false
+  tenantID: ""
+  cronTab: ""
+  clusterName: ""
+  label: ""
+  secretName: ""
