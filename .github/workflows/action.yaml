@@ -19,6 +19,7 @@ jobs:
       with:
        version: ${{ github.ref_name }}
 
+
   helm_chart_validation:
     runs-on: ubuntu-latest
     if: always() && !contains(needs.tag-validate.result, 'failure')   
@@ -45,7 +46,7 @@ jobs:
 
   helm_push_to_ecr:
     runs-on: ubuntu-latest
-    needs: [helm_chart_validation]
+    needs: [helm_chart_validation,tag-validate]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2

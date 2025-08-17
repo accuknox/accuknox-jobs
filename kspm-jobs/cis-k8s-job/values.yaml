@@ -33,7 +33,7 @@ toolConfig:
 global:
   authToken: ""
   enableJobsUrl: false
-  tenantID: ""
+  tenantId: ""
   cronTab: ""
   clusterName: ""
   label: ""

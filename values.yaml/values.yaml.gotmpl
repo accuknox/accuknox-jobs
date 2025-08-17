@@ -1,4 +1,0 @@
-agents:
-  spireHost: {{- if .Values.agents.enableSpire }}spire.{{ .Values.agents.url }}{{ else }}""{{ end }}
-  ppsHost: {{- if .Values.agents.enablePps }}pps.{{ .Values.agents.url }}{{ else }}""{{ end }}
-  knoxGateway: {{- if .Values.agents.enableKnoxGateway }}knox-gw.{{ .Values.agents.url }}:3000{{ else }}""{{ end }}
