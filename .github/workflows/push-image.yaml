@@ -33,9 +33,6 @@ on:
         required: true
       AWS_SECRET_ACCESS_KEY:
         required: true
-      GIT_KEY:
-        required: true
-
 jobs:
   push_to_registry:
     name: Build and Push Docker image
@@ -67,9 +64,6 @@ jobs:
           else
             echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
           fi
-
-      - name: Set git ssh private key
-        run: echo "${{ secrets.GIT_KEY }}" > GIT-KEY
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
