@@ -1,40 +1,68 @@
-name: build accuknox-job image workflow
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024
+
+name: Push image to ECR
 
 on:
-  push:
-    tags:
-    - '*'
-    branches:
-    - "main"
+  workflow_call:
+    inputs:
+      DOCKER_CONTEXT:
+        description: 'Docker build context'
+        required: true
+        type: string
+      DOCKERFILE:
+        description: 'Path to Dockerfile'
+        required: true
+        type: string
+      IMAGE_NAME:
+        description: 'Image name (without registry)'
+        required: true
+        type: string
+      REGISTRY:
+        description: 'Registry URL'
+        required: false
+        type: string
+        default: public.ecr.aws/k9v9d5v2
+      AWS_REGION:
+        description: 'AWS region'
+        required: false
+        type: string
+        default: us-east-1
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+      GIT_KEY:
+        required: true
 
 jobs:
   push_to_registry:
-    name: Push Docker image to Docker Hub
+    name: Build and Push Docker image
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
-        
+
       - name: Set up AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
-          
+          aws-region: ${{ inputs.AWS_REGION }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-
       - name: Login to AWS ECR
         run: |
-          aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws/k9v9d5v2
-    
-         
+          aws ecr-public get-login-password --region ${{ inputs.AWS_REGION }} \
+            | docker login --username AWS --password-stdin ${{ inputs.REGISTRY }}
+
       - name: Determine version
         id: vars
         run: |
-          if [ ${{ github.ref }} == "refs/heads/main" ]; then
+          if [ "${GITHUB_REF}" == "refs/heads/main" ]; then
             echo "tag=latest" >> $GITHUB_OUTPUT
           else
             echo "tag=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
@@ -46,8 +74,7 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
-          # equivalent of make docker-build
-          context: .
-          file: Dockerfile
+          context: ${{ inputs.DOCKER_CONTEXT }}
+          file: ${{ inputs.DOCKERFILE }}
           push: true
-          tags: public.ecr.aws/k9v9d5v2/cluster-job:${{ steps.vars.outputs.tag }}
+          tags: ${{ inputs.REGISTRY }}/${{ inputs.IMAGE_NAME }}:${{ steps.vars.outputs.tag }}
