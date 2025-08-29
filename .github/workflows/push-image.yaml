@@ -33,8 +33,6 @@ on:
         required: true
       AWS_SECRET_ACCESS_KEY:
         required: true
-      GITHUB_TOKEN:   
-        required: true
 
 jobs:
   push_to_registry:
