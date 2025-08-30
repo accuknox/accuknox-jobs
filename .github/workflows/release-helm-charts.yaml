@@ -1,0 +1,78 @@
+# SPDX-License-Identifier: Apache-2.0
+# Copyright 2024 Authors of SentryFlow
+
+name: Release Helm Charts
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release tag which has to be updated"
+        type: string
+        required: true
+      ecr_repository:
+        description: "ECR repository URL for Helm charts"
+        type: string
+        required: false
+        default: "956994857092.dkr.ecr.us-east-2.amazonaws.com"
+      chart_path:
+        description: "Path to Helm chart directory"
+        type: string
+        required: false
+        default: "deployments"
+      registry_type:
+        description: "ECR registry type (public or private)"
+        type: string
+        required: false
+        default: "private"
+
+    secrets:
+      AWS_ACCESS_KEY_ID:
+        required: true
+      AWS_SECRET_ACCESS_KEY:
+        required: true
+
+env:
+  AWS_REGION: us-east-2
+
+jobs:
+  release_helm_charts:
+    if: github.repository == 'accuknox/sentryflow'
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Set up AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install Helm
+        run: |
+          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+      - name: Install Helm ECR plugin
+        run: |
+          helm plugin install https://github.com/aws-controllers-k8s/helm-ecr || true
+
+      - name: Helm Lint
+        run: |
+          helm lint ${{ inputs.chart_path }}
+
+      - name: Package Helm chart
+        run: |
+          helm package ${{ inputs.chart_path }} --version ${{ inputs.tag }} --destination ./charts
+
+      - name: Push Helm chart to ECR
+        run: |
+          helm registry login ${{ inputs.ecr_repository }} \
+            --username AWS \
+            --password $(aws ecr get-login-password --region ${{ env.AWS_REGION }})
+
+          helm push ./charts/*.tgz oci://${{ inputs.ecr_repository }}
