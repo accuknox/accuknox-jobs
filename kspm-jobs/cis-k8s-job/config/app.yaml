@@ -1,0 +1,29 @@
+jobs:
+  {{- if .Values.global.authToken }}
+  authTokenFile: {{ .Values.authTokenPath }}
+  {{- end }}
+  url: https://{{ include "global.jobURL" .  }}/api/v1/artifact/?tenant_id={{ .Values.global.tenantId }}&data_type=KB&label_id={{ .Values.global.label }}&save_to_s3=true
+  tenantID: {{ .Values.global.tenantId }}
+  clusterName: {{ .Values.global.clusterName }}
+  labelName: {{ .Values.global.label }}
+  dataType: "KB"
+  saveToS3: true
+  reportFile: "/data/report.json"
+  clusterID: {{ .Values.global.clusterID }}
+  printData: true
+
+spire:
+  enabled: {{ include "spire.enabled" . }}
+  server: {{ include "jobs.spireHost" . }}
+  port: {{ .Values.spirePort }}
+  secretName: "{{ .Values.global.spire.secretName }}"
+  joinTokenFile: {{ .Values.joinTokenPath }}
+  namespace: "{{ .Release.Namespace }}"
+  gatewayServer: {{ include "jobs.knoxGatewayHost" . }}
+  directory: ""
+  configFile: {{ .Values.spireConfigFile }}
+
+configPaths:
+{{- range .Values.configPaths }}
+  - {{ . }}
+{{- end }}

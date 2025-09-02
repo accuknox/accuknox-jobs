@@ -1,42 +1,27 @@
 apiVersion: batch/v1
 kind: CronJob
 metadata:
-  name: k8s-risk-assessment-job
+  name: kiem-job
   namespace: {{ .Release.Namespace }}
 spec:
-  schedule: "{{ .Values.global.cronTab }}"
+  schedule: "{{ .Values.global.cronTab }}"  
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
-
   jobTemplate:
     metadata:
       labels:
-        app: k8s-risk-assessment-job
+        app: kiem-job
     spec:
       template:
         spec:
         {{- if .Values.registry.secretName }}
           imagePullSecrets:
           - name: {{ .Values.registry.secretName }}
-        {{- end }}        
+        {{- end }}         
           initContainers:
-            - name: job-init-container
-              image: "{{ include "kubescape.image" . }}"
-              args:
-                - scan
-                - framework
-                - allcontrols,clusterscan,mitre,nsa
-                - --format
-                - json
-                - --cache-dir
-                - /data/kubescape-cache
-                - --output
-                - /data/report.json
-                - --cluster-name=$(CLUSTER_NAME)
-                {{- if .Values.global.airgapped }}
-                - --use-artifacts-from
-                - /opt/kubescape/artifacts
-                {{- end }}
+            - name: kiem-init
+              image: "{{ include "kiem.image" . }}"
+              args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
               env:
                 - name: CLUSTER_NAME
                   value: {{ .Values.global.clusterName }}
@@ -45,15 +30,13 @@ spec:
                   mountPath: /data
           containers:
             - image: "{{ include "cluster_job.image" . }}"
-              name: artifact-api-container
-              args: 
+              args:
               - -config 
               - /jobs/conf/app.yaml
+              name: accuknox-kiem-cronjob
               volumeMounts:
                 - mountPath: /data
-                  name: datapath
-                - mountPath: /script
-                  name: scriptpath
+                  name: datapath    
                 - name: secret-volume
                   mountPath: /secrets/tokens
                   readOnly: true
@@ -66,22 +49,20 @@ spec:
                   subPath: agent.conf 
                 - name: spirepath
                   mountPath: /run/spire/agent
-                {{- end }}
+                {{- end }}      
+          terminationGracePeriodSeconds: 0
           volumes:
             - name: datapath
               emptyDir: {}
-            - name: scriptpath
-              configMap:
-                name: k8s-risk-assessment-job-script-configmap
             - name: secret-volume
               secret:
-                secretName: {{ .Values.global.secretName | default "k8s-risk-assessment-job-token" }}
+                secretName: {{ .Values.global.secretName | default "kiem-job-auth-token" }}
             - name: config
               configMap:
-                name: risk-assessment-config-{{ .Release.Name }}
+                name: kiem-config-{{ .Release.Name }}
             {{- if .Values.global.agents.joinToken }} 
             - name: spirepath
               emptyDir: {}
             {{- end }}
           restartPolicy: OnFailure
-          serviceAccount: k8s-risk-assessment-job-service-account
+          serviceAccount: kiem-service-account

@@ -60,3 +60,27 @@ cspm.{{ .Values.global.agents.url -}}
 {{- default "" .Values.global.enableJobsUrl -}}
 {{- end -}}
 {{- end -}}
+
+{{- define "spire.enabled" -}}
+  {{- if .Values.global.agents.joinToken -}}
+    true
+  {{- else -}}
+    false
+  {{- end -}}
+{{- end -}}
+
+{{/*
+Return full spire host like spire.dev.accuknox.com or localhost
+*/}}
+{{- define "jobs.spireHost" -}}
+{{- if .Values.global.agents.joinToken -}}spire.{{ .Values.global.agents.url }}{{- else -}}localhost{{- end -}}
+{{- end }}
+
+
+
+{{/*
+Return KnoxGateway URL with port, like knox-gw.dev.accuknox.com:3000 or empty
+*/}}
+{{- define "jobs.knoxGatewayHost" -}}
+{{- if .Values.global.agents.joinToken -}}knox-gw.{{ .Values.global.agents.url }}:3000{{- else -}}{{""}}{{- end -}}
+{{- end }}
