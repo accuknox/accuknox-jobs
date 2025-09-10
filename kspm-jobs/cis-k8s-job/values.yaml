@@ -4,8 +4,8 @@
 
 cluster_job:
   owner: public.ecr.aws/k9v9d5v2
-  repository: cluster-job
-  tag: "latest"
+  repository: knoxjobs
+  tag: "v0.1.0"
   image: ""
 
 kubeBench:
@@ -38,3 +38,23 @@ global:
   clusterName: ""
   label: ""
   secretName: ""
+  joinToken: ""
+
+  spire:
+    secretName: "spire-agent-secret"
+
+
+authTokenPath: "/secrets/tokens/AUTH_TOKEN"
+joinTokenPath: "/secrets/tokens/JOIN_TOKEN"
+
+spireHost: "localhost"
+spirePort: 8081
+knoxGateway: "kgw:8080"
+spireConfigFile: "/jobs/spire/agent.conf"
+
+
+configPaths:
+- "/data/kubescape-cache/allcontrols.json"
+- "/data/kubescape-cache/clusterscan.json"
+- "/data/kubescape-cache/mitre.json"
+- "/data/kubescape-cache/nsa.json"

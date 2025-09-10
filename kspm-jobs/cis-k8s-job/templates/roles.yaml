@@ -1,0 +1,11 @@
+{{- if .Values.global.agents.joinToken }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ printf "spire-cm-secrets-role-%s" .Release.Name }} 
+  namespace: {{ .Release.Namespace }}
+rules:
+- apiGroups: [""]
+  resources: ["configmaps", "secrets"]
+  verbs: ["get", "list", "create", "delete", "patch", "update"]
+{{- end }}

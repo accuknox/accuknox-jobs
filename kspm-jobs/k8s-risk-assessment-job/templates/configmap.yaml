@@ -38,3 +38,17 @@ data:
     --header "Tenant-Id: ${TENANT_ID}" \
     --form "file=@\"/data/report.json\"" \
     "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KS&save_to_s3=true&label_id=${LABEL_NAME}"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: risk-assessment-config-{{ .Release.Name }}
+  namespace: {{ .Release.Namespace }}
+data:
+  app.yaml : |
+    {{ tpl ( .Files.Get "config/app.yaml" ) . | nindent 4 }}
+  {{- if .Values.global.agents.joinToken }}
+  agent.conf: |
+    {{ tpl ( .Files.Get "config/agent.conf" ) . | nindent 4 }}
+  {{- end }}  

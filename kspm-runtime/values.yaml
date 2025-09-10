@@ -1,5 +1,7 @@
 # Global values that apply to the entire chart or sub-charts
 global:
+  secretManagedByParent: true
+  
   enableJobsUrl: false
   tenantId: ""
   authToken: "" 
@@ -8,11 +10,14 @@ global:
   clusterName: ""
   secretName: ""
   url: ""
+  joinToken: ""
+
+  spire:
+    secretName: "spire-agent-secret"
 
 # Values specific to agents sub-chart
   agents:
     enabled: false
-    joinToken: ""
     accessKey: ""
     enableSpire: true
     enablePps: true
