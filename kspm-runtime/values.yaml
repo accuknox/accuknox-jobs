@@ -10,7 +10,6 @@ global:
   clusterName: ""
   secretName: ""
   url: ""
-  joinToken: ""
 
   spire:
     secretName: "spire-agent-secret"
@@ -23,6 +22,7 @@ global:
     enablePps: true
     enableKnoxGateway: true
     url: ""
+    joinToken: ""
 
 #OnlyChartsNeedsToBeInstall
   install:
