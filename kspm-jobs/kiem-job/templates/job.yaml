@@ -52,7 +52,7 @@ spec:
           emptyDir: {}
         - name: secret-volume
           secret:
-            secretName: {{ .Values.global.secretName | default "kiem-job-auth-token" }}
+            secretName: {{ .Values.global.secretName | default "jobs-token" }}
         - name: config
           configMap:
             name: kiem-config-{{ .Release.Name }}
