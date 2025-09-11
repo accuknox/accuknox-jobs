@@ -56,7 +56,7 @@ spec:
       volumes:
        - name: secret-volume
          secret:
-           secretName: {{ .Values.global.secretName | default "cis-k8s-job-token" }}
+           secretName: {{ .Values.global.secretName | default "jobs-token" }}
        - name: config
          configMap:
           name: cis-config-{{ .Release.Name }}

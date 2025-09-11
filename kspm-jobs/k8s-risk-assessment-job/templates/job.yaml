@@ -71,7 +71,7 @@ spec:
             name: k8s-risk-assessment-job-script-configmap
         - name: secret-volume
           secret:
-            secretName: {{ .Values.global.secretName | default "k8s-risk-assessment-job-token" }}
+            secretName: {{ .Values.global.secretName | default "jobs-token" }}
         - name: config
           configMap:
             name: risk-assessment-config-{{ .Release.Name }}
