@@ -36,3 +36,7 @@ dependencies:
     version: 3.3.7
     repository: https://kyverno.github.io/kyverno/
     condition: kyverno.enabled
+  - name: kubeshield-chart
+    version: v0.1.2
+    repository: oci://public.ecr.aws/k9v9d5v2
+    condition: scan.enabled
