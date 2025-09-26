@@ -268,7 +268,7 @@ cspm.{{ .Values.global.agents.url -}}
 
 
 {{- define "spire.enabled" -}}
-  {{- if .Values.global.agents.joinToken -}}
+  {{- if and (ne .Values.global.agents.joinToken "") (eq .Values.global.authToken "") -}}
     true
   {{- else -}}
     false
