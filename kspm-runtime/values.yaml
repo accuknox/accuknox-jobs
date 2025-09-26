@@ -58,3 +58,6 @@ admissionController:
 
 kyverno:
   enabled: false
+
+incluster-scan:
+  enabled: false
