@@ -12,8 +12,8 @@ spec:
       labels:
         app: cis-k8s-job-{{ now | unixEpoch }}
     spec:
-    {{- if or (or (contains "master" .Values.toolConfig.nodeType) (contains "controlplane" .Values.toolConfig.nodeType)) (or (contains "master" .Values.toolConfig.targets) (contains "controlplane" .Values.toolConfig.targets)) }}
-      {{- include "masterConfig" .Values.toolConfig | trim | nindent 6 }}
+    {{- if or (or (contains "master" .Values.global.cis.toolConfig.nodeType) (contains "controlplane" .Values.global.cis.toolConfig.nodeType)) (or (contains "master" .Values.global.cis.toolConfig.targets) (contains "controlplane" .Values.global.cis.toolConfig.targets)) }}
+      {{- include "masterConfig" .Values.global.cis.toolConfig | trim | nindent 6 }}
     {{- end }}
       {{- if .Values.registry.secretName }}
       imagePullSecrets:
@@ -47,10 +47,10 @@ spec:
       initContainers:
       - image: "{{ include "kubeBench.image" . }}"
         command:
-        {{- include "cmd" .Values.toolConfig | trim | nindent 9 }}
+        {{- include "cmd" .Values.global.cis.toolConfig | trim | nindent 9 }}
         name: kube-bench
         volumeMounts:
-        {{- include "volumeMounts" .Values.toolConfig | trim | nindent 9 }}
+        {{- include "volumeMounts" .Values.global.cis.toolConfig | trim | nindent 9 }}
       hostPID: true
       restartPolicy: Never
       volumes:
@@ -64,4 +64,4 @@ spec:
        - name: spirepath
          emptyDir: {}
        {{- end }}
-      {{- include "volumes" .Values.toolConfig | trim | nindent 7 }}
+      {{- include "volumes" .Values.global.cis.toolConfig | trim | nindent 7 }}

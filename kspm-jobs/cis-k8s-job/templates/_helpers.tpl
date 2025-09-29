@@ -73,7 +73,19 @@ Create the name of the service account to use
 - name: etc-kubernetes
   hostPath:
     path: "/etc/kubernetes"
-{{- if .platform | empty }}
+{{- if eq .platform "GKE" }}
+# Use emptyDir for paths that are read-only on GKE
+- name: home-kubernetes
+  emptyDir: {}
+- name: srv-kubernetes
+  emptyDir: {}
+- name: opt-cni-bin
+  emptyDir: {}
+- name: etc-cni-netd
+  emptyDir: {}
+- name: usr-bin
+  emptyDir: {}
+{{- else if .platform | empty }}
 - name: var-lib-cni
   hostPath:
     path: /var/lib/cni
@@ -101,10 +113,6 @@ Create the name of the service account to use
 - hostPath:
     path: /opt/cni/bin/
   name: opt-cni-bin
-{{- else if eq .platform "GKE" }}
-- name: home-kubernetes
-  hostPath:
-    path: "/home/kubernetes"
 {{- else if eq .platform "AKS" }}
 - name: etc-default
   hostPath:
@@ -124,7 +132,23 @@ Create the name of the service account to use
 - name: etc-kubernetes
   mountPath: /etc/kubernetes
   readOnly: true
-{{- if .platform | empty }}
+{{- if eq .platform "GKE" }}
+- name: home-kubernetes
+  mountPath: /home/kubernetes
+  readOnly: true
+- name: srv-kubernetes
+  mountPath: /srv/kubernetes
+  readOnly: false
+- name: opt-cni-bin
+  mountPath: /opt/cni/bin
+  readOnly: false
+- name: etc-cni-netd
+  mountPath: /etc/cni/net.d
+  readOnly: false
+- name: usr-bin
+  mountPath: /usr/local/mount-from-host/bin
+  readOnly: false
+{{- else if .platform | empty }}
 - name: var-lib-cni
   mountPath: /var/lib/cni
   readOnly: true
@@ -139,22 +163,6 @@ Create the name of the service account to use
   readOnly: true
 - mountPath: /lib/systemd/
   name: lib-systemd
-  readOnly: true
-- mountPath: /srv/kubernetes/
-  name: srv-kubernetes
-  readOnly: true
-- mountPath: /usr/local/mount-from-host/bin
-  name: usr-bin
-  readOnly: true
-- mountPath: /etc/cni/net.d/
-  name: etc-cni-netd
-  readOnly: true
-- mountPath: /opt/cni/bin/
-  name: opt-cni-bin
-  readOnly: true
-{{- else if eq .platform "GKE" }}
-- name: home-kubernetes
-  mountPath: /home/kubernetes
   readOnly: true
 {{- else if eq .platform "AKS" }}
 - name: etc-default

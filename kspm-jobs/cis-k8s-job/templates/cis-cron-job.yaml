@@ -10,8 +10,8 @@ spec:
     spec:
       template:
         spec:
-        {{- if or (or (contains "master" .Values.toolConfig.nodeType) (contains "controlplane" .Values.toolConfig.nodeType)) (or (contains "master" .Values.toolConfig.targets) (contains "controlplane" .Values.toolConfig.targets)) }}
-          {{- include "masterConfig" .Values.toolConfig | trim | nindent 10 }}
+        {{- if or (or (contains "master" .Values.global.cis.toolConfig.nodeType) (contains "controlplane" .Values.global.cis.toolConfig.nodeType)) (or (contains "master" .Values.global.cis.toolConfig.targets) (contains "controlplane" .Values.global.cis.toolConfig.targets)) }}
+          {{- include "masterConfig" .Values.global.cis.toolConfig | trim | nindent 10 }}
         {{- end }}
           {{- if .Values.registry.secretName }}
           imagePullSecrets:
@@ -45,10 +45,10 @@ spec:
           initContainers:
           - image: "{{ include "kubeBench.image" . }}"
             command:
-            {{- include "cmd" .Values.toolConfig | trim | nindent 13 }}
+            {{- include "cmd" .Values.global.cis.toolConfig | trim | nindent 13 }}
             name: kube-bench
             volumeMounts:
-            {{- include "volumeMounts" .Values.toolConfig | trim | nindent 13 }}
+            {{- include "volumeMounts" .Values.global.cis.toolConfig | trim | nindent 13 }}
           hostPID: true
           restartPolicy: Never
           volumes:
@@ -62,7 +62,7 @@ spec:
            - name: spirepath
              emptyDir: {}
            {{- end }}
-          {{- include "volumes" .Values.toolConfig | trim | nindent 11 }}
+          {{- include "volumes" .Values.global.cis.toolConfig | trim | nindent 11 }}
 
   schedule: "{{ .Values.global.cronTab }}"
   successfulJobsHistoryLimit: 1
