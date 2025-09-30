@@ -1,0 +1,6 @@
+apiVersion: coordination.k8s.io/v1
+kind: Lease
+metadata:
+  name: spire-agent-lease
+  namespace: {{ .Release.Namespace }}
+spec: {}
