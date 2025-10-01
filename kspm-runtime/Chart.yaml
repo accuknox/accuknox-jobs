@@ -17,15 +17,15 @@ dependencies:
     repository: https://kubearmor.github.io/charts
     condition: kubearmor-operator.enabled
   - name: cis-k8s-job
-    version: "0.1.2"
+    version: "0.1.0"
     repository: "file://../kspm-jobs/cis-k8s-job"
     condition: global.cis.enabled  
   - name: k8s-risk-assessment-job
-    version: "0.1.2"
+    version: "0.1.0"
     repository: "file://../kspm-jobs/k8s-risk-assessment-job"
     condition: global.riskassessment.enabled  
   - name: kiem-job
-    version: "0.1.2"
+    version: "0.1.0"
     repository: "file://../kspm-jobs/kiem-job"
     condition: global.kiem.enabled     
   - name: knoxguard-chart
