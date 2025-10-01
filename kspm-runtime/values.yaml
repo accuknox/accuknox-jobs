@@ -1,6 +1,7 @@
 # Global values that apply to the entire chart or sub-charts
 global:
   secretManagedByParent: true
+  leaseManagedByParent: true
   
   enableJobsUrl: false
   tenantId: ""
