@@ -64,7 +64,7 @@ spec:
               - name: TENANT_ID
                 value: {{ .Values.tenantID | quote }}
               - name: CLUSTER_NAME
-                value: {{ if ne .Values.clusterName "" }}{{ .Values.clusterName }}{{ else }}{{ "default" }}{{ end }}
+                value: {{ if ne .Values.clusterName "" }}{{ ".Values.global.clusterName" }}{{ else }}{{ "default" }}{{ end }}
               - name: LABEL_NAME
                 value: {{ if ne .Values.label "" }}{{ .Values.label }}{{ else }}{{ "default" }}{{ end }}
             volumeMounts:
