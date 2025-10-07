@@ -4,7 +4,7 @@ jobs:
   {{- end }}
   url: https://{{ include "global.jobURL" . }}/api/v1/artifact/?tenant_id={{ .Values.global.tenantId }}&data_type=KS&label_id={{ .Values.global.label }}&save_to_s3=true
   tenantID: {{ .Values.global.tenantId }}
-  clusterName: {{ .Values.global.clusterName }}
+  clusterName: "{{ .Values.global.clusterName }}"
   labelName: {{ .Values.global.label }}
   dataType: "KS"
   saveToS3: true

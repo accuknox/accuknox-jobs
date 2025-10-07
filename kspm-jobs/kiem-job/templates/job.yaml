@@ -21,7 +21,7 @@ spec:
           args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
           env:
             - name: CLUSTER_NAME
-              value: {{ .Values.global.clusterName }}
+              value: "{{ .Values.global.clusterName }}"
           volumeMounts:
             - name: datapath
               mountPath: /data
