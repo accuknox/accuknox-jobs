@@ -19,9 +19,7 @@ spec:
       imagePullSecrets:
       - name: {{ .Values.registry.secretName | quote }}
       {{- end }}
-      {{- if .Values.global.agents.joinToken }}
       serviceAccount: cis-service-account
-      {{- end }}
       containers:
       - image: "{{ include "cluster_job.image" . }}"
         args: 
