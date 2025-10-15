@@ -24,12 +24,11 @@ global:
     enableKnoxGateway: true
     url: ""
     joinToken: ""
+    clusterName: ""
 
 #OnlyChartsNeedsToBeInstall
-  install:
-    Feeder: false
-    localRegistryAgent: false
-
+  localRegistryAgent: false
+  
 # Values specific to KSPM-jobs sub-charts
   cis:
     enabled: false  
