@@ -11,9 +11,9 @@ spec:
       labels:
         app: k8s-risk-assessment-job-{{ now | unixEpoch }}
     spec:
-    {{- if .Values.registry.secretName }}
+    {{- if .Values.global.registry.secretName }}
       imagePullSecrets:
-      - name: {{ .Values.registry.secretName }}
+      - name: {{ .Values.global.registry.secretName }}
     {{- end }}     
       initContainers:
         - name: job-init-container
@@ -42,9 +42,29 @@ spec:
       containers:
         - image: "{{ include "cluster_job.image" . }}"
           name: artifact-api-container
-          args: 
-          - -config 
-          - /jobs/conf/app.yaml
+          command:
+            - "/bin/sh"
+            - "-c"
+            - "/bin/sh /script/augment-and-push-results.sh -config /jobs/conf/app.yaml"
+          env:
+            - name: AUTH_TOKEN
+              value: {{ .Values.global.authToken | quote }}
+            - name: CLUSTER_NAME
+              value: {{ .Values.global.clusterName }}
+            - name: URL     
+              value: "{{ include "global.jobURL" . }}"
+            - name: TENANT_ID
+              value: {{ .Values.global.tenantId | quote }}
+            - name: LABEL_NAME
+              value: {{ .Values.global.label | quote }}
+            - name: CERT_BUNDLE_PATH
+              value: {{ .Values.global.certBundlePath | quote }}
+            - name: CERT_BUNDLE_URL
+              value: {{ .Values.global.certBundleURL | quote }}
+            - name: USE_INSECURE_CONNECTION
+              value: {{ .Values.global.useInsecureConnection | quote }}
+            - name: DATA_TYPE
+              value: "KS"
           volumeMounts:
             - mountPath: /data
               name: datapath

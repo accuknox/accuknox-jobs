@@ -38,15 +38,16 @@ spec:
     spec:
       template:
         spec:
-        {{- if .Values.registry.secretName }}
+        {{- if .Values.global.registry.secretName }}
           imagePullSecrets:
-          - name: {{ .Values.registry.secretName }}
+          - name: {{ .Values.global.registry.secretName }}
         {{- end }}  
           serviceAccountName: k8tls-serviceact
           containers:
           - image:  "{{ include "cluster_job.image" . }}"
+            workingDir: /app
             command: ["/bin/sh", "-c"]
-            args: ['curl --location --request POST "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=K8TLS&save_to_s3=true" --header "Tenant-Id: ${TENANT_ID}" --header "Authorization: Bearer ${AUTH_TOKEN}" --form "file=@\"/data/report.json\"" && cat /data/report.json']
+            args: ['./curl_command.sh']
             name: k8tls-job
             resources: {}
             env:
@@ -59,6 +60,14 @@ spec:
                     {{- else }}
                     name: {{ .Values.secretName }}
                     {{- end }}
+              - name: AUTH_TOKEN
+                value: {{ .Values.global.authToken | quote }}
+              - name: URL
+                value: "{{ include "global.jobURL" . }}"
+              - name: TENANT_ID
+                value: {{ .Values.global.tenantId | quote }}
+              - name: LABEL_NAME
+                value: {{ .Values.global.label | quote }}
               - name: URL
                 value: {{ .Values.URL }}
               - name: TENANT_ID
@@ -67,6 +76,14 @@ spec:
                 value: {{ if ne .Values.clusterName "" }}{{ ".Values.global.clusterName" }}{{ else }}{{ "default" }}{{ end }}
               - name: LABEL_NAME
                 value: {{ if ne .Values.label "" }}{{ .Values.label }}{{ else }}{{ "default" }}{{ end }}
+              - name: CERT_BUNDLE_PATH
+                value: {{ .Values.global.certBundlePath | quote }}    
+              - name: CERT_BUNDLE_URL
+                value: {{ .Values.global.certBundleURL }}
+              - name: USE_INSECURE_CONNECTION
+                value: {{ .Values.global.useInsecureConnection | quote }}
+              - name: DATA_TYPE
+                value: "K8TLS" 
             volumeMounts:
               - mountPath: /data
                 name: datapath
