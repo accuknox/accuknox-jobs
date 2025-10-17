@@ -109,11 +109,11 @@ Create the name of the service account to use
 
 
 {{- define "cluster_job.image" -}}
-  {{ include "image-name" (dict "url" .Values.registry.url "owner" .Values.cluster_job.owner "repoName" .Values.cluster_job.repository "tag" .Values.cluster_job.tag "preserve" .Values.registry.preserveUpstream "image" .Values.cluster_job.image ) }}
+  {{ include "image-name" (dict "url" .Values.global.registry.url "owner" .Values.cluster_job.owner "repoName" .Values.cluster_job.repository "tag" .Values.cluster_job.tag "preserve" .Values.global.registry.preserveUpstream "image" .Values.cluster_job.image ) }}
 {{- end -}}
 
 {{- define "kiem.image" -}}
-  {{ include "image-name" (dict "url" .Values.registry.url "owner" .Values.kiem.owner "repoName" .Values.kiem.repository "tag" .Values.kiem.tag "preserve" .Values.registry.preserveUpstream "image" .Values.kiem.image ) }}
+  {{ include "image-name" (dict "url" .Values.global.registry.url "owner" .Values.kiem.owner "repoName" .Values.kiem.repository "tag" .Values.kiem.tag "preserve" .Values.global.registry.preserveUpstream "image" .Values.kiem.image ) }}
 {{- end -}}
 
 

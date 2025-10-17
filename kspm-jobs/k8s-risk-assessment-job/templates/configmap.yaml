@@ -33,11 +33,7 @@ data:
     cat /data/report.json
 
     # push
-    curl --location --request POST \
-    --header "Authorization: Bearer ${AUTH_TOKEN}" \
-    --header "Tenant-Id: ${TENANT_ID}" \
-    --form "file=@\"/data/report.json\"" \
-    "https://${URL}/api/v1/artifact/?tenant_id=${TENANT_ID}&data_type=KS&save_to_s3=true&label_id=${LABEL_NAME}"
+    /curl_command.sh
 
 ---
 apiVersion: v1

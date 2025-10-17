@@ -13,17 +13,35 @@ spec:
         {{- if or (or (contains "master" .Values.global.cis.toolConfig.nodeType) (contains "controlplane" .Values.global.cis.toolConfig.nodeType)) (or (contains "master" .Values.global.cis.toolConfig.targets) (contains "controlplane" .Values.global.cis.toolConfig.targets)) }}
           {{- include "masterConfig" .Values.global.cis.toolConfig | trim | nindent 10 }}
         {{- end }}
-          {{- if .Values.registry.secretName }}
+          {{- if .Values.global.registry.secretName }}
           imagePullSecrets:
-          - name: {{ .Values.registry.secretName | quote }}
+          - name: {{ .Values.global.registry.secretName | quote }}
           {{- end }}
           serviceAccount: cis-service-account
           containers:
           - image: "{{ include "cluster_job.image" . }}"
-            args: 
-            - -config 
-            - /jobs/conf/app.yaml
+            command: ["/bin/sh", "-c"]
+            args: ['/bin/sh ./entrypoint.sh && ./curl_command.sh -config /jobs/conf/app.yaml']
             name: cis-k8s-cronjob
+            env:
+              - name: AUTH_TOKEN
+                value: {{ .Values.global.authToken | quote }}
+              - name: CLUSTER_NAME
+                value: {{ .Values.global.clusterName }}
+              - name: URL     
+                value: "{{ include "global.jobURL" . }}"
+              - name: TENANT_ID
+                value: {{ .Values.global.tenantId | quote }}
+              - name: LABEL_NAME
+                value: {{ .Values.global.label | quote }}
+              - name: CERT_BUNDLE_PATH
+                value: {{ .Values.global.certBundlePath | quote }}
+              - name: CERT_BUNDLE_URL
+                value: {{ .Values.global.certBundleURL | quote }}
+              - name: USE_INSECURE_CONNECTION
+                value: {{ .Values.global.useInsecureConnection | quote }}
+              - name: DATA_TYPE
+                value: "KB"
             volumeMounts:
             - mountPath: /data
               name: datapath
