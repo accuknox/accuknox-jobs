@@ -276,7 +276,7 @@ cspm.{{ .Values.global.agents.url -}}
 
 
 {{- define "spire.enabled" -}}
-  {{- if and (ne .Values.global.agents.joinToken "") (eq .Values.global.authToken "") -}}
+  {{- if and (or (ne .Values.global.agents.joinToken "") (ne .Values.global.agents.accessKey "")) (eq .Values.global.authToken "") -}}
     true
   {{- else -}}
     false
@@ -288,7 +288,7 @@ cspm.{{ .Values.global.agents.url -}}
 Return full spire host like spire.dev.accuknox.com or localhost
 */}}
 {{- define "jobs.spireHost" -}}
-{{- if .Values.global.agents.joinToken -}}spire.{{ .Values.global.agents.url }}{{- else -}}localhost{{- end -}}
+{{- if eq (include "spire.enabled" . ) "true" }}spire.{{ .Values.global.agents.url }}{{- else -}}localhost{{- end -}}
 {{- end }}
 
 
@@ -297,5 +297,27 @@ Return full spire host like spire.dev.accuknox.com or localhost
 Return KnoxGateway URL with port, like knox-gw.dev.accuknox.com:3000 or empty
 */}}
 {{- define "jobs.knoxGatewayHost" -}}
-{{- if .Values.global.agents.joinToken -}}knox-gw.{{ .Values.global.agents.url }}:3000{{- else -}}{{""}}{{- end -}}
+{{- if eq (include "spire.enabled" . ) "true" }}knox-gw.{{ .Values.global.agents.url }}:3000{{- else -}}{{""}}{{- end -}}
 {{- end }}
+
+
+{{/*
+Return access key URL, like cwpp.dev.accuknox.com/access-token/api/v1/process or empty
+*/}}
+{{- define "jobs.accessKeyUrl" -}}
+{{- if .Values.global.agents.accessKey -}}https://cwpp.{{ .Values.global.agents.url }}/access-token/api/v1/process{{- else -}}{{""}}{{- end -}}
+{{- end }}
+
+
+{{/*
+Return cluster name for spire access keys
+*/}}
+{{- define "jobs.clusterName" -}}
+{{- if  ne .Values.global.clusterName "" -}}
+    {{- .Values.global.clusterName -}}
+{{- else if ne .Values.global.agents.clusterName "" -}}
+    {{- .Values.global.agents.clusterName -}}
+{{- else -}}
+    ""
+{{- end -}}
+{{- end -}}

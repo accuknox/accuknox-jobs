@@ -4,7 +4,7 @@ jobs:
   {{- end }}
   url: https://{{ include "global.jobURL" .  }}/api/v1/artifact/?tenant_id={{ .Values.global.tenantId }}&data_type=KIEM&label_id={{ .Values.global.label }}&save_to_s3=true
   tenantID: {{ .Values.global.tenantId }}
-  clusterName: {{ .Values.global.clusterName }}
+  clusterName: {{ include "jobs.clusterName" . | quote }}
   labelName: {{ .Values.global.label }}
   dataType: "KIEM"
   saveToS3: true
@@ -22,6 +22,10 @@ spire:
   gatewayServer: {{ include "jobs.knoxGatewayHost" . }}
   directory: ""
   configFile: {{ .Values.spireConfigFile }}
+  clusterName: {{ include "jobs.clusterName" . | quote }}
+  accessKeyUrl: {{ include "jobs.accessKeyUrl" . }}
+  trustBundleUrl: "{{ .Values.global.spire.trustBundleUrl }}"
+  accessKeyFile: {{ .Values.accessKeyPath }}
 
 configPaths:
 {{- range .Values.configPaths }}
