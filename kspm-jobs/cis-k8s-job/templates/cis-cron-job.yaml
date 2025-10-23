@@ -24,6 +24,7 @@ spec:
             - -config 
             - /jobs/conf/app.yaml
             name: cis-k8s-cronjob
+            imagePullPolicy: Always
             volumeMounts:
             - mountPath: /data
               name: datapath
@@ -33,7 +34,7 @@ spec:
             - name: config
               mountPath: /jobs/conf/app.yaml
               subPath: app.yaml
-            {{- if .Values.global.agents.joinToken }}    
+            {{- if eq (include "spire.enabled" . ) "true" }}    
             - name: config
               mountPath: /jobs/spire/agent.conf
               subPath: agent.conf 
@@ -56,7 +57,7 @@ spec:
            - name: config
              configMap:
                name: cis-config-{{ .Release.Name }}
-           {{- if .Values.global.agents.joinToken }} 
+           {{- if eq (include "spire.enabled" . ) "true" }} 
            - name: spirepath
              emptyDir: {}
            {{- end }}

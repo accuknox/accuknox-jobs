@@ -6,7 +6,7 @@
 cluster_job:
   owner: public.ecr.aws/k9v9d5v2
   repository: knoxjobs
-  tag: "v0.1.2"
+  tag: "v0.1.3"
   image: ""
 
 kiem:
@@ -35,13 +35,17 @@ global:
   label: ""
   secretName: ""
   joinToken: ""
+  accessKey: ""
 
   spire:
     secretName: "spire-agent-secret"
+    trustBundleUrl: ""
 
 
 authTokenPath: "/secrets/tokens/AUTH_TOKEN"
 joinTokenPath: "/secrets/tokens/JOIN_TOKEN"
+accessKeyPath: "/secrets/tokens/ACCESS_KEY"
+
 
 spirePort: 8081
 spireConfigFile: "/jobs/spire/agent.conf"

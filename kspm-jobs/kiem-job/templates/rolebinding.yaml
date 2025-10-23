@@ -11,7 +11,7 @@ roleRef:
   kind: ClusterRole
   name: {{ .Release.Namespace }}-kiem-cluster-role
 ---
-{{- if .Values.global.agents.joinToken }}
+{{- if eq (include "spire.enabled" . ) "true" }}  
 kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
