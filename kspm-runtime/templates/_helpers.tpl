@@ -32,7 +32,7 @@ Return the chart version.
 Helper to check if Spire is enabled.
 */}}
 {{- define "spire.enabled" -}}
-{{- if .Values.spire.enabled }}
+{{- if .Values.global.spire.enabled }}
 true
 {{- else }}
 false
