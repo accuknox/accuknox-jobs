@@ -33,9 +33,9 @@ Helper to check if Spire is enabled.
 */}}
 {{- define "spire.enabled" -}}
 {{- if .Values.global.spire.enabled }}
-true
+    true
 {{- else }}
-false
+    false
 {{- end -}}
 {{- end -}}
 
