@@ -30,7 +30,6 @@ docker run --rm -it \
 | `CX_PASSWORD`\*     | `yourpassword`                         | Password for Checkmarx login (used for token generation) |
 | `AK_ENDPOINT`\*| `https://cspm.demo.accuknox.com`       | AccuKnox CSPM API Endpoint                               |
 | `AK_LABEL`\*        | `$LABEL `                              | The label created in AccuKnox SaaS for associating scan results |
-| `AK_TENANT_ID`\*    | `$TENANT_ID$`                          |  The ID of the tenant associated with the CSPM panel   |
 | `AK_TOKEN`\* | `$ARTIFACT_TOKEN`                    | The token for authenticating with the CSPM panel |
 | `CX_SCOPE`          | `sast_rest_api`                        | OAuth scope used for token generation ( default: `sast_rest_api` ) |
 | `CX_GRANT_TYPE`     | `password`                             | OAuth grant type ( default: `password` )                   |
