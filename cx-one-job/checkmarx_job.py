@@ -672,11 +672,9 @@ class Checkmarx:
                 files = {"file": (result_file, data)}
                 url = f"{self.env['AK_ENDPOINT']}/api/v1/artifact/"
                 headers = {
-                    "Tenant-Id": self.env["AK_TENANT_ID"],
                     "Authorization": f"Bearer {self.env['AK_TOKEN']}",
                 }
                 params = {
-                    "tenant_id": self.env["AK_TENANT_ID"],
                     "data_type": "CX",
                     "save_to_s3": "false",
                     "label_id": self.env["AK_LABEL"],
@@ -742,7 +740,6 @@ REQUIRED_ENV_VARS = [
     "CX_API_KEY",
     "AK_ENDPOINT",
     "AK_LABEL",
-    "AK_TENANT_ID",
     "AK_TOKEN",
 ]
 
