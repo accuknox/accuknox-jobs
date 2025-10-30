@@ -584,13 +584,34 @@ class Checkmarx:
             project_id = project.get("id")
             data = project
 
-            scan_ids, scan_info = asyncio.run(
-                self._fetch_last_scan_id(
-                    project_id,
-                    branch_names=branch_name,
-                    project_name=project_name,
-                ),
-            )
+            # Allow overriding scan IDs via environment. If provided, skip
+            # fetching the "last" scan IDs and instead use the provided ones.
+            # Accept either CX_SCAN_IDS (JSON list or comma-separated) or
+            # CX_SCAN_ID (single id).
+            env_scan_raw = self.env.get("CX_SCAN_IDS") or self.env.get("CX_SCAN_ID")
+            if env_scan_raw:
+                # CX_SCAN_IDS is expected as comma-separated values: id1,id2
+                log.info(
+                    f"['{project_name}']  CX_SCAN_IDS provided; skipping last-scan lookup and using provided IDs",
+                )
+                scan_ids = [s.strip() for s in env_scan_raw.split(",") if s.strip()]
+
+                # Fetch scan details for provided ids (preserve original behavior of _fetch_last_scan_id)
+                try:
+                    tasks = [self._fetch_scan_detail(sid, project_name) for sid in scan_ids]
+                    scan_info = asyncio.run(asyncio.gather(*tasks)) if tasks else []
+                except Exception as e:
+                    log.error(f"['{project_name}']  Error fetching scan details for CX_SCAN_IDS: {e}")
+                    scan_info = []
+            else:
+                scan_ids, scan_info = asyncio.run(
+                    self._fetch_last_scan_id(
+                        project_id,
+                        branch_names=branch_name,
+                        project_name=project_name,
+                    ),
+                )
+            
             if not scan_ids:
                 msg = f"['{project_name}']  No scans found"
                 if branch_name:
