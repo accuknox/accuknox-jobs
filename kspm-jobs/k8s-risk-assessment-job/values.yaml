@@ -14,13 +14,6 @@ kubescape:
   tag: "v3.0.8"
   image: ""
 
-# To use existing secret updated {registry.secretName} with your secret name.
-registry: 
-  url: ""
-  secretName: ""
-  username: ""
-  password: ""
-  preserveUpstream: true
 
 replicaCount: 1
 
@@ -41,6 +34,13 @@ global:
     secretName: "spire-agent-secret"
     trustBundleUrl: ""
 
+  # To use existing secret updated {global.registry.secretName} with your secret name.
+  registry: 
+    url: ""
+    secretName: ""
+    username: ""
+    password: ""
+    preserveUpstream: true
 
 authTokenPath: "/secrets/tokens/AUTH_TOKEN"
 joinTokenPath: "/secrets/tokens/JOIN_TOKEN"

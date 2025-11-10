@@ -14,13 +14,6 @@ kubeBench:
   tag: "v0.9.1"
   image: ""
 
-# To use existing secret updated {registry.secretName} with your secret name.
-registry: 
-  url: ""
-  secretName: ""
-  username: ""
-  password: ""
-  preserveUpstream: true
 
 toolConfig:
   platform: ""
@@ -45,6 +38,13 @@ global:
     secretName: "spire-agent-secret"
     trustBundleUrl: ""
 
+  # To use existing secret updated {global.registry.secretName} with your secret name.
+  registry: 
+    url: ""
+    secretName: ""
+    username: ""
+    password: ""
+    preserveUpstream: true
 
 authTokenPath: "/secrets/tokens/AUTH_TOKEN"
 joinTokenPath: "/secrets/tokens/JOIN_TOKEN"

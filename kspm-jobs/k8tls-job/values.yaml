@@ -14,13 +14,6 @@ k8tls:
   tag: "latest"
   image: ""
 
-# To use existing secret updated {registry.secretName} with your secret name.
-registry: 
-  url: ""
-  secretName: ""
-  username: ""
-  password: ""
-  preserveUpstream: true
 
 global:
   authToken: ""
@@ -30,3 +23,11 @@ global:
   clusterName: ""
   label: ""
   secretName: ""
+
+  # To use existing secret updated {global.registry.secretName} with your secret name.
+  registry: 
+    url: ""
+    secretName: ""
+    username: ""
+    password: ""
+    preserveUpstream: true

@@ -10,9 +10,9 @@ spec:
     metadata:
       name: k8tls-job-{{ now | unixEpoch }}
     spec:
-    {{- if .Values.registry.secretName }}
+    {{- if .Values.global.registry.secretName }}
       imagePullSecrets:
-      - name: {{ .Values.registry.secretName }}
+      - name: {{ .Values.global.registry.secretName }}
     {{- end }}     
       serviceAccountName: k8tls-serviceact
       containers:
