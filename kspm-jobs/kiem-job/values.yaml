@@ -5,8 +5,8 @@
 
 cluster_job:
   owner: public.ecr.aws/k9v9d5v2
-  repository: knoxjobs
-  tag: "v0.1.3"
+  repository: cluster-job
+  tag: "latest-onprem"
   image: ""
 
 kiem:
@@ -31,7 +31,10 @@ global:
 
   spire:
     secretName: "spire-agent-secret"
-    trustBundleUrl: ""
+
+  certBundlePath: ""  # Set this for cert local path if needed .
+  certBundleURL: ""  # Set this for cert URL if needed (if certBundlePath is set as well certBundlePath will take precedent)
+  useInsecureConnection: false  # Set to true if insecure connection is needed
 
   # To use existing secret updated {global.registry.secretName} with your secret name.
   registry: 
