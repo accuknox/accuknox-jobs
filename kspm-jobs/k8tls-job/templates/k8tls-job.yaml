@@ -12,7 +12,7 @@ spec:
     spec:
     {{- if .Values.global.registry.secretName }}
       imagePullSecrets:
-      - name: {{ .Values.global.registry.secretName }}
+      - name: {{ .Values.global.registry.secretName }}-k8tls
     {{- end }}     
       serviceAccountName: k8tls-serviceact
       containers:

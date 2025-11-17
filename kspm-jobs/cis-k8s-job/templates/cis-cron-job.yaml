@@ -15,7 +15,7 @@ spec:
         {{- end }}
           {{- if .Values.global.registry.secretName }}
           imagePullSecrets:
-          - name: {{ .Values.global.registry.secretName | quote }}
+          - name: {{ .Values.global.registry.secretName }}-cis
           {{- end }}
           serviceAccount: cis-service-account
           containers:

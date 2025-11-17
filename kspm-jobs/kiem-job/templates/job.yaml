@@ -13,7 +13,7 @@ spec:
     spec:
     {{- if .Values.global.registry.secretName }}
       imagePullSecrets:
-      - name: {{ .Values.global.registry.secretName }}
+      - name: {{ .Values.global.registry.secretName }}-kiem
     {{- end }}      
       initContainers:
         - name: kiem-init
