@@ -44,8 +44,7 @@ global:
   kiem:
     enabled: false 
 
-  inClusterScan:
-    enabled: true
+  inClusterScan: false
 
 # Values specific to KubeArmorOperator sub-chart
 kubearmor-operator:
@@ -59,5 +58,3 @@ admissionController:
 kyverno:
   enabled: false
 
-incluster-scan:
-  enabled: false
