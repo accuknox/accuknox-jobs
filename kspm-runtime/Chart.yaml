@@ -13,7 +13,7 @@ dependencies:
     repository: oci://public.ecr.aws/k9v9d5v2  
     condition: global.agents.enabled
   - name: kubearmor-operator
-    version: v1.5.7
+    version: v1.6.4
     repository: https://kubearmor.github.io/charts
     condition: kubearmor-operator.enabled
   - name: cis-k8s-job
@@ -39,4 +39,4 @@ dependencies:
   - name: kubeshield-chart
     version: v0.1.2-patch
     repository: oci://public.ecr.aws/k9v9d5v2
-    condition: incluster-scan.enabled
+    condition: global.inClusterScan.enabled
