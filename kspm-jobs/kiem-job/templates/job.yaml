@@ -15,6 +15,10 @@ spec:
       imagePullSecrets:
       - name: {{ .Values.global.registry.secretName }}-kiem
     {{- end }}      
+      {{- if .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.global.nodeSelector | nindent 8 }}
+      {{- end }}     
       initContainers:
         - name: kiem-init
           image: "{{ include "kiem.image" . }}"
@@ -22,6 +26,10 @@ spec:
           env:
             - name: CLUSTER_NAME
               value: "{{ .Values.global.clusterName }}"
+            {{- range $key, $value := .Values.global.extraEnv }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
           volumeMounts:
             - name: datapath
               mountPath: /data
@@ -53,6 +61,10 @@ spec:
               value: {{ .Values.global.useInsecureConnection | quote }}
             - name: DATA_TYPE
               value: "KIEM"
+            {{- range $key, $value := .Values.global.extraEnv }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
           volumeMounts:
             - mountPath: /data
               name: datapath  

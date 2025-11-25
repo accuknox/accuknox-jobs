@@ -17,6 +17,10 @@ spec:
           imagePullSecrets:
           - name: {{ .Values.global.registry.secretName }}-cis
           {{- end }}
+          {{- if .Values.global.nodeSelector }}
+          nodeSelector:
+            {{- toYaml .Values.global.nodeSelector | nindent 8 }}
+          {{- end }}
           serviceAccount: cis-service-account
           containers:
           - image: "{{ include "cluster_job.image" . }}"
@@ -42,6 +46,10 @@ spec:
                 value: {{ .Values.global.useInsecureConnection | quote }}
               - name: DATA_TYPE
                 value: "KB"
+              {{- range $key, $value := .Values.global.extraEnv }}
+              - name: {{ $key }}
+                value: {{ $value | quote }}
+              {{- end }}
             imagePullPolicy: Always
             volumeMounts:
             - mountPath: /data
@@ -64,6 +72,15 @@ spec:
             command:
             {{- include "cmd" .Values.global.cis.toolConfig | trim | nindent 13 }}
             name: kube-bench
+            {{- if .Values.global.extraEnv }}
+            env:
+              {{- range $key, $value := .Values.global.extraEnv }}
+              - name: {{ $key }}
+                value: {{ $value | quote }}
+              {{- end }}
+            {{- else }}
+            env: []
+            {{- end }}            
             volumeMounts:
             {{- include "volumeMounts" .Values.global.cis.toolConfig | trim | nindent 13 }}
           hostPID: true

@@ -19,6 +19,10 @@ spec:
           imagePullSecrets:
           - name: {{ .Values.global.registry.secretName }}-k8s
         {{- end }}        
+          {{- if .Values.global.nodeSelector }}
+          nodeSelector:
+            {{- toYaml .Values.global.nodeSelector | nindent 8 }}
+          {{- end }}  
           initContainers:
             - name: job-init-container
               image: "{{ include "kubescape.image" . }}"
@@ -40,6 +44,10 @@ spec:
               env:
                 - name: CLUSTER_NAME
                   value: "{{ .Values.global.clusterName }}"
+                {{- range $key, $value := .Values.global.extraEnv }}
+                - name: {{ $key }}
+                  value: {{ $value | quote }}
+                {{- end }}
               volumeMounts:
                 - name: datapath
                   mountPath: /data
@@ -70,6 +78,10 @@ spec:
                   value: {{ .Values.global.useInsecureConnection | quote }}
                 - name: DATA_TYPE
                   value: "KS"
+                {{- range $key, $value := .Values.global.extraEnv }}
+                - name: {{ $key }}
+                  value: {{ $value | quote }}
+                {{- end }}            
               volumeMounts:
                 - mountPath: /data
                   name: datapath

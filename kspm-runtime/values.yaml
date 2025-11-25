@@ -19,6 +19,10 @@ global:
   certBundleURL: ""  # Set this for cert URL if needed (if certBundlePath is set as well certBundlePath will take precedent)
   useInsecureConnection: false  # Set to true if insecure connection is needed
 
+  extraEnv: {} # Additional environment variables to be added to both initContainer and main container --set extraEnv.MY_ENV_VAR=value or
+  # extraEnv:
+  #   NO_PROXY: "localhost,192.168.1.10"
+  nodeSelector: {} # Node selector for scheduling the job --set nodeSelector."kubernetes.io/os"=linux
 
   # To use existing secret updated {registry.secretName} with your secret name.
   registry: 
@@ -64,6 +68,9 @@ global:
 kubearmor-operator:
   enabled: false
   autoDeploy: false
+  imagePinning: false
+  oci_meta:
+    repo: kubearmor
 
 # Values specific to knoxguard and kyverno sub-charts
 admissionController:
