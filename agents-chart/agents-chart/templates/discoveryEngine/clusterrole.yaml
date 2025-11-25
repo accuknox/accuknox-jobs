@@ -1,0 +1,91 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: view-cluster-resources
+rules:
+  - apiGroups:
+      - '*'
+    resources:
+      - pods
+      - services
+      - deployments
+      - namespaces
+      - nodes
+      - replicasets
+      - statefulsets
+      - daemonsets
+      - configmaps
+      - jobs
+      - cronjobs
+    verbs:
+      - get
+      - list
+      - watch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: manage-policies
+rules:
+  - apiGroups:
+      - cilium.io
+    resources:
+      - ciliumnetworkpolicies
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - networking.k8s.io
+    resources:
+      - networkpolicies
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - security.kubearmor.com
+    resources:
+      - discoveredpolicies
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch
+  - apiGroups:
+      - security.kubearmor.com
+    resources:
+      - discoveredpolicies/finalizers
+    verbs:
+      - update
+  - apiGroups:
+      - security.kubearmor.com
+    resources:
+      - discoveredpolicies/status
+    verbs:
+      - get
+      - patch
+      - update
+  - apiGroups:
+      - security.kubearmor.com
+    resources:
+      - kubearmorpolicies
+    verbs:
+      - create
+      - delete
+      - get
+      - list
+      - patch
+      - update
+      - watch

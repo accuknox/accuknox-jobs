@@ -1,0 +1,76 @@
+fullnameOverride: accuknox-knoxguard
+
+globalRegistry: public.ecr.aws/k9v9d5v2
+
+defaultPolicyController:
+  kyverno:
+    registry: true
+    vulnerability: true
+
+# use this to override default policy controller
+policyControllerOverride:    
+
+controllerManager:
+  kubeRbacProxy:
+    enable: false
+    args:
+    - --secure-listen-address=0.0.0.0:8443
+    - --upstream=http://127.0.0.1:8080/
+    - --logtostderr=true
+    - --v=0
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    image:
+      registry: gcr.io
+      repository: kubebuilder/kube-rbac-proxy
+      tag: v0.16.0
+      pullPolicy: IfNotPresent
+    resources:
+      limits:
+        cpu: 500m
+        memory: 128Mi
+      requests:
+        cpu: 5m
+        memory: 64Mi
+  manager:
+    args:
+    - --ctrlConfigPath=/var/lib/knoxguard/conifg/config.yaml
+    - --health-probe-bind-address=:8081
+    - --metrics-bind-address=127.0.0.1:8080
+    - --leader-elect
+    containerSecurityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+    image:
+      registry:
+      repository: knoxguard
+      tag: 
+      pullPolicy: IfNotPresent
+    resources:
+      limits:
+        cpu: 500m
+        memory: 128Mi
+      requests:
+        cpu: 10m
+        memory: 64Mi
+  replicas: 1
+  serviceAccount:
+    annotations: {}
+kubernetesClusterDomain: cluster.local
+metricsService:
+  ports:
+  - name: https
+    port: 8443
+    protocol: TCP
+    targetPort: https
+  type: ClusterIP
+
+global:
+  extraEnv: {}
+  nodeSelector: {}
+  

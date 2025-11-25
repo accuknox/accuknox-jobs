@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: onboarding-vars
+data:
+  CLUSTER_NAME: {{ include "cluster.name" . | default "abc" }}
+  cluster_name: {{ include "cluster.name" . | default "abc" }}  
+  cluster_id: {{ include "cluster.id" . | default "abc" }}
+  tenant_id: {{ include "tenant.id" . | default "abc" }}
+  workspace_id: {{ include "workspace.id" . | default "abc" }}   

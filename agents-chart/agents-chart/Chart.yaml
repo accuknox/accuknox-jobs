@@ -1,0 +1,16 @@
+apiVersion: v2
+appVersion: 0.1.0
+description: A Helm chart for agents
+name: agents-chart
+type: application
+version: 0.1.0
+
+dependencies:
+  - name: knoxguard-chart
+    version: "0.2.2"
+    repository: "file://charts/knoxguard-chart"
+    condition: admissionController.enabled
+  - name: kyverno
+    version: "3.3.7"
+    repository: "file://charts/kyverno"
+    condition: kyverno.enabled

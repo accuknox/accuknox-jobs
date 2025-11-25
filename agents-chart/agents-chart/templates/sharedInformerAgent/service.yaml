@@ -1,0 +1,18 @@
+{{- if (eq (include "condition-feeder" .) "false") }}
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ include "sharedInformerAgent.name" . }}
+  name: {{ include "sharedInformerAgent.name" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  selector:
+    app: {{ include "sharedInformerAgent.name" . }}
+  ports:
+    - name: audit-webhook
+      protocol: TCP
+      port: {{ .Values.sharedInformerAgent.auditWebhook.port | default 8080 }}
+      targetPort: {{ .Values.sharedInformerAgent.auditWebhook.port | default 8080 }}
+  type: NodePort
+{{- end }}
