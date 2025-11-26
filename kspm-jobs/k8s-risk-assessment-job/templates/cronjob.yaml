@@ -33,6 +33,10 @@ spec:
                 - --output
                 - /data/report.json
                 - --cluster-name=$(CLUSTER_NAME)
+                {{- if .Values.controlsConfig.enabled }}
+                - --controls-config
+                - /data/controls-config/controls-config.json
+                {{- end }}
                 {{- if .Values.global.airgapped }}
                 - --use-artifacts-from
                 - /opt/kubescape/artifacts
@@ -43,6 +47,12 @@ spec:
               volumeMounts:
                 - name: datapath
                   mountPath: /data
+                {{- if .Values.controlsConfig.enabled }}
+                - name: controls-config
+                  mountPath: /data/controls-config
+                  subPath: controls-config.json
+                  readOnly: true
+                {{- end }}
           containers:
             - image: "{{ include "cluster_job.image" . }}"
               name: artifact-api-container
@@ -80,6 +90,11 @@ spec:
             - name: config
               configMap:
                 name: risk-assessment-config-{{ .Release.Name }}
+            {{- if .Values.controlsConfig.enabled }}
+            - name: controls-config
+              configMap:
+                name: controls-config-{{ .Release.Name }}
+            {{- end }}
             {{- if eq (include "spire.enabled" . ) "true" }}   
             - name: spirepath
               emptyDir: {}
