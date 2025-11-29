@@ -1,0 +1,106 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.2
+  name: discoveries.kubeshield.accuknox.com
+spec:
+  group: kubeshield.accuknox.com
+  names:
+    kind: Discovery
+    listKind: DiscoveryList
+    plural: discoveries
+    singular: discovery
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.node
+      name: Node
+      type: string
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: Discovery is the Schema for the imagediscoveries API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: DiscoverySpec defines the desired state of Discovery.
+            properties:
+              node:
+                description: The node that the discovery will run on
+                type: string
+              runtime:
+                type: string
+            required:
+            - node
+            type: object
+          status:
+            description: DiscoveryStatus defines the observed state of Discovery.
+            properties:
+              criPath:
+                type: string
+              imagePullSecrets:
+                items:
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
+              images:
+                items:
+                  properties:
+                    name:
+                      type: string
+                    ownerReferences:
+                      items:
+                        properties:
+                          kind:
+                            type: string
+                          name:
+                            type: string
+                          namespace:
+                            type: string
+                        required:
+                        - kind
+                        - name
+                        - namespace
+                        type: object
+                      type: array
+                  required:
+                  - name
+                  type: object
+                type: array
+              runtime:
+                type: string
+            required:
+            - criPath
+            - images
+            - runtime
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

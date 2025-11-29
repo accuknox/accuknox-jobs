@@ -1,0 +1,171 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.2
+  name: imagescans.kubeshield.accuknox.com
+spec:
+  group: kubeshield.accuknox.com
+  names:
+    kind: ImageScan
+    listKind: ImageScanList
+    plural: imagescans
+    singular: imagescan
+  scope: Cluster
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .status.status
+      name: STATUS
+      type: string
+    - jsonPath: .metadata.creationTimestamp
+      name: Age
+      type: date
+    name: v1beta1
+    schema:
+      openAPIV3Schema:
+        description: ImageScan is the Schema for the imagescans API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ImageScanSpec defines the desired state of ImageScan.
+            properties:
+              criPath:
+                type: string
+              image:
+                description: images to scan
+                items:
+                  properties:
+                    name:
+                      type: string
+                    ownerReferences:
+                      items:
+                        properties:
+                          kind:
+                            type: string
+                          name:
+                            type: string
+                          namespace:
+                            type: string
+                        required:
+                        - kind
+                        - name
+                        - namespace
+                        type: object
+                      type: array
+                  required:
+                  - name
+                  type: object
+                type: array
+              imagePullSecrets:
+                items:
+                  properties:
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                  required:
+                  - name
+                  - namespace
+                  type: object
+                type: array
+              node:
+                description: The node that the scanner will scan the image on
+                type: string
+              runtime:
+                type: string
+              saasOptions:
+                properties:
+                  SecretRef:
+                    description: |-
+                      SecretReference represents a Secret Reference. It has enough information to retrieve secret
+                      in any namespace
+                    properties:
+                      name:
+                        description: name is unique within a namespace to reference
+                          a secret resource.
+                        type: string
+                      namespace:
+                        description: namespace defines the space within which the
+                          secret name must be unique.
+                        type: string
+                    type: object
+                    x-kubernetes-map-type: atomic
+                  submitReport:
+                    default: false
+                    description: if true, submit the scan result to SaaS
+                    type: boolean
+                required:
+                - SecretRef
+                type: object
+              scanOptions:
+                properties:
+                  artifactConfig:
+                    properties:
+                      artifactEndpoint:
+                        type: string
+                      artifactToken:
+                        type: string
+                      label:
+                        type: string
+                    type: object
+                  checkmarxConfig:
+                    properties:
+                      apikey:
+                        type: string
+                      baseURI:
+                        type: string
+                      clientID:
+                        type: string
+                      clientSecret:
+                        type: string
+                      projectName:
+                        type: string
+                      tenant:
+                        type: string
+                    required:
+                    - projectName
+                    type: object
+                  registryID:
+                    format: int64
+                    type: integer
+                  scanTool:
+                    type: string
+                required:
+                - scanTool
+                type: object
+            required:
+            - image
+            - scanOptions
+            type: object
+          status:
+            description: ImageScanStatus defines the observed state of ImageScan.
+            properties:
+              saasMessage:
+                type: string
+              saasStatus:
+                type: string
+              status:
+                type: string
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
