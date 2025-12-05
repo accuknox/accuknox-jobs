@@ -22,7 +22,7 @@ jobs:
           requirements: |
             - name: KSPM runtime changes
               paths:
-                - 'charts/kspm-runtime/**'
+                - 'kspm-runtime/**'
               users:
                 - kprateep
                 - seswarrajan
