@@ -44,7 +44,7 @@ git clone https://github.com/accuknox/accuknox-jobs.git
 cd accuknox-jobs/kspm-runtime
 helm dependency update
 
-helm upgrade --install kspm-runtime ./ \
+helm upgrade --install agents kspm-runtime ./ \
   -n kspm --create-namespace \
   --set global.agents.enabled=true \
   --set global.agents.joinToken="" \
