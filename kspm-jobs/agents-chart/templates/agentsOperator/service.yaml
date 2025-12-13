@@ -1,0 +1,20 @@
+{{- if (eq (include "condition-feeder" .) "false") }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "agentsOperator.name" . }}
+  labels:
+    app: {{ include "agentsOperator.name" . }}
+spec:
+  ports:
+  - port: 9090
+    targetPort: 9090
+    protocol: TCP
+    name: health-check
+  - port: 9091
+    targetPort: 9091
+    protocol: TCP
+    name: spire-agent
+  selector:
+    app: {{ include "agentsOperator.name" . }}
+{{- end }}   

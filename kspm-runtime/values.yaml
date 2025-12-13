@@ -15,7 +15,47 @@ global:
   spire:
     secretName: "spire-agent-secret"
 
-# Values specific to agents sub-chart
+  SingleEndpointDeployment: false
+
+  certPath: ""  # Set this for cert local path if needed .
+  certURL: ""  # Set this for cert URL if needed (if certPath is set as well certPath will take precedent)
+  skipTLSVerification: true  # Set to true if insecure connection is needed
+    
+  # To use existing secret updated {registry.secretName} with your secret name.
+  registry: 
+    url: ""
+    secretName: ""
+    username: ""
+    password: ""
+    preserveUpstream: true
+
+  # operator will deploy pinned images for each application
+  imagePinning: true
+
+  # kubearmor images
+  kubearmor:
+    repo: kubearmor #(default to kubearmor)
+    images:
+      kubearmor:
+        image: kubearmor
+        tag: stable
+      kubearmorInit:
+        image: kubearmor-init
+        tag: stable
+      kubearmorRelay:
+        image: kubearmor-relay-server
+        tag: latest
+      kubearmorController:
+        image: kubearmor-controller
+        tag: latest
+      kubearmorSnitch:
+        image: kubearmor-snitch
+        tag: latest
+      kubearmorOperator:
+        image: kubearmor-operator
+        tag: latest
+
+  # Values specific to agents sub-chart
   agents:
     enabled: false
     accessKey: ""
@@ -25,11 +65,12 @@ global:
     url: ""
     joinToken: ""
     clusterName: ""
+    tokenURL: ""
 
-#OnlyChartsNeedsToBeInstall
+  #OnlyChartsNeedsToBeInstall
   localRegistryAgent: false
   
-# Values specific to KSPM-jobs sub-charts
+  # Values specific to KSPM-jobs sub-charts
   cis:
     enabled: false  
     toolConfig:
@@ -43,6 +84,7 @@ global:
     enabled: false  
   kiem:
     enabled: false 
+
   inClusterScan:
     enabled: false
 
