@@ -34,7 +34,6 @@ The **kspm-runtime** Helm chart consolidates multiple AccuKnox and third-party c
 | `global.tenantId` / `global.authToken` | Tenant authentication |
 | `global.enableJobsUrl` | Enable job URL reporting |
 | `global.inClusterScan.enabled` | Enable kubeshield-chart |
-| `cleanup.enabled` | Enable automatic cleanup of all CRDs and cluster resources on uninstall (default: true) |
 
 ---
 
@@ -66,66 +65,8 @@ helm upgrade --install kspm-runtime ./ \
 ```
 ---
 
-## Uninstallation
-
-To uninstall the chart and clean up all resources including CRDs and ClusterRoleBindings:
-
-```bash
-helm uninstall kubeshield -n kubeshield
-```
-
-The chart includes a pre-delete hook that automatically cleans up:
-- **Kubeshield CRDs**: `clusterscans`, `discoveries`, `imagescans`, `scheduleclusterscans`
-- **KubeArmor CRDs**: `kubearmorpolicies`, `kubearmorhostpolicies`, `kubearmorclusterpolicies`, `kubearmorconfigs`
-- **KubeArmor ClusterRoleBindings and ClusterRoles**
-- **KubeArmor namespace** (if different from the release namespace)
-
-### Disabling Automatic Cleanup
-
-If you want to disable automatic cleanup (e.g., to preserve CRDs for other workloads):
-
-```bash
-helm upgrade --install kubeshield ./kspm-runtime \
-  --set cleanup.enabled=false \
-  [other flags...]
-```
-
-### Manual Cleanup (if needed)
-
-If automatic cleanup fails or is disabled, you can manually remove resources:
-
-```bash
-# Delete Kubeshield CRDs
-kubectl delete crd clusterscans.kubeshield.accuknox.com
-kubectl delete crd discoveries.kubeshield.accuknox.com
-kubectl delete crd imagescans.kubeshield.accuknox.com
-kubectl delete crd scheduleclusterscans.kubeshield.accuknox.com
-
-# Delete KubeArmor CRDs
-kubectl delete crd kubearmorpolicies.security.kubearmor.com
-kubectl delete crd kubearmorhostpolicies.security.kubearmor.com
-kubectl delete crd kubearmorclusterpolicies.security.kubearmor.com
-kubectl delete crd kubearmorconfigs.operator.kubearmor.com
-
-# Delete KubeArmor ClusterRoleBindings
-kubectl delete clusterrolebinding kubearmor-operator-clusterrolebinding
-kubectl delete clusterrolebinding kubearmor-clusterrolebinding
-kubectl delete clusterrolebinding kubearmor-relay-clusterrolebinding
-
-# Delete KubeArmor ClusterRoles
-kubectl delete clusterrole kubearmor-operator-clusterrole
-kubectl delete clusterrole kubearmor-clusterrole
-kubectl delete clusterrole kubearmor-relay-clusterrole
-
-# Delete KubeArmor namespace
-kubectl delete namespace kubearmor
-```
-
----
-
 ## Notes
 
 - Run ```helm dependency update``` before install/upgrade.
 - Enable/disable sub-charts via boolean flags.
 - Update sub-chart versions in ```Chart.yaml``` before tagging a release.
-- The cleanup job uses `bitnami/kubectl:latest` image - ensure your cluster can pull from Docker Hub or configure an alternate image registry.
