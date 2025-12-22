@@ -58,3 +58,7 @@ admissionController:
 kyverno:
   enabled: false
 
+# Cleanup configuration for helm uninstall
+cleanup:
+  enabled: true
+
