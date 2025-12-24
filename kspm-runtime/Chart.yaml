@@ -9,11 +9,11 @@ appVersion: "0.1.0"
 
 dependencies:
   - name: agents-chart
-    version: "v0.11.13"
+    version: "v0.11.14"
     repository: oci://public.ecr.aws/k9v9d5v2  
     condition: global.agents.enabled
   - name: kubearmor-operator
-    version: v1.5.7
+    version: v1.6.6
     repository: https://kubearmor.github.io/charts
     condition: kubearmor-operator.enabled
   - name: cis-k8s-job
