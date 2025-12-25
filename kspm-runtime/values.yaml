@@ -42,9 +42,9 @@ global:
   riskassessment:
     enabled: false  
   kiem:
-    enabled: false 
-  inClusterScan:
     enabled: false
+  inClusterScan:
+    enabled: true
 
 # Values specific to KubeArmorOperator sub-chart
 kubearmor-operator:
@@ -55,10 +55,16 @@ kubearmor-operator:
 admissionController:
   enabled: false
 
+# Set registryId for Kubeshield chart
+scan:
+  registryId: 1
+
 kyverno:
-  enabled: false
+  enabled: true
 
 # Cleanup configuration for helm uninstall
+# Uses restricted RBAC with resourceNames for security (least privilege)
+# Note: KubeArmor namespace must be deleted manually for security
 cleanup:
   enabled: true
 

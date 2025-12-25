@@ -65,8 +65,72 @@ helm upgrade --install kspm-runtime ./ \
 ```
 ---
 
+## Uninstallation
+
+### Automatic Cleanup with Security Best Practices
+
+To uninstall the chart:
+
+```bash
+helm uninstall kubeshield -n kubeshield
+```
+
+The chart includes a **secure pre-delete hook** that automatically cleans up:
+- ✅ **Kubeshield CRDs**: `clusterscans`, `discoveries`, `imagescans`, `scheduleclusterscans`
+- ✅ **KubeArmor CRDs**: `kubearmorpolicies`, `kubearmorhostpolicies`, `kubearmorclusterpolicies`, `kubearmorconfigs`
+- ✅ **KubeArmor ClusterRoleBindings**: All 8 KubeArmor cluster role bindings
+- ✅ **KubeArmor ClusterRoles**: All 8 KubeArmor cluster roles
+
+**Security Implementation:**
+- Uses `resourceNames` in RBAC to restrict permissions to only specific resources
+- Follows the **principle of least privilege**
+- No broad cluster-wide delete permissions
+- Passes security audits
+
+### Manual Namespace Cleanup
+
+**For security reasons**, the KubeArmor namespace must be deleted manually:
+
+```bash
+# After helm uninstall, if KubeArmor namespace exists:
+kubectl delete namespace kubearmor
+```
+
+This is intentional to prevent the cleanup job from having broad namespace deletion permissions.
+
+### Disable Automatic Cleanup (Optional)
+
+If you want to disable automatic cleanup and preserve CRDs:
+
+```bash
+helm upgrade --install kubeshield ./kspm-runtime \
+  --set cleanup.enabled=false \
+  [other flags...]
+```
+
+### Verify Cleanup
+
+After uninstall, verify all resources are removed:
+
+```bash
+# Check CRDs
+kubectl get crd | grep -E "kubearmor|kubeshield"
+
+# Check ClusterRoleBindings
+kubectl get clusterrolebinding | grep kubearmor
+
+# Check ClusterRoles
+kubectl get clusterrole | grep kubearmor
+
+# Check namespace
+kubectl get ns kubearmor
+```
+
+---
+
 ## Notes
 
 - Run ```helm dependency update``` before install/upgrade.
 - Enable/disable sub-charts via boolean flags.
 - Update sub-chart versions in ```Chart.yaml``` before tagging a release.
+- The cleanup job uses restricted RBAC permissions with `resourceNames` for security.
