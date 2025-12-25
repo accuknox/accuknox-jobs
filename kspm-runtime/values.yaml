@@ -55,12 +55,8 @@ kubearmor-operator:
 admissionController:
   enabled: false
 
-# Set registryId for Kubeshield chart
-scan:
-  registryId: 1
-
 kyverno:
-  enabled: true
+  enabled: false
 
 # Cleanup configuration for helm uninstall
 # Uses restricted RBAC with resourceNames for security (least privilege)
