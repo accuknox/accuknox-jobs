@@ -12,6 +12,15 @@ global:
   secretName: ""
   url: ""
 
+  cis:
+    toolConfig:
+      platform: ""
+      nodeType: ""
+      targets: ""
+      benchmark: ""
+      check: ""
+      skip: ""
+
   spire:
     secretName: "spire-agent-secret"
 

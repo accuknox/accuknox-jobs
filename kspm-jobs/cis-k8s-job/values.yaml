@@ -15,14 +15,6 @@ kubeBench:
   image: ""
 
 
-toolConfig:
-  platform: ""
-  nodeType: "worker"
-  targets: ""
-  benchmark: ""
-  check: ""
-  skip: ""
-
 global:
   authToken: ""
   enableJobsUrl: false
@@ -33,6 +25,15 @@ global:
   secretName: ""
   joinToken: ""
   accessKey: ""
+
+  cis:
+    toolConfig:
+      platform: ""
+      nodeType: ""
+      targets: ""
+      benchmark: ""
+      check: ""
+      skip: ""
 
   spire:
     secretName: "spire-agent-secret"
