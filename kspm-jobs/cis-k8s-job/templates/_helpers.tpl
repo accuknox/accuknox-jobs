@@ -176,6 +176,9 @@ Create the name of the service account to use
 - run
 - --json
 - --outputfile=/data/report.json
+{{- if not (.platform | empty) }}
+- --platform="{{ .platform }}"
+{{- end }}
 {{- if not (.targets | empty) }}
 - --targets="{{ .targets }}"
 {{- end }}
