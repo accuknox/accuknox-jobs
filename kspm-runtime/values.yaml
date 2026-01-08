@@ -44,7 +44,7 @@ global:
   kiem:
     enabled: false
   inClusterScan:
-    enabled: true
+    enabled: false
 
 # Values specific to KubeArmorOperator sub-chart
 kubearmor-operator:
