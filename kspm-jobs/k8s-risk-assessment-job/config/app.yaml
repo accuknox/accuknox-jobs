@@ -11,6 +11,9 @@ jobs:
   reportFile: "/data/report.json"
   clusterID: {{ .Values.global.clusterID }}
   printData: true
+  insecure: {{ .Values.global.skipTLSVerification }}
+  caPath: {{ .Values.global.certPath | quote }}
+  caUrl: {{ .Values.global.certURL | quote }}
 
 spire:
   enabled: {{ include "spire.enabled" . }}
