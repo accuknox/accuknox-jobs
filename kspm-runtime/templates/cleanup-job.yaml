@@ -1,0 +1,140 @@
+{{- if .Values.cleanup.enabled }}
+---
+
+# Cleanup Job with Security Best Practices
+# This pre-delete hook ensures all cluster-scoped resources are cleaned up on helm uninstall
+# Security: Uses resourceNames to restrict permissions to only specific named resources
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Release.Name }}-cleanup-sa
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-weight": "-5"  
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ .Release.Name }}-cleanup-role
+  annotations:
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+rules:
+  - apiGroups: ["apiextensions.k8s.io"]
+    resources: ["customresourcedefinitions"]
+    verbs: ["get", "delete", "list", "watch"]
+    resourceNames:
+      # Kubeshield CRDs
+      - "clusterscans.kubeshield.accuknox.com"
+      - "discoveries.kubeshield.accuknox.com"
+      - "imagescans.kubeshield.accuknox.com"
+      - "scheduleclusterscans.kubeshield.accuknox.com"
+      # KubeArmor CRDs
+      - "kubearmorpolicies.security.kubearmor.com"
+      - "kubearmorhostpolicies.security.kubearmor.com"
+      - "kubearmorclusterpolicies.security.kubearmor.com"
+      - "kubearmorconfigs.operator.kubearmor.com"
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterrolebindings"]
+    verbs: ["get", "delete", "list", "watch"]
+    resourceNames:
+      # KubeArmor ClusterRoleBindings
+      - "kubearmor-operator-clusterrolebinding"
+      - "kubearmor-operator-clusterrole-binding"
+      - "kubearmor-operator-manage-controller-clusterrole-binding"
+      - "kubearmor-operator-manage-kubearmor-clusterrole-binding"
+      - "kubearmor-operator-manage-relay-clusterrole-binding"
+      - "kubearmor-clusterrolebinding"
+      - "kubearmor-controller-clusterrolebinding"
+      - "kubearmor-relay-clusterrolebinding"
+      - "kubearmor-snitch-binding"
+      - "agents-cleanup-rolebinding"
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    verbs: ["get", "delete"]
+    resourceNames:
+      - "{{ .Release.Namespace }}"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ .Release.Name }}-cleanup-rolebinding
+  annotations:
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ .Release.Name }}-cleanup-role
+subjects:
+- kind: ServiceAccount
+  name: {{ .Release.Name }}-cleanup-sa
+  namespace: {{ .Release.Namespace }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-cleanup-job
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-delete
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+spec:
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      name: {{ .Release.Name }}-cleanup
+    spec:
+      serviceAccountName: {{ .Release.Name }}-cleanup-sa
+      restartPolicy: Never
+      containers:
+      - name: cleanup
+        image: public.ecr.aws/k9v9d5v2/kubectl:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -e
+          echo "Starting cleanup process..."
+          
+          # Delete Kubeshield CRDs
+          echo "Deleting Kubeshield CRDs..."
+          kubectl delete crd --ignore-not-found=true \
+            clusterscans.kubeshield.accuknox.com \
+            discoveries.kubeshield.accuknox.com \
+            imagescans.kubeshield.accuknox.com \
+            scheduleclusterscans.kubeshield.accuknox.com
+          
+          # Delete KubeArmor CRDs
+          echo "Deleting KubeArmor CRDs..."
+          kubectl delete crd --ignore-not-found=true \
+            kubearmorpolicies.security.kubearmor.com \
+            kubearmorhostpolicies.security.kubearmor.com \
+            kubearmorclusterpolicies.security.kubearmor.com \
+            kubearmorconfigs.operator.kubearmor.com
+          
+          # Delete KubeArmor ClusterRoleBindings
+          echo "Deleting KubeArmor ClusterRoleBindings..."
+          kubectl delete clusterrolebinding --ignore-not-found=true \
+            kubearmor-operator-clusterrolebinding \
+            kubearmor-operator-clusterrole-binding \
+            kubearmor-operator-manage-controller-clusterrole-binding \
+            kubearmor-operator-manage-kubearmor-clusterrole-binding \
+            kubearmor-operator-manage-relay-clusterrole-binding \
+            kubearmor-clusterrolebinding \
+            kubearmor-controller-clusterrolebinding \
+            kubearmor-relay-clusterrolebinding \
+            kubearmor-snitch-binding
+          
+          # Delete release namespace
+          echo "Deleting {{ .Release.Namespace }} namespace..."
+          kubectl delete ns {{ .Release.Namespace }} --ignore-not-found=true
+          
+          echo "Cleanup completed successfully!"
+{{- end }}
+

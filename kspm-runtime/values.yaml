@@ -90,8 +90,7 @@ global:
   riskassessment:
     enabled: false  
   kiem:
-    enabled: false 
-
+    enabled: false
   inClusterScan:
     enabled: false
 
@@ -106,4 +105,10 @@ admissionController:
 
 kyverno:
   enabled: false
+
+# Cleanup configuration for helm uninstall
+# Uses restricted RBAC with resourceNames for security (least privilege)
+# Note: KubeArmor namespace must be deleted manually for security
+cleanup:
+  enabled: true
 
