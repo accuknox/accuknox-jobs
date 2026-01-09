@@ -11,17 +11,9 @@ cluster_job:
 kubeBench:
   owner: docker.io/aquasec
   repository: kube-bench
-  tag: "v0.9.1"
+  tag: "v0.14.1"
   image: ""
 
-
-toolConfig:
-  platform: ""
-  nodeType: "worker"
-  targets: ""
-  benchmark: ""
-  check: ""
-  skip: ""
 
 global:
   authToken: ""
@@ -33,6 +25,15 @@ global:
   secretName: ""
   joinToken: ""
   accessKey: ""
+
+  cis:
+    toolConfig:
+      platform: ""
+      nodeType: ""
+      targets: ""
+      benchmark: ""
+      check: ""
+      skip: ""
 
   spire:
     secretName: "spire-agent-secret"
