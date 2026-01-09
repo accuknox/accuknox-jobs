@@ -176,20 +176,38 @@ Create the name of the service account to use
 - run
 - --json
 - --outputfile=/data/report.json
+{{- if not (.benchmark | empty) }}
+- --config-dir
+- /opt/kube-bench/cfg
+- --benchmark
+- {{ .benchmark }}
+{{- else }}
 {{- if not (.platform | empty) }}
-- --platform="{{ .platform }}"
+- --config-dir
+- /opt/kube-bench/cfg
+{{- if eq .platform "GKE" }}
+- --benchmark
+- gke-1.8.0
+{{- else if eq .platform "AKS" }}
+- --benchmark
+- aks-1.7
+{{- else if eq .platform "EKS" }}
+- --benchmark
+- eks-1.7.0
+{{- end }}
+{{- end }}
 {{- end }}
 {{- if not (.targets | empty) }}
-- --targets="{{ .targets }}"
-{{- end }}
-{{- if not (.benchmark | empty) }}
-- --benchmark="{{ .benchmark }}"
+- --targets
+- {{ .targets }}
 {{- end }}
 {{- if not (.check | empty) }}
-- --check="{{ .check }}"
+- --check
+- {{ .check }}
 {{- end }}
 {{- if not (.skip | empty) }}
-- --skip="{{ .skip }}"
+- --skip
+- {{ .skip }}
 {{- end }}
 {{- end }}
 

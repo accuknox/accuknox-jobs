@@ -11,7 +11,7 @@ cluster_job:
 kubeBench:
   owner: docker.io/aquasec
   repository: kube-bench
-  tag: "v0.9.1"
+  tag: "v0.14.1"
   image: ""
 
 
