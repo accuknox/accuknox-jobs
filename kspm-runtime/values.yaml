@@ -121,3 +121,7 @@ kyverno:
 cleanup:
   enabled: true
 
+# skip TLS verification by default
+kubeshield-chart:
+  scan:
+    secure_conn: "false"
