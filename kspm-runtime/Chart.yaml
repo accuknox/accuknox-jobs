@@ -9,8 +9,8 @@ appVersion: "0.1.0"
 
 dependencies:
   - name: agents-chart
-    version: "v0.11.15"
-    repository: oci://public.ecr.aws/k9v9d5v2  
+    version: "v0.11.16"
+    repository: oci://public.ecr.aws/k9v9d5v2
     condition: global.agents.enabled
   - name: kubearmor-operator
     version: v1.6.6
@@ -19,15 +19,15 @@ dependencies:
   - name: cis-k8s-job
     version: "0.1.0"
     repository: "file://../kspm-jobs/cis-k8s-job"
-    condition: global.cis.enabled  
+    condition: global.cis.enabled
   - name: k8s-risk-assessment-job
     version: "0.1.0"
     repository: "file://../kspm-jobs/k8s-risk-assessment-job"
-    condition: global.riskassessment.enabled  
+    condition: global.riskassessment.enabled
   - name: kiem-job
     version: "0.1.0"
     repository: "file://../kspm-jobs/kiem-job"
-    condition: global.kiem.enabled     
+    condition: global.kiem.enabled
   - name: knoxguard-chart
     version: v0.2.1
     repository: oci://public.ecr.aws/k9v9d5v2
@@ -37,6 +37,6 @@ dependencies:
     repository: https://kyverno.github.io/kyverno/
     condition: kyverno.enabled
   - name: kubeshield-chart
-    version: v0.2.9
+    version: v0.3.0
     repository: oci://public.ecr.aws/k9v9d5v2
     condition: global.inClusterScan.enabled
