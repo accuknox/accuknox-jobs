@@ -286,18 +286,25 @@ tolerations:
   {{ include "image-name" (dict "url" .Values.global.registry.url "owner" .Values.kubeBench.owner "repoName" .Values.kubeBench.repository "tag" .Values.kubeBench.tag "preserve" .Values.global.registry.preserveUpstream "image" .Values.kubeBench.image ) }}
 {{- end -}}
 
+
 {{- define "global.jobURL" -}}
 {{- $root := .Top | default . -}}
 {{- $enableJobs := $root.Values.global.enableJobsUrl | default false -}}
 {{- $url := $root.Values.global.agents.url | default "" -}}
 {{- $singleEP := $root.Values.global.SingleEndpointDeployment | default false -}}
 
-{{- if and $enableJobs $url $singleEP -}}
-{{ printf "%s" $url }}
+{{- if and $enableJobs $root.Values.global.cspmHost -}}
+{{ $root.Values.global.cspmHost }}
+
+{{- else if and $enableJobs $url $singleEP -}}
+{{ printf "%s" $url }}:{{ $root.Values.global.cspmPort | default 443 }}
+
 {{- else if and $enableJobs $url -}}
 cspm.{{ $url }}
+
 {{- else -}}
 {{ "" }}
+
 {{- end -}}
 {{- end }}
 
@@ -313,18 +320,24 @@ cspm.{{ $url }}
 
 {{/*
 Return full spire host:
+0. If global spireHost set → use it
 1. If spire enabled AND SingleEndpointDeployment enabled → <url>
 2. If spire enabled → spire.<url>
 3. If SingleEndpointDeployment enabled → <url>
 4. Else → localhost
 */}}
+
 {{- define "jobs.spireHost" -}}
 {{- $root := .Top | default . -}}
+{{- $spireHost := $root.Values.global.spireHost | default "" -}}
 {{- $spireEnabled := $root.Values.global.agents.enableSpire | default false -}}
 {{- $singleEP := $root.Values.global.SingleEndpointDeployment | default false -}}
 {{- $url := $root.Values.global.agents.url | default "" -}}
 
-{{- if and $spireEnabled $singleEP -}}
+{{- if $spireHost -}}
+{{ $spireHost }}
+
+{{- else if and $spireEnabled $singleEP -}}
 {{ $url }}
 
 {{- else if $spireEnabled -}}
@@ -335,16 +348,18 @@ Return full spire host:
 
 {{- else -}}
 localhost
+
 {{- end -}}
 {{- end }}
 
 
 
+
 {{/*
 Return KnoxGateway URL with port:
-1. If spire enabled AND SingleEndpointDeployment enabled → <url>:3000
-2. If ONLY SingleEndpointDeployment enabled → <url>:3000
-3. If spire enabled only → knox-gw.<url>:3000
+1. If spire enabled AND SingleEndpointDeployment enabled → <url>:<port>
+2. If ONLY SingleEndpointDeployment enabled → <url>:<port>
+3. If spire enabled only → knox-gw.<url>:<port>
 4. Else → ""
 */}}
 {{- define "jobs.knoxGatewayHost" -}}
@@ -352,15 +367,16 @@ Return KnoxGateway URL with port:
 {{- $spireEnabled := eq (include "spire.enabled" $root) "true" -}}
 {{- $singleEP := $root.Values.global.SingleEndpointDeployment | default false -}}
 {{- $url := $root.Values.global.agents.url | default "" -}}
+{{- $port := int ($root.Values.global.knoxGatewayPort | default 3000) -}}
 
 {{- if and $spireEnabled $singleEP -}}
-{{ printf "%s:3000" $url }}
+{{ printf "%s:%d" $url $port }}
 
 {{- else if and (not $spireEnabled) $singleEP -}}
-{{ printf "%s:3000" $url }}
+{{ printf "%s:%d" $url $port }}
 
 {{- else if $spireEnabled -}}
-{{ printf "knox-gw.%s:3000" $url }}
+{{ printf "knox-gw.%s:%d" $url $port }}
 
 {{- else -}}
 {{ "" }}
