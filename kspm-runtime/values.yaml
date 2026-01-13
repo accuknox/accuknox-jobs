@@ -78,10 +78,17 @@ global:
     tokenURL: ""
 
   spireHost: ""
+  spirePort: 8081
+  healthPort: 9090
 
   ppsHost: ""
+  ppsPort: 443
 
-  knoxGateway: ""
+  knoxGatewayHost: ""
+  knoxGatewayPort: 3000
+
+  cspmHost: ""
+  cspmPort: 443
 
 #OnlyChartsNeedsToBeInstall
   localRegistryAgent: false
