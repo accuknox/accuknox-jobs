@@ -11,18 +11,13 @@ jobs:
   check-approvers:
     name: Check required approvals
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      pull-requests: write
-      statuses: write
-      checks: write
 
     steps:
       - name: Require specific approvers
-        uses: Automattic/action-required-review@v3
+        uses: Automattic/action-required-review@v2
         with:
           # GitHub token
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.GH_ORG_TOKEN }}
 
           requirements: |
             - name: KSPM runtime changes
