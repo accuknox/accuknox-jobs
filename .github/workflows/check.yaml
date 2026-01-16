@@ -14,10 +14,10 @@ jobs:
 
     steps:
       - name: Require specific approvers
-        uses: Automattic/action-required-review@v2
+        uses: Automattic/action-required-review@v3
         with:
           # GitHub token
-          token: ${{ secrets.GH_ORG_TOKEN }}
+          token: ${{ secrets.GITHUB_TOKEN }}
 
           requirements: |
             - name: KSPM runtime changes
