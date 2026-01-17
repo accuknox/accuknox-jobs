@@ -132,8 +132,8 @@ spec:
             kubearmor-snitch-binding
           
           # Delete release namespace
-          echo "Deleting {{ .Release.Namespace }} namespace..."
-          kubectl delete ns {{ .Release.Namespace }} --ignore-not-found=true
+          #echo "Deleting {{ .Release.Namespace }} namespace..."
+          #kubectl delete ns {{ .Release.Namespace }} --ignore-not-found=true
           
           echo "Cleanup completed successfully!"
 {{- end }}
