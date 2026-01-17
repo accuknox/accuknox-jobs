@@ -33,8 +33,8 @@ dependencies:
     repository: oci://public.ecr.aws/k9v9d5v2
     condition: admissionController.enabled
   - name: kyverno
-    version: 3.6.2
-    repository: https://kyverno.github.io/kyverno/
+    version: v1.16.2
+    repository: oci://public.ecr.aws/k9v9d5v2
     condition: kyverno.enabled
   - name: kubeshield-chart
     version: v0.3.0-patch
