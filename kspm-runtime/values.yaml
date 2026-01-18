@@ -121,6 +121,8 @@ admissionController:
 
 kyverno:
   enabled: false
+  webhooksCleanup:
+    enabled: false
 
 # Cleanup configuration for helm uninstall
 # Uses restricted RBAC with resourceNames for security (least privilege)
