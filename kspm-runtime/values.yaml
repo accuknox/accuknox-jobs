@@ -82,7 +82,7 @@ global:
   healthPort: 9090
 
   ppsHost: ""
-  ppsPort: 443
+  ppsPort: ""
 
   knoxGatewayHost: ""
   knoxGatewayPort: 3000
