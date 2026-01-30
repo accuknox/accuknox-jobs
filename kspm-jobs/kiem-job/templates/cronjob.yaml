@@ -13,6 +13,9 @@ spec:
         app: kiem-job
     spec:
       template:
+        metadata:
+          labels:
+            app: scanner
         spec:
         {{- if .Values.global.registry.secretName }}
           imagePullSecrets:

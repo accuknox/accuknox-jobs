@@ -32,10 +32,10 @@ Return the chart version.
 Helper to check if Spire is enabled.
 */}}
 {{- define "spire.enabled" -}}
-  {{- if and (or (ne .Values.global.agents.joinToken "") (ne .Values.global.agents.accessKey "")) (eq .Values.global.authToken "") -}}
-    true
-  {{- else -}}
+  {{- if or .Values.global.agents.enabled .Values.global.inClusterScan.enabled -}}
     false
+  {{- else -}}
+    true
   {{- end -}}
 {{- end -}}
 

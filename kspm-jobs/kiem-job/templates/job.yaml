@@ -9,7 +9,8 @@ spec:
   template:
     metadata:
       labels:
-        app: kiem-job-{{ now | unixEpoch }}
+        job: kiem-job-{{ now | unixEpoch }}
+        app: scanner
     spec:
     {{- if .Values.global.registry.secretName }}
       imagePullSecrets:
