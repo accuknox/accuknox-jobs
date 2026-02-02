@@ -14,6 +14,9 @@ spec:
         app: k8s-risk-assessment-job
     spec:
       template:
+        metadata:
+          labels:
+            app: scanner
         spec:
         {{- if .Values.global.registry.secretName }}
           imagePullSecrets:

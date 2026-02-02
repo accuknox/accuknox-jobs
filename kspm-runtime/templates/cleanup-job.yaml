@@ -52,11 +52,9 @@ rules:
       - "kubearmor-relay-clusterrolebinding"
       - "kubearmor-snitch-binding"
       - "agents-cleanup-rolebinding"
-  - apiGroups: [""]
-    resources: ["namespaces"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
     verbs: ["get", "delete"]
-    resourceNames:
-      - "{{ .Release.Namespace }}"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -107,8 +105,10 @@ spec:
           kubectl delete crd --ignore-not-found=true \
             clusterscans.kubeshield.accuknox.com \
             discoveries.kubeshield.accuknox.com \
-            imagescans.kubeshield.accuknox.com \
-            scheduleclusterscans.kubeshield.accuknox.com
+            imagescans.kubeshield.accuknox.com 
+          # this is causing helm delete to exit with error and the resources
+          # are not properly deleted. Commenting out for now.
+          #   scheduleclusterscans.kubeshield.accuknox.com
           
           # Delete KubeArmor CRDs
           echo "Deleting KubeArmor CRDs..."
@@ -134,6 +134,10 @@ spec:
           # Delete release namespace
           #echo "Deleting {{ .Release.Namespace }} namespace..."
           #kubectl delete ns {{ .Release.Namespace }} --ignore-not-found=true
+
+          # Delete lease used by spire agent
+          echo "Deleting lease..."
+          kubectl delete lease spire-agent-lease --ignore-not-found=true -n {{ .Release.Namespace }}
           
           echo "Cleanup completed successfully!"
 {{- end }}

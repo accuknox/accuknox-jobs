@@ -9,7 +9,8 @@ spec:
   template:
     metadata:
       labels:
-        app: k8s-risk-assessment-job-{{ now | unixEpoch }}
+        job-name: k8s-risk-assessment-job-{{ now | unixEpoch }}
+        app: scanner
     spec:
     {{- if .Values.global.registry.secretName }}
       imagePullSecrets:

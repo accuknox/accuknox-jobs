@@ -9,6 +9,9 @@ spec:
       name: cis-k8s-cronjob
     spec:
       template:
+        metadata:
+          labels:
+            app: scanner
         spec:
         {{- if or (or (contains "master" .Values.global.cis.toolConfig.nodeType) (contains "controlplane" .Values.global.cis.toolConfig.nodeType)) (or (contains "master" .Values.global.cis.toolConfig.targets) (contains "controlplane" .Values.global.cis.toolConfig.targets)) }}
           {{- include "masterConfig" .Values.global.cis.toolConfig | trim | nindent 10 }}
