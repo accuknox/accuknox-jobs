@@ -52,9 +52,6 @@ rules:
       - "kubearmor-relay-clusterrolebinding"
       - "kubearmor-snitch-binding"
       - "agents-cleanup-rolebinding"
-  - apiGroups: ["coordination.k8s.io"]
-    resources: ["leases"]
-    verbs: ["get", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -134,10 +131,6 @@ spec:
           # Delete release namespace
           #echo "Deleting {{ .Release.Namespace }} namespace..."
           #kubectl delete ns {{ .Release.Namespace }} --ignore-not-found=true
-
-          # Delete lease used by spire agent
-          echo "Deleting lease..."
-          kubectl delete lease spire-agent-lease --ignore-not-found=true -n {{ .Release.Namespace }}
           
           echo "Cleanup completed successfully!"
 {{- end }}
