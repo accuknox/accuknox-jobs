@@ -31,7 +31,7 @@ Return the chart version.
 {{/*
 Helper to check if Spire is enabled.
 */}}
-{{- define "secret.enabled" -}}
+{{- define "spire.enabled" -}}
   {{- if and (or (ne .Values.global.agents.joinToken "") (ne .Values.global.agents.accessKey "")) (eq .Values.global.authToken "") -}}
     true
   {{- else -}}
