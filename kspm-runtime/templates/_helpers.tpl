@@ -29,9 +29,9 @@ Return the chart version.
 {{- end -}}
 
 {{/*
-Helper to check if Spire is enabled.
+Helper to check if Spire roles needs to be enabled.
 */}}
-{{- define "spire.enabled" -}}
+{{- define "spire.roles.enabled" -}}
   {{- if and (or (ne .Values.global.agents.joinToken "") (ne .Values.global.agents.accessKey "")) (eq .Values.global.authToken "") -}}
     true
   {{- else -}}
