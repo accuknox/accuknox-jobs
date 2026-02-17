@@ -123,6 +123,17 @@ spec:
                     images:
                       items:
                         properties:
+                          containerDetails:
+                            description: List of containers that are running this
+                              specific image
+                            items:
+                              properties:
+                                id:
+                                  type: string
+                              required:
+                              - id
+                              type: object
+                            type: array
                           name:
                             type: string
                           ownerReferences:
