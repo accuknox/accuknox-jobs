@@ -1,0 +1,31 @@
+name: "Mandatory Approvers Check"
+
+on:
+  pull_request:
+    branches:
+      - "jobs-consol"
+    paths:
+      - "**"
+      
+jobs:
+  check-approvers:
+    name: Check required approvals
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Require specific approvers
+        uses: Automattic/action-required-review@v2
+        with:
+          # GitHub token
+          token: ${{ secrets.GH_ORG_TOKEN }}
+
+          requirements: |
+            - name: KSPM runtime changes
+              paths:
+                - 'kspm-runtime/**'
+              users:
+                - kprateep
+                - seswarrajan
+                - Priyaccuknox
+              teams: []   
+          fail: true

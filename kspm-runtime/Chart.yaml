@@ -9,34 +9,34 @@ appVersion: "0.1.0"
 
 dependencies:
   - name: agents-chart
-    version: "v0.11.10"
-    repository: oci://public.ecr.aws/k9v9d5v2  
+    version: "v0.11.23"
+    repository: oci://public.ecr.aws/k9v9d5v2
     condition: global.agents.enabled
   - name: kubearmor-operator
-    version: v1.5.7
+    version: v1.6.6
     repository: https://kubearmor.github.io/charts
     condition: kubearmor-operator.enabled
   - name: cis-k8s-job
     version: "0.1.0"
     repository: "file://../kspm-jobs/cis-k8s-job"
-    condition: global.cis.enabled  
+    condition: global.cis.enabled
   - name: k8s-risk-assessment-job
     version: "0.1.0"
     repository: "file://../kspm-jobs/k8s-risk-assessment-job"
-    condition: global.riskassessment.enabled  
+    condition: global.riskassessment.enabled
   - name: kiem-job
     version: "0.1.0"
     repository: "file://../kspm-jobs/kiem-job"
-    condition: global.kiem.enabled     
+    condition: global.kiem.enabled
   - name: knoxguard-chart
     version: v0.2.1
     repository: oci://public.ecr.aws/k9v9d5v2
     condition: admissionController.enabled
   - name: kyverno
-    version: 3.3.7
-    repository: https://kyverno.github.io/kyverno/
+    version: v1.16.2
+    repository: oci://public.ecr.aws/k9v9d5v2
     condition: kyverno.enabled
   - name: kubeshield-chart
-    version: v0.1.2-patch
+    version: v0.3.4
     repository: oci://public.ecr.aws/k9v9d5v2
-    condition: incluster-scan.enabled
+    condition: global.inClusterScan.enabled

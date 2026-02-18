@@ -11,11 +11,14 @@ jobs:
   reportFile: "/data/report.json"
   clusterID: {{ .Values.global.clusterID }}
   printData: true
+  insecure: {{ .Values.global.skipTLSVerification }}
+  caPath: {{ .Values.global.certPath | quote }}
+  caUrl: {{ .Values.global.certURL | quote }}
 
 spire:
   enabled: {{ include "spire.enabled" . }}
   server: {{ include "jobs.spireHost" . }}
-  port: {{ .Values.spirePort }}
+  port: {{ .Values.global.spirePort | default .Values.spirePort }}
   secretName: {{ .Values.global.spire.secretName }}
   joinTokenFile: {{ .Values.joinTokenPath }}
   namespace: "{{ .Release.Namespace }}"
@@ -26,7 +29,7 @@ spire:
   accessKeyUrl: {{ include "jobs.accessKeyUrl" . }}
   trustBundleUrl: "{{ .Values.global.spire.trustBundleUrl }}"
   accessKeyFile: {{ .Values.accessKeyPath }}
-
+  agent: {{ include "spire.agent" . }}
 
 configPaths:
 {{- range .Values.configPaths }}

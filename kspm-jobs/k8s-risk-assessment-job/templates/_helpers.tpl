@@ -45,55 +45,131 @@
 
 
 {{- define "cluster_job.image" -}}
-  {{ include "image-name" (dict "url" .Values.registry.url "owner" .Values.cluster_job.owner "repoName" .Values.cluster_job.repository "tag" .Values.cluster_job.tag "preserve" .Values.registry.preserveUpstream "image" .Values.cluster_job.image ) }}
+  {{ include "image-name" (dict "url" .Values.global.registry.url "owner" .Values.cluster_job.owner "repoName" .Values.cluster_job.repository "tag" .Values.cluster_job.tag "preserve" .Values.global.registry.preserveUpstream "image" .Values.cluster_job.image ) }}
 {{- end -}}
 
 {{- define "kubescape.image" -}}
-  {{ include "image-name" (dict "url" .Values.registry.url "owner" .Values.kubescape.owner "repoName" .Values.kubescape.repository "tag" .Values.kubescape.tag "preserve" .Values.registry.preserveUpstream "image" .Values.kubescape.image ) }}
+  {{ include "image-name" (dict "url" .Values.global.registry.url "owner" .Values.kubescape.owner "repoName" .Values.kubescape.repository "tag" .Values.kubescape.tag "preserve" .Values.global.registry.preserveUpstream "image" .Values.kubescape.image ) }}
 {{- end -}}
 
-{{/* Construct the URL for jobs */}}
+
 {{- define "global.jobURL" -}}
-{{- if and .Values.global.enableJobsUrl .Values.global.agents.url -}}
-cspm.{{ .Values.global.agents.url -}}
+{{- $root := .Top | default . -}}
+{{- $enableJobs := $root.Values.global.enableJobsUrl | default false -}}
+{{- $url := $root.Values.global.agents.url | default "" -}}
+{{- $singleEP := $root.Values.global.SingleEndpointDeployment | default false -}}
+
+{{- if and $enableJobs $root.Values.global.cspmHost -}}
+{{ $root.Values.global.cspmHost }}
+
+{{- else if and $enableJobs $url $singleEP -}}
+{{ printf "%s" $url }}:{{ $root.Values.global.cspmPort | default 443 }}
+
+{{- else if and $enableJobs $url -}}
+cspm.{{ $url }}
+
 {{- else -}}
-{{- default "" .Values.global.enableJobsUrl -}}
+{{ "" }}
+
 {{- end -}}
-{{- end -}}
+{{- end }}
 
 
 
 {{- define "spire.enabled" -}}
-  {{- if and (or (ne .Values.global.agents.joinToken "") (ne .Values.global.agents.accessKey "")) (eq .Values.global.authToken "") -}}
-    true
-  {{- else -}}
+  {{- if or .Values.global.agents.enabled .Values.global.inClusterScan.enabled -}}
     false
+  {{- else -}}
+    true
   {{- end -}}
 {{- end -}}
 
-
 {{/*
-Return full spire host like spire.dev.accuknox.com or localhost
+Return full spire host:
+0. If global spireHost set → use it
+1. If spire enabled AND SingleEndpointDeployment enabled → <url>
+2. If spire enabled → spire.<url>
+3. If SingleEndpointDeployment enabled → <url>
+4. Else → localhost
 */}}
+
 {{- define "jobs.spireHost" -}}
-{{- if eq (include "spire.enabled" . ) "true" }}spire.{{ .Values.global.agents.url }}{{- else -}}localhost{{- end -}}
+{{- $root := .Top | default . -}}
+{{- $spireHost := $root.Values.global.spireHost | default "" -}}
+{{- $spireEnabled := $root.Values.global.agents.enableSpire | default false -}}
+{{- $singleEP := $root.Values.global.SingleEndpointDeployment | default false -}}
+{{- $url := $root.Values.global.agents.url | default "" -}}
+
+{{- if $spireHost -}}
+{{ $spireHost }}
+
+{{- else if and $spireEnabled $singleEP -}}
+{{ $url }}
+
+{{- else if $spireEnabled -}}
+{{ printf "spire.%s" $url }}
+
+{{- else if $singleEP -}}
+{{ $url }}
+
+{{- else -}}
+localhost
+
+{{- end -}}
 {{- end }}
 
 
 
+
 {{/*
-Return KnoxGateway URL with port, like knox-gw.dev.accuknox.com:3000 or empty
+Return KnoxGateway URL with port:
+1. If spire enabled AND SingleEndpointDeployment enabled → <url>:<port>
+2. If ONLY SingleEndpointDeployment enabled → <url>:<port>
+3. If spire enabled only → knox-gw.<url>:<port>
+4. Else → ""
 */}}
 {{- define "jobs.knoxGatewayHost" -}}
-{{- if eq (include "spire.enabled" . ) "true" }}knox-gw.{{ .Values.global.agents.url }}:3000{{- else -}}{{""}}{{- end -}}
+{{- $root := .Top | default . -}}
+{{- $spireEnabled := eq (include "spire.enabled" $root) "true" -}}
+{{- $singleEP := $root.Values.global.SingleEndpointDeployment | default false -}}
+{{- $url := $root.Values.global.agents.url | default "" -}}
+{{- $port := int ($root.Values.global.knoxGatewayPort | default 3000) -}}
+
+{{- if and $spireEnabled $singleEP -}}
+{{ printf "%s:%d" $url $port }}
+
+{{- else if and (not $spireEnabled) $singleEP -}}
+{{ printf "%s:%d" $url $port }}
+
+{{- else -}}
+{{ printf "knox-gw.%s:%d" $url $port }}
+
+{{- end }}
 {{- end }}
 
 
+
 {{/*
-Return access key URL, like cwpp.dev.accuknox.com/access-token/api/v1/process or empty
+Return access key URL:
+1. If accessKey exists AND SingleEndpointDeployment enabled → <url>/access-token/api/v1/process
+2. If accessKey exists only → https://cwpp.<url>/access-token/api/v1/process
+3. Else → ""
 */}}
 {{- define "jobs.accessKeyUrl" -}}
-{{- if .Values.global.agents.accessKey -}}https://cwpp.{{ .Values.global.agents.url }}/access-token/api/v1/process{{- else -}}{{""}}{{- end -}}
+{{- $root := .Top | default . -}}
+{{- $accessKey := $root.Values.global.agents.accessKey | default "" -}}
+{{- $singleEP := $root.Values.global.SingleEndpointDeployment | default false -}}
+{{- $url := $root.Values.global.agents.url | default "" -}}
+
+{{- if and $accessKey $singleEP -}}
+{{ printf "%s/access-token/api/v1/process" $url }}
+
+{{- else if $accessKey -}}
+{{ printf "https://cwpp.%s/access-token/api/v1/process" $url }}
+
+{{- else -}}
+{{ "" }}
+{{- end }}
 {{- end }}
 
 
@@ -108,4 +184,15 @@ Return cluster name for spire access keys
 {{- else -}}
     ""
 {{- end -}}
+{{- end -}}
+
+
+{{- define "spire.agent" -}}
+  {{- if eq .Values.global.agents.enabled true -}}
+    {{- printf "agents-operator.%s.svc.cluster.local:9091" .Release.Namespace -}}
+  {{- else if eq .Values.global.inClusterScan.enabled true -}}
+    {{- printf "kubeshield-spire-agent.%s.svc.cluster.local:9091" .Release.Namespace -}}
+  {{- else -}}
+    "localhost:9091"
+  {{- end -}}
 {{- end -}}

@@ -11,9 +11,60 @@ global:
   clusterName: ""
   secretName: ""
   url: ""
+  airgapped: false
+
+  cis:
+    toolConfig:
+      platform: ""
+      nodeType: ""
+      targets: ""
+      benchmark: ""
+      check: ""
+      skip: ""
 
   spire:
     secretName: "spire-agent-secret"
+
+  SingleEndpointDeployment: false
+
+  certPath: ""  # Set this for cert local path if needed .
+  certURL: ""  # Set this for cert URL if needed (if certPath is set as well certPath will take precedent)
+  skipTLSVerification: true  # Set to true if insecure connection is needed
+    
+  # To use existing secret updated {registry.secretName} with your secret name.
+  registry: 
+    url: ""
+    secretName: ""
+    username: ""
+    password: ""
+    preserveUpstream: true
+
+  # kubearmor config
+  autoDeploy: true 
+  imagePinning: true
+
+  # kubearmor images
+  kubearmor:
+    repo: kubearmor #(default to kubearmor)
+    images:
+      kubearmor:
+        image: kubearmor
+        tag: stable
+      kubearmorInit:
+        image: kubearmor-init
+        tag: stable
+      kubearmorRelay:
+        image: kubearmor-relay-server
+        tag: latest
+      kubearmorController:
+        image: kubearmor-controller
+        tag: latest
+      kubearmorSnitch:
+        image: kubearmor-snitch
+        tag: latest
+      kubearmorOperator:
+        image: kubearmor-operator
+        tag: latest
 
 # Values specific to agents sub-chart
   agents:
@@ -25,6 +76,20 @@ global:
     url: ""
     joinToken: ""
     clusterName: ""
+    tokenURL: ""
+
+  spireHost: ""
+  spirePort: 8081
+  healthPort: 9090
+
+  ppsHost: ""
+  ppsPort: ""
+
+  knoxGatewayHost: ""
+  knoxGatewayPort: 3000
+
+  cspmHost: ""
+  cspmPort: 443
 
 #OnlyChartsNeedsToBeInstall
   localRegistryAgent: false
@@ -42,10 +107,9 @@ global:
   riskassessment:
     enabled: false  
   kiem:
-    enabled: false 
-
+    enabled: false
   inClusterScan:
-    enabled: true
+    enabled: false
 
 # Values specific to KubeArmorOperator sub-chart
 kubearmor-operator:
@@ -58,6 +122,16 @@ admissionController:
 
 kyverno:
   enabled: false
+  webhooksCleanup:
+    enabled: false
 
-incluster-scan:
-  enabled: false
+# Cleanup configuration for helm uninstall
+# Uses restricted RBAC with resourceNames for security (least privilege)
+# Note: KubeArmor namespace must be deleted manually for security
+cleanup:
+  enabled: true
+
+# skip TLS verification by default
+kubeshield-chart:
+  scan:
+    secure_conn: "false"

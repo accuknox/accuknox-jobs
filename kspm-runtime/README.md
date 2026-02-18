@@ -8,13 +8,14 @@ The **kspm-runtime** Helm chart consolidates multiple AccuKnox and third-party c
 
 | Chart | Version | Condition |
 |-------|---------|-----------|
-| agents-chart | v0.10.8-test | `global.agents.enabled` |
+| agents-chart | v0.11.13 | `global.agents.enabled` |
 | kubearmor-operator | v1.5.7 | `kubearmor-operator.enabled` |
 | cis-k8s-job | 0.1.0 | `global.cis.enabled` |
 | k8s-risk-assessment-job | 0.1.0 | `global.riskassessment.enabled` |
 | kiem-job | 0.1.0 | `global.kiem.enabled` |
 | knoxguard-chart | v0.2.1 | `admissionController.enabled` |
 | kyverno | 3.3.7 | `kyverno.enabled` |
+| kubeshield-chart | v0.2.5 | `global.inClusterScan.enabled` |
 
 ---
 
@@ -32,6 +33,7 @@ The **kspm-runtime** Helm chart consolidates multiple AccuKnox and third-party c
 | `global.clusterName` | Cluster name |
 | `global.tenantId` / `global.authToken` | Tenant authentication |
 | `global.enableJobsUrl` | Enable job URL reporting |
+| `global.inClusterScan.enabled` | Enable kubeshield-chart |
 
 ---
 

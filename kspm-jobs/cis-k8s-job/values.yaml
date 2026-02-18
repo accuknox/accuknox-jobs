@@ -5,30 +5,15 @@
 cluster_job:
   owner: public.ecr.aws/k9v9d5v2
   repository: knoxjobs
-  tag: "v0.1.3"
+  tag: "v0.1.7"
   image: ""
 
 kubeBench:
   owner: docker.io/aquasec
   repository: kube-bench
-  tag: "v0.9.1"
+  tag: "v0.14.1"
   image: ""
 
-# To use existing secret updated {registry.secretName} with your secret name.
-registry: 
-  url: ""
-  secretName: ""
-  username: ""
-  password: ""
-  preserveUpstream: true
-
-toolConfig:
-  platform: ""
-  nodeType: "worker"
-  targets: ""
-  benchmark: ""
-  check: ""
-  skip: ""
 
 global:
   authToken: ""
@@ -41,10 +26,29 @@ global:
   joinToken: ""
   accessKey: ""
 
+  cis:
+    toolConfig:
+      platform: ""
+      nodeType: ""
+      targets: ""
+      benchmark: ""
+      check: ""
+      skip: ""
+
   spire:
     secretName: "spire-agent-secret"
-    trustBundleUrl: ""
 
+  certPath: ""  # Set this for cert local path if needed .
+  certURL: ""  # Set this for cert URL if needed (if certPath is set as well certPath will take precedent)
+  skipTLSVerification: false  # Set to true if insecure connection is needed
+
+  # To use existing secret updated {global.registry.secretName} with your secret name.
+  registry: 
+    url: ""
+    secretName: ""
+    username: ""
+    password: ""
+    preserveUpstream: true
 
 authTokenPath: "/secrets/tokens/AUTH_TOKEN"
 joinTokenPath: "/secrets/tokens/JOIN_TOKEN"

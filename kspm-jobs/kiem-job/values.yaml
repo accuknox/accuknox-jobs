@@ -2,26 +2,17 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-
 cluster_job:
   owner: public.ecr.aws/k9v9d5v2
   repository: knoxjobs
-  tag: "v0.1.3"
+  tag: "v0.1.7"
   image: ""
-
+  
 kiem:
   owner: accuknox
   repository: kiem
   tag: "latest"
   image: ""
-
-# To use existing secret updated {registry.secretName} with your secret name.
-registry: 
-  url: ""
-  secretName: ""
-  username: ""
-  password: ""
-  preserveUpstream: true
 
 
 replicaCount: 1
@@ -39,8 +30,18 @@ global:
 
   spire:
     secretName: "spire-agent-secret"
-    trustBundleUrl: ""
 
+  certPath: ""  # Set this for cert local path if needed .
+  certURL: ""  # Set this for cert URL if needed (if certPath is set as well certPath will take precedent)
+  skipTLSVerification: false  # Set to true if insecure connection is needed
+
+  # To use existing secret updated {global.registry.secretName} with your secret name.
+  registry: 
+    url: ""
+    secretName: ""
+    username: ""
+    password: ""
+    preserveUpstream: true
 
 authTokenPath: "/secrets/tokens/AUTH_TOKEN"
 joinTokenPath: "/secrets/tokens/JOIN_TOKEN"
