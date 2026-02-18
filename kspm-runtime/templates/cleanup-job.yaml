@@ -7,21 +7,21 @@
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: {{ .Release.Name }}-cleanup-sa
+  name: {{ .Release.Name }}-cleanup-sa-{{ .Release.Revision }}
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": pre-delete
     "helm.sh/hook-weight": "-5"  
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ .Release.Name }}-cleanup-role
+  name: {{ .Release.Name }}-cleanup-role-{{ .Release.Revision }}
   annotations:
     "helm.sh/hook": pre-delete
     "helm.sh/hook-weight": "-5"
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
 rules:
   - apiGroups: ["apiextensions.k8s.io"]
     resources: ["customresourcedefinitions"]
@@ -52,45 +52,40 @@ rules:
       - "kubearmor-relay-clusterrolebinding"
       - "kubearmor-snitch-binding"
       - "agents-cleanup-rolebinding"
-  - apiGroups: [""]
-    resources: ["namespaces"]
-    verbs: ["get", "delete"]
-    resourceNames:
-      - "{{ .Release.Namespace }}"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ .Release.Name }}-cleanup-rolebinding
+  name: {{ .Release.Name }}-cleanup-rolebinding-{{ .Release.Revision }}
   annotations:
     "helm.sh/hook": pre-delete
     "helm.sh/hook-weight": "-5"
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ .Release.Name }}-cleanup-role
+  name: {{ .Release.Name }}-cleanup-role-{{ .Release.Revision }}
 subjects:
 - kind: ServiceAccount
-  name: {{ .Release.Name }}-cleanup-sa
+  name: {{ .Release.Name }}-cleanup-sa-{{ .Release.Revision }}
   namespace: {{ .Release.Namespace }}
 ---
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ .Release.Name }}-cleanup-job
+  name: {{ .Release.Name }}-cleanup-job-{{ .Release.Revision }}
   namespace: {{ .Release.Namespace }}
   annotations:
     "helm.sh/hook": pre-delete
     "helm.sh/hook-weight": "0"
-    "helm.sh/hook-delete-policy": hook-succeeded,hook-failed
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
 spec:
   ttlSecondsAfterFinished: 300
   template:
     metadata:
-      name: {{ .Release.Name }}-cleanup
+      name: {{ .Release.Name }}-cleanup-{{ .Release.Revision }}
     spec:
-      serviceAccountName: {{ .Release.Name }}-cleanup-sa
+      serviceAccountName: {{ .Release.Name }}-cleanup-sa-{{ .Release.Revision }}
       restartPolicy: Never
       containers:
       - name: cleanup
@@ -107,8 +102,10 @@ spec:
           kubectl delete crd --ignore-not-found=true \
             clusterscans.kubeshield.accuknox.com \
             discoveries.kubeshield.accuknox.com \
-            imagescans.kubeshield.accuknox.com \
-            scheduleclusterscans.kubeshield.accuknox.com
+            imagescans.kubeshield.accuknox.com 
+          # this is causing helm delete to exit with error and the resources
+          # are not properly deleted. Commenting out for now.
+          #   scheduleclusterscans.kubeshield.accuknox.com
           
           # Delete KubeArmor CRDs
           echo "Deleting KubeArmor CRDs..."

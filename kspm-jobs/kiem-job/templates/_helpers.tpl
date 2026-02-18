@@ -141,10 +141,10 @@ cspm.{{ $url }}
 
 
 {{- define "spire.enabled" -}}
-  {{- if and (or (ne .Values.global.agents.joinToken "") (ne .Values.global.agents.accessKey "")) (eq .Values.global.authToken "") -}}
-    true
-  {{- else -}}
+  {{- if or .Values.global.agents.enabled .Values.global.inClusterScan.enabled -}}
     false
+  {{- else -}}
+    true
   {{- end -}}
 {{- end -}}
 
@@ -206,11 +206,9 @@ Return KnoxGateway URL with port:
 {{- else if and (not $spireEnabled) $singleEP -}}
 {{ printf "%s:%d" $url $port }}
 
-{{- else if $spireEnabled -}}
+{{- else -}}
 {{ printf "knox-gw.%s:%d" $url $port }}
 
-{{- else -}}
-{{ "" }}
 {{- end }}
 {{- end }}
 
@@ -252,4 +250,15 @@ Return cluster name for jobs pod
 {{- else -}}
     ""
 {{- end -}}
+{{- end -}}
+
+
+{{- define "spire.agent" -}}
+  {{- if eq .Values.global.agents.enabled true -}}
+    {{- printf "agents-operator.%s.svc.cluster.local:9091" .Release.Namespace -}}
+  {{- else if eq .Values.global.inClusterScan.enabled true -}}
+    {{- printf "kubeshield-spire-agent.%s.svc.cluster.local:9091" .Release.Namespace -}}
+  {{- else -}}
+    "localhost:9091"
+  {{- end -}}
 {{- end -}}

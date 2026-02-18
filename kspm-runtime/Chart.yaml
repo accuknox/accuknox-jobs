@@ -9,7 +9,7 @@ appVersion: "0.1.0"
 
 dependencies:
   - name: agents-chart
-    version: "v0.11.19"
+    version: "v0.11.23"
     repository: oci://harbor.do.accuknox.com/accuknox
     condition: global.agents.enabled
   - name: kubearmor-operator
@@ -37,6 +37,6 @@ dependencies:
     repository: oci://harbor.do.accuknox.com/accuknox
     condition: kyverno.enabled
   - name: kubeshield-chart
-    version: v0.3.0-patch
+    version: v0.3.4
     repository: oci://harbor.do.accuknox.com/accuknox
     condition: global.inClusterScan.enabled

@@ -29,6 +29,7 @@ spire:
   accessKeyUrl: {{ include "jobs.accessKeyUrl" . }}
   trustBundleUrl: "{{ .Values.global.spire.trustBundleUrl }}"
   accessKeyFile: {{ .Values.accessKeyPath }}
+  agent: {{ include "spire.agent" . }}
 
 configPaths:
 {{- range .Values.configPaths }}

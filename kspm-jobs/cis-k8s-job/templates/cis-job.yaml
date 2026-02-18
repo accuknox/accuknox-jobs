@@ -10,7 +10,8 @@ spec:
     metadata:
       name: cis-k8s-job-{{ now | unixEpoch }}
       labels:
-        app: cis-k8s-job-{{ now | unixEpoch }}
+        job-name: cis-k8s-job-{{ now | unixEpoch }}
+        app: scanner
     spec:
     {{- if or (or (contains "master" .Values.global.cis.toolConfig.nodeType) (contains "controlplane" .Values.global.cis.toolConfig.nodeType)) (or (contains "master" .Values.global.cis.toolConfig.targets) (contains "controlplane" .Values.global.cis.toolConfig.targets)) }}
       {{- include "masterConfig" .Values.global.cis.toolConfig | trim | nindent 6 }}
