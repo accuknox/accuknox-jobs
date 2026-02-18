@@ -9,8 +9,8 @@ cluster_job:
   image: ""
 
 kubescape:
-  owner: public.ecr.aws/k9v9d5v2/kubescape
-  repository: kubescape-cli
+  owner: public.ecr.aws/k9v9d5v2
+  repository: k8s-risk-assessment
   tag: "v3.0.8"
   image: ""
 
