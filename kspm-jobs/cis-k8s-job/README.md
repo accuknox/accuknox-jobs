@@ -25,7 +25,7 @@ Instruction to perform CIS Benchmark on Cluster via AccuKnox CIS K8s Job
 ## Schedule CIS Job on cluster
 #### Clone GitHub and switch to CIS K8s Job folder
 ```sh
-git clone https://github.com/accuknox/accuknox-jobs.git && cd accuknox-jobs/cis-k8s-job
+git clone https://github.com/accuknox/accuknox-jobs.git && cd accuknox-jobs/kspm-jobs/cis-k8s-job
 ```
 
 #### Helm Command to deploy AccuKnox CIS K8s Job locally:
