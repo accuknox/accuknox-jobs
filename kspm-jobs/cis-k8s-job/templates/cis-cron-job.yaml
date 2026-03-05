@@ -27,7 +27,15 @@ spec:
             - -config 
             - /jobs/conf/app.yaml
             name: cis-k8s-cronjob
-            imagePullPolicy: Always
+            {{- if .Values.global.airgapped }}
+            imagePullPolicy: IfNotPresent
+            {{ else }}
+            imagePullPolicy: IfNotPresent
+            {{- end }}
+            {{- with .Values.resources }}
+            resources:
+              {{- toYaml . | nindent 16 }}
+            {{- end }}
             volumeMounts:
             - mountPath: /data
               name: datapath
@@ -46,6 +54,15 @@ spec:
             {{- end }}
           initContainers:
           - image: "{{ include "kubeBench.image" . }}"
+            {{- if .Values.global.airgapped }}
+            imagePullPolicy: IfNotPresent
+            {{ else }}
+            imagePullPolicy: IfNotPresent
+            {{- end }}
+            {{- with .Values.resources }}
+            resources:
+              {{- toYaml . | nindent 16 }}
+            {{- end }}
             command:
             {{- include "cmd" .Values.global.cis.toolConfig | trim | nindent 13 }}
             name: kube-bench

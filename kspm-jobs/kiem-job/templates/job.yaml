@@ -19,6 +19,15 @@ spec:
       initContainers:
         - name: kiem-init
           image: "{{ include "kiem.image" . }}"
+          {{- if .Values.global.airgapped }}
+          imagePullPolicy: IfNotPresent
+          {{ else }}
+          imagePullPolicy: IfNotPresent
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
           args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
           env:
             - name: CLUSTER_NAME
@@ -31,7 +40,15 @@ spec:
           args:
           - -config 
           - /jobs/conf/app.yaml
-          imagePullPolicy: Always
+          {{- if .Values.global.airgapped }}
+          imagePullPolicy: IfNotPresent
+          {{ else }}
+          imagePullPolicy: IfNotPresent
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
           name: accuknox-kiem-job
           volumeMounts:
             - mountPath: /data

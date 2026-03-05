@@ -12,6 +12,7 @@ global:
   secretName: ""
   url: ""
   airgapped: false
+  isRobin: false
 
   cis:
     toolConfig:
@@ -49,22 +50,22 @@ global:
     images:
       kubearmor:
         image: kubearmor
-        tag: stable
+        tag: v1.6.7
       kubearmorInit:
         image: kubearmor-init
-        tag: stable
+        tag: v1.6.7
       kubearmorRelay:
         image: kubearmor-relay-server
         tag: latest
       kubearmorController:
         image: kubearmor-controller
-        tag: latest
+        tag: v1.6.7
       kubearmorSnitch:
         image: kubearmor-snitch
-        tag: latest
+        tag: v1.6.12
       kubearmorOperator:
         image: kubearmor-operator
-        tag: latest
+        tag: v1.6.12
 
 # Values specific to agents sub-chart
   agents:
@@ -123,7 +124,7 @@ admissionController:
 kyverno:
   enabled: false
   webhooksCleanup:
-    enabled: false
+    enabled: true
 
 # Cleanup configuration for helm uninstall
 # Uses restricted RBAC with resourceNames for security (least privilege)
@@ -135,3 +136,11 @@ cleanup:
 kubeshield-chart:
   scan:
     secure_conn: "false"
+
+resources:
+  limits:
+    cpu: 100m
+    memory: 150Mi
+  requests:
+    cpu: 10m
+    memory: 64Mi

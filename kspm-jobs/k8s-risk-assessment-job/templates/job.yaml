@@ -19,6 +19,15 @@ spec:
       initContainers:
         - name: job-init-container
           image: "{{ include "kubescape.image" . }}"
+          {{- if .Values.global.airgapped }}
+          imagePullPolicy: IfNotPresent
+          {{ else }}
+          imagePullPolicy: IfNotPresent
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
           args:
             - scan
             - framework
@@ -46,7 +55,15 @@ spec:
           args: 
           - -config 
           - /jobs/conf/app.yaml
-          imagePullPolicy: Always
+          {{- if .Values.global.airgapped }}
+          imagePullPolicy: IfNotPresent
+          {{ else }}
+          imagePullPolicy: IfNotPresent
+          {{- end }}
+          {{- with .Values.resources }}
+          resources:
+          {{- toYaml . | nindent 12 }}
+          {{- end }}
           volumeMounts:
             - mountPath: /data
               name: datapath

@@ -1,42 +1,39 @@
 apiVersion: v2
-name: kspm-runtime
-description: A Helm chart for Kubernetes
-
-type: application
-
-version: 0.1.0
-appVersion: "0.1.0"
-
+appVersion: v0.1.36
 dependencies:
-  - name: agents-chart
-    version: "v0.11.24"
-    repository: oci://public.ecr.aws/k9v9d5v2
-    condition: global.agents.enabled
-  - name: kubearmor-operator
-    version: v1.6.6
-    repository: https://kubearmor.github.io/charts
-    condition: kubearmor-operator.enabled
-  - name: cis-k8s-job
-    version: "0.1.0"
-    repository: "file://../kspm-jobs/cis-k8s-job"
-    condition: global.cis.enabled
-  - name: k8s-risk-assessment-job
-    version: "0.1.0"
-    repository: "file://../kspm-jobs/k8s-risk-assessment-job"
-    condition: global.riskassessment.enabled
-  - name: kiem-job
-    version: "0.1.0"
-    repository: "file://../kspm-jobs/kiem-job"
-    condition: global.kiem.enabled
-  - name: knoxguard-chart
-    version: v0.2.3
-    repository: oci://public.ecr.aws/k9v9d5v2
-    condition: admissionController.enabled
-  - name: kyverno
-    version: v1.16.2
-    repository: oci://public.ecr.aws/k9v9d5v2
-    condition: kyverno.enabled
-  - name: kubeshield-chart
-    version: v0.3.5
-    repository: oci://public.ecr.aws/k9v9d5v2
-    condition: global.inClusterScan.enabled
+- condition: global.agents.enabled
+  name: agents-chart
+  repository: oci://public.ecr.aws/k9v9d5v2
+  version: v0.11.23
+- condition: kubearmor-operator.enabled
+  name: kubearmor-operator
+  repository: https://kubearmor.github.io/charts
+  version: v1.6.6
+- condition: global.cis.enabled
+  name: cis-k8s-job
+  repository: file://../kspm-jobs/cis-k8s-job
+  version: 0.1.0
+- condition: global.riskassessment.enabled
+  name: k8s-risk-assessment-job
+  repository: file://../kspm-jobs/k8s-risk-assessment-job
+  version: 0.1.0
+- condition: global.kiem.enabled
+  name: kiem-job
+  repository: file://../kspm-jobs/kiem-job
+  version: 0.1.0
+- condition: admissionController.enabled
+  name: knoxguard-chart
+  repository: oci://public.ecr.aws/k9v9d5v2
+  version: v0.2.1
+- condition: kyverno.enabled
+  name: kyverno
+  repository: oci://public.ecr.aws/k9v9d5v2
+  version: v1.16.2
+- condition: global.inClusterScan.enabled
+  name: kubeshield-chart
+  repository: oci://public.ecr.aws/k9v9d5v2
+  version: v0.3.5
+description: A Helm chart for Kubernetes
+name: kspm-runtime
+type: application
+version: v0.1.36
