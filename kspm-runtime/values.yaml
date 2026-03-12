@@ -41,7 +41,7 @@ global:
 
   # kubearmor config
   autoDeploy: true 
-  imagePinning: true
+  imagePinning: false
 
   # kubearmor images
   kubearmor:
