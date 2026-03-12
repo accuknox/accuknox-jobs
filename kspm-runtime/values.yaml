@@ -64,7 +64,7 @@ global:
         tag: latest
       kubearmorOperator:
         image: kubearmor-operator
-        tag: latest
+        tag: stable
 
 # Values specific to agents sub-chart
   agents:
