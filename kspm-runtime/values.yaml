@@ -77,6 +77,8 @@ global:
     joinToken: ""
     clusterName: ""
     tokenURL: ""
+    feeder:
+      gatekeeper: false
 
   spireHost: ""
   spirePort: 8081
