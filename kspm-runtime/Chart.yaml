@@ -9,7 +9,7 @@ appVersion: "0.1.0"
 
 dependencies:
   - name: agents-chart
-    version: "v0.11.25"
+    version: "v0.11.26"
     repository: oci://harbor.do.accuknox.com/accuknox-ecr/k9v9d5v2
     condition: global.agents.enabled
   - name: kubearmor-operator

@@ -71,12 +71,12 @@ The **kspm-runtime** Helm chart consolidates multiple AccuKnox and third-party c
 
 | Variable             | Sample Value           | Description                |
 |----------------------|------------------------|----------------------------|
-| toolConfig.platform   | "GKE" / "AKS"                    | Name of the platform. Default: empty |
-| toolConfig.nodeType   | master OR controlplane            | For node selection                   |
-| toolConfig.targets    | "master,controlplane,node"        | [Ref](https://github.com/aquasecurity/kube-bench/blob/main/docs/flags-and-commands.md#specifying-benchmark-sections) |
-| toolConfig.benchmark  | "gke-1.6.0" | [Ref](https://github.com/aquasecurity/kube-bench/blob/main/docs/platforms.md) |
-| toolConfig.check | "1.1.1,1.2.3"     | Control IDs to check |
-| toolConfig.skip | "1.1.1,1.3.1" | Control IDs to skip |
+| global.cis.toolConfig.platform   | "GKE" / "AKS"                    | Name of the platform. Default: empty |
+| global.cis.toolConfig.nodeType   | master OR controlplane            | For node selection                   |
+| global.cis.toolConfig.targets    | "master,controlplane,node"        | [Ref](https://github.com/aquasecurity/kube-bench/blob/main/docs/flags-and-commands.md#specifying-benchmark-sections) |
+| global.cis.toolConfig.benchmark  | "gke-1.6.0" | [Ref](https://github.com/aquasecurity/kube-bench/blob/main/docs/platforms.md) |
+| global.cis.toolConfig.check | "1.1.1,1.2.3"     | Control IDs to check |
+| global.cis.toolConfig.skip | "1.1.1,1.3.1" | Control IDs to skip |
 ---
 
 ## Installation
