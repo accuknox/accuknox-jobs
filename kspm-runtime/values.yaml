@@ -2,10 +2,10 @@
 global:
   secretManagedByParent: true
   leaseManagedByParent: true
-  
+
   enableJobsUrl: false
   tenantId: ""
-  authToken: "" 
+  authToken: ""
   cronTab: ""
   label: ""
   clusterName: ""
@@ -30,9 +30,9 @@ global:
   certPath: ""  # Set this for cert local path if needed .
   certURL: ""  # Set this for cert URL if needed (if certPath is set as well certPath will take precedent)
   skipTLSVerification: true  # Set to true if insecure connection is needed
-    
+
   # To use existing secret updated {registry.secretName} with your secret name.
-  registry: 
+  registry:
     url: ""
     secretName: ""
     username: ""
@@ -40,7 +40,7 @@ global:
     preserveUpstream: true
 
   # kubearmor config
-  autoDeploy: true 
+  autoDeploy: true
   imagePinning: false
 
   # kubearmor images
@@ -95,19 +95,19 @@ global:
 
 #OnlyChartsNeedsToBeInstall
   localRegistryAgent: false
-  
+
 # Values specific to KSPM-jobs sub-charts
   cis:
-    enabled: false  
+    enabled: false
     toolConfig:
-      platform: ""  
+      platform: ""
       nodeType: "worker"
       targets: ""
       benchmark: ""
       check: ""
       skip: ""
   riskassessment:
-    enabled: false  
+    enabled: false
   kiem:
     enabled: false
   inClusterScan:
@@ -137,3 +137,5 @@ cleanup:
 kubeshield-chart:
   scan:
     secure_conn: "false"
+    trivyConfig:
+      useTrivyAsPkg: true
