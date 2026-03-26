@@ -21,6 +21,10 @@ spec:
           imagePullSecrets:
           - name: {{ .Values.global.registry.secretName }}-kiem
         {{- end }}         
+          {{- if .Values.global.nodeSelector }}
+          nodeSelector:
+            {{- toYaml .Values.global.nodeSelector | nindent 8 }}
+          {{- end }}
           initContainers:
             - name: kiem-init
               image: "{{ include "kiem.image" . }}"

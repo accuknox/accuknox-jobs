@@ -113,6 +113,8 @@ global:
   inClusterScan:
     enabled: false
 
+  nodeSelector: {} # Node selector for scheduling the job --set nodeSelector."kubernetes.io/os"=linux
+
 # Values specific to KubeArmorOperator sub-chart
 kubearmor-operator:
   enabled: false

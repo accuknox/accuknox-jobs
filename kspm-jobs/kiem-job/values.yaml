@@ -35,6 +35,8 @@ global:
   certURL: ""  # Set this for cert URL if needed (if certPath is set as well certPath will take precedent)
   skipTLSVerification: false  # Set to true if insecure connection is needed
 
+  nodeSelector: {} # Node selector for scheduling the job --set nodeSelector."kubernetes.io/os"=linux
+
   # To use existing secret updated {global.registry.secretName} with your secret name.
   registry: 
     url: ""

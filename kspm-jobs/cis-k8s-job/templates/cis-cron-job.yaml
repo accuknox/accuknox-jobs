@@ -20,6 +20,10 @@ spec:
           imagePullSecrets:
           - name: {{ .Values.global.registry.secretName }}-cis
           {{- end }}
+          {{- if .Values.global.nodeSelector }}
+          nodeSelector:
+            {{- toYaml .Values.global.nodeSelector | nindent 8 }}
+          {{- end }}          
           serviceAccount: cis-service-account
           containers:
           - image: "{{ include "cluster_job.image" . }}"

@@ -16,6 +16,10 @@ spec:
       imagePullSecrets:
       - name: {{ .Values.global.registry.secretName }}-k8s
     {{- end }}     
+      {{- if .Values.global.nodeSelector }}
+      nodeSelector:
+        {{- toYaml .Values.global.nodeSelector | nindent 8 }}
+      {{- end }}        
       initContainers:
         - name: job-init-container
           image: "{{ include "kubescape.image" . }}"
