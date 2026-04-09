@@ -40,11 +40,12 @@ global:
     preserveUpstream: true
 
   # kubearmor config
-  autoDeploy: true 
+  autoDeploy: false
   imagePinning: false
 
   # kubearmor images
   kubearmor:
+    enabled: false
     repo: kubearmor #(default to kubearmor)
     images:
       kubearmor:
@@ -114,11 +115,6 @@ global:
     enabled: false
   nodeSelector: {} # Node selector for scheduling the job --set nodeSelector."kubernetes.io/os"=linux
   tolerations: [] # Tolerations for scheduling pods on tainted nodes e.g. --set global.tolerations[0].key=dedicated --set global.tolerations[0].operator=Equal --set global.tolerations[0].value=accuknox --set global.tolerations[0].effect=NoSchedule
-
-# Values specific to KubeArmorOperator sub-chart
-kubearmor-operator:
-  enabled: false
-  autoDeploy: false
 
 # Values specific to knoxguard and kyverno sub-charts
 admissionController:
