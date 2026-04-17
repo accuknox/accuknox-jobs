@@ -13,7 +13,7 @@ dependencies:
     repository: oci://harbor.do.accuknox.com/accuknox-ecr/k9v9d5v2
     condition: global.agents.enabled
   - name: kubearmor-operator
-    version: v1.6.15
+    version: v1.6.17
     repository: https://kubearmor.github.io/charts
     condition: global.kubearmor.enabled
   - name: cis-k8s-job
