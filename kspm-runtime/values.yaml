@@ -39,33 +39,6 @@ global:
     password: ""
     preserveUpstream: true
 
-  # kubearmor config
-  autoDeploy: true 
-  imagePinning: false
-
-  # kubearmor images
-  kubearmor:
-    repo: kubearmor #(default to kubearmor)
-    images:
-      kubearmor:
-        image: kubearmor
-        tag: stable
-      kubearmorInit:
-        image: kubearmor-init
-        tag: stable
-      kubearmorRelay:
-        image: kubearmor-relay-server
-        tag: latest
-      kubearmorController:
-        image: kubearmor-controller
-        tag: latest
-      kubearmorSnitch:
-        image: kubearmor-snitch
-        tag: latest
-      kubearmorOperator:
-        image: kubearmor-operator
-        tag: latest
-
 # Values specific to agents sub-chart
   agents:
     enabled: false
@@ -115,10 +88,34 @@ global:
   nodeSelector: {} # Node selector for scheduling the job --set nodeSelector."kubernetes.io/os"=linux
   tolerations: [] # Tolerations for scheduling pods on tainted nodes e.g. --set global.tolerations[0].key=dedicated --set global.tolerations[0].operator=Equal --set global.tolerations[0].value=accuknox --set global.tolerations[0].effect=NoSchedule
 
-# Values specific to KubeArmorOperator sub-chart
-kubearmor-operator:
+# kubearmor images
+kubearmor:
   enabled: false
-  autoDeploy: false
+  repo: kubearmor #(default to kubearmor)
+  images:
+    kubearmor:
+      image: kubearmor
+      tag: stable
+    kubearmorInit:
+      image: kubearmor-init
+      tag: stable
+    kubearmorRelay:
+      image: kubearmor-relay-server
+      tag: latest
+    kubearmorController:
+      image: kubearmor-controller
+      tag: latest
+    kubearmorSnitch:
+      image: kubearmor-snitch
+      tag: latest
+    kubearmorOperator:
+      image: kubearmor-operator
+      tag: latest
+
+# kubearmor config
+autoDeploy: false
+imagePinning: false
+
 
 # Values specific to knoxguard and kyverno sub-charts
 admissionController:

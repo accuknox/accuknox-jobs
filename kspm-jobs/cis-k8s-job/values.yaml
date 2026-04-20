@@ -5,13 +5,13 @@
 cluster_job:
   owner: harbor.do.accuknox.com/accuknox-ecr/k9v9d5v2
   repository: knoxjobs
-  tag: "v0.1.7"
+  tag: "v0.1.8"
   image: ""
 
 kubeBench:
   owner: docker.io/aquasec
   repository: kube-bench
-  tag: "v0.14.1"
+  tag: "v0.15.0"
   image: ""
 
 
