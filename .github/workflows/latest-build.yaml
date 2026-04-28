@@ -1,0 +1,71 @@
+name: KSPM-Runtime Workflow for MAIN
+
+on:
+  push:
+    branches:
+      - main 
+
+
+jobs:
+  helm_chart_validation:
+    runs-on: ubuntu-latest
+    if: always() && !contains(needs.tag-validate.result, 'failure')   
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Helm
+        run: |
+          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+          chmod 700 get_helm.sh
+          ./get_helm.sh
+
+      - name: Update Helm Dependencies
+        run: |
+          cd kspm-runtime
+          helm dependency update
+
+      - name: Validate Helm charts
+        run: |
+          helm lint kspm-runtime
+          helm template kspm-runtime --dry-run > /dev/null
+
+  helm_push_to_ecr:
+    runs-on: ubuntu-latest
+    needs: [helm_chart_validation]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Install Helm
+        run: |
+          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+          chmod 700 get_helm.sh
+          ./get_helm.sh
+
+      - name: Login to AWS ECR
+        run: |
+          aws ecr-public get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin ${{ secrets.REPO }}
+
+      - name: Update Helm Dependencies
+        run: |
+          cd kspm-runtime
+          helm dependency update
+
+      - name: Chart versioning
+        run: |
+          sed -i "s/^version:.*$/version: latest/" kspm-runtime/Chart.yaml
+          sed -i "s/^appVersion:.*$/appVersion: latest/" kspm-runtime/Chart.yaml
+
+      - name: Package and Push Helm Chart
+        run: |
+          helm package kspm-runtime
+          HELM_PACKAGE=$(ls kspm-runtime-*.tgz)
+          helm push $HELM_PACKAGE oci://${{ secrets.REPO }}

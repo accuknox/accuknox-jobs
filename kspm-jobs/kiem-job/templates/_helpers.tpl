@@ -243,13 +243,7 @@ Return access key URL:
 Return cluster name for jobs pod
 */}}
 {{- define "jobs.clusterName" -}}
-{{- if  ne .Values.global.clusterName "" -}}
-    {{- .Values.global.clusterName -}}
-{{- else if ne .Values.global.agents.clusterName "" -}}
-    {{- .Values.global.agents.clusterName -}}
-{{- else -}}
-    ""
-{{- end -}}
+{{- coalesce .Values.global.clusterName .Values.global.agents.clusterName -}}
 {{- end -}}
 
 
