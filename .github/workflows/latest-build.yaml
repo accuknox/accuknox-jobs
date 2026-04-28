@@ -3,7 +3,7 @@ name: KSPM-Runtime Workflow for MAIN
 on:
   push:
     branches:
-      - main 
+      - jobs-consol
 
 
 jobs:
