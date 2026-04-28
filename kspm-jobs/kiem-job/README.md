@@ -24,7 +24,7 @@ Follow these instructions to deploy AccuKnox KIEM as a Kubernetes job.
 
 ```sh
 git clone https://github.com/accuknox/accuknox-jobs
-cd accuknox-jobs/kiem-job
+cd accuknox-jobs/kspm-jobs/kiem-job
 ```
 
 ### Helm command to deploy the AccuKnox KIEM Kubernetes job locally:

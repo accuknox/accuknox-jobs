@@ -2,10 +2,10 @@
 global:
   secretManagedByParent: true
   leaseManagedByParent: true
-  
+
   enableJobsUrl: false
   tenantId: ""
-  authToken: "" 
+  authToken: ""
   cronTab: ""
   label: ""
   clusterName: ""
@@ -30,41 +30,14 @@ global:
   certPath: ""  # Set this for cert local path if needed .
   certURL: ""  # Set this for cert URL if needed (if certPath is set as well certPath will take precedent)
   skipTLSVerification: true  # Set to true if insecure connection is needed
-    
+
   # To use existing secret updated {registry.secretName} with your secret name.
-  registry: 
+  registry:
     url: ""
     secretName: ""
     username: ""
     password: ""
     preserveUpstream: true
-
-  # kubearmor config
-  autoDeploy: true 
-  imagePinning: true
-
-  # kubearmor images
-  kubearmor:
-    repo: kubearmor #(default to kubearmor)
-    images:
-      kubearmor:
-        image: kubearmor
-        tag: stable
-      kubearmorInit:
-        image: kubearmor-init
-        tag: stable
-      kubearmorRelay:
-        image: kubearmor-relay-server
-        tag: latest
-      kubearmorController:
-        image: kubearmor-controller
-        tag: latest
-      kubearmorSnitch:
-        image: kubearmor-snitch
-        tag: latest
-      kubearmorOperator:
-        image: kubearmor-operator
-        tag: latest
 
 # Values specific to agents sub-chart
   agents:
@@ -77,6 +50,8 @@ global:
     joinToken: ""
     clusterName: ""
     tokenURL: ""
+    feeder:
+      gatekeeper: false
 
   spireHost: ""
   spirePort: 8081
@@ -93,28 +68,54 @@ global:
 
 #OnlyChartsNeedsToBeInstall
   localRegistryAgent: false
-  
+
 # Values specific to KSPM-jobs sub-charts
   cis:
-    enabled: false  
+    enabled: false
     toolConfig:
-      platform: ""  
+      platform: ""
       nodeType: "worker"
       targets: ""
       benchmark: ""
       check: ""
       skip: ""
   riskassessment:
-    enabled: false  
+    enabled: false
   kiem:
     enabled: false
   inClusterScan:
     enabled: false
+  nodeSelector: {} # Node selector for scheduling the job --set nodeSelector."kubernetes.io/os"=linux
+  tolerations: [] # Tolerations for scheduling pods on tainted nodes e.g. --set global.tolerations[0].key=dedicated --set global.tolerations[0].operator=Equal --set global.tolerations[0].value=accuknox --set global.tolerations[0].effect=NoSchedule
 
-# Values specific to KubeArmorOperator sub-chart
-kubearmor-operator:
+# kubearmor images
+kubearmor:
   enabled: false
-  autoDeploy: false
+  repo: kubearmor #(default to kubearmor)
+  images:
+    kubearmor:
+      image: kubearmor
+      tag: stable
+    kubearmorInit:
+      image: kubearmor-init
+      tag: stable
+    kubearmorRelay:
+      image: kubearmor-relay-server
+      tag: latest
+    kubearmorController:
+      image: kubearmor-controller
+      tag: latest
+    kubearmorSnitch:
+      image: kubearmor-snitch
+      tag: latest
+    kubearmorOperator:
+      image: kubearmor-operator
+      tag: latest
+
+# kubearmor config
+autoDeploy: false
+imagePinning: false
+
 
 # Values specific to knoxguard and kyverno sub-charts
 admissionController:
@@ -135,3 +136,5 @@ cleanup:
 kubeshield-chart:
   scan:
     secure_conn: "false"
+    trivyConfig:
+      useTrivyAsPkg: true

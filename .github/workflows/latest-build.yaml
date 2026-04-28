@@ -1,31 +1,15 @@
-name: KSPM-Runtime Workflow
+name: KSPM-Runtime Workflow for MAIN
 
 on:
   push:
-    tags:
-    - "v[0-9]+.[0-9]+.[0-9]+"
-    - "v[0-9]+.[0-9]+.[0-9]+-*"
-    - "v[0-9]+.[0-9]+.[0-9]+.[0-9]+"        
-    - "v[0-9]+.[0-9]+.[0-9]+.[0-9]+-*"     
-  pull_request_target:
     branches:
-      - "*" 
+      - main 
 
 
 jobs:
-  tag-validate:
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v')
-    steps:
-    - uses: rubenesp87/semver-validation-action@0.1.0
-      with:
-       version: ${{ github.ref_name }}
-
-
   helm_chart_validation:
     runs-on: ubuntu-latest
     if: always() && !contains(needs.tag-validate.result, 'failure')   
-    needs: [tag-validate]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -48,7 +32,7 @@ jobs:
 
   helm_push_to_ecr:
     runs-on: ubuntu-latest
-    needs: [helm_chart_validation,tag-validate]
+    needs: [helm_chart_validation]
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
@@ -76,10 +60,9 @@ jobs:
           helm dependency update
 
       - name: Chart versioning
-        if: ( github.event_name != 'pull_request' && github.event_name != 'pull_request_target' )
         run: |
-          sed -i "s/^version:.*$/version: ${{ github.ref_name }}/" kspm-runtime/Chart.yaml
-          sed -i "s/^appVersion:.*$/appVersion: ${{ github.ref_name }}/" kspm-runtime/Chart.yaml
+          sed -i "s/^version:.*$/version: latest/" kspm-runtime/Chart.yaml
+          sed -i "s/^appVersion:.*$/appVersion: latest/" kspm-runtime/Chart.yaml
 
       - name: Package and Push Helm Chart
         run: |

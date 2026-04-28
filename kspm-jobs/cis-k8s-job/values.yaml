@@ -3,15 +3,15 @@
 # Declare variables to be passed into your templates.
 
 cluster_job:
-  owner: public.ecr.aws/k9v9d5v2
+  owner: harbor.do.accuknox.com/accuknox-ecr/k9v9d5v2
   repository: knoxjobs
-  tag: "v0.1.7"
+  tag: "v0.1.8"
   image: ""
 
 kubeBench:
   owner: docker.io/aquasec
   repository: kube-bench
-  tag: "v0.14.1"
+  tag: "v0.15.0"
   image: ""
 
 
@@ -42,8 +42,11 @@ global:
   certURL: ""  # Set this for cert URL if needed (if certPath is set as well certPath will take precedent)
   skipTLSVerification: false  # Set to true if insecure connection is needed
 
+  nodeSelector: {} # Node selector for scheduling the job --set nodeSelector."kubernetes.io/os"=linux
+  tolerations: [] # Tolerations for scheduling pods on tainted nodes e.g. --set global.tolerations[0].key=dedicated --set global.tolerations[0].operator=Equal --set global.tolerations[0].value=accuknox --set global.tolerations[0].effect=NoSchedule
+
   # To use existing secret updated {global.registry.secretName} with your secret name.
-  registry: 
+  registry:
     url: ""
     secretName: ""
     username: ""
