@@ -21,10 +21,34 @@ spec:
         {{- if .Values.global.registry.secretName }}
           imagePullSecrets:
           - name: {{ .Values.global.registry.secretName }}-k8s
-        {{- end }}        
+        {{- end }}
+          {{- if .Values.global.nodeSelector }}
+          nodeSelector:
+            {{- toYaml .Values.global.nodeSelector | nindent 12 }}
+          {{- end }}
+          {{- if .Values.global.tolerations }}
+          tolerations:
+            {{- toYaml .Values.global.tolerations | nindent 12 }}
+          {{- end }}
           initContainers:
             - name: job-init-container
               image: "{{ include "kubescape.image" . }}"
+              {{- if .Values.global.kraCustomConfig }}
+              command: ["/bin/sh", "-c"]
+              args:
+                - >
+                  wget -O /tmp/controls.json '{{ .Values.global.kraCustomConfig }}' &&
+                  kubescape scan framework
+                  --format json
+                  --cache-dir /data/kubescape-cache
+                  --output /data/report.json
+                  --cluster-name=$CLUSTER_NAME
+                  {{- if .Values.global.airgapped }}
+                  --use-artifacts-from /opt/kubescape/artifacts
+                  {{- end }}
+                  --controls-config /tmp/controls.json
+              {{- else }}
+              command: ["kubescape"]
               args:
                 - scan
                 - framework
@@ -40,6 +64,7 @@ spec:
                 - --use-artifacts-from
                 - /opt/kubescape/artifacts
                 {{- end }}
+              {{- end }}
               env:
                 - name: CLUSTER_NAME
                   value: "{{ .Values.global.clusterName }}"

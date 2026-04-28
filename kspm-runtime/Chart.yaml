@@ -9,13 +9,13 @@ appVersion: "0.1.0"
 
 dependencies:
   - name: agents-chart
-    version: "v0.12.0"
+    version: "v0.12.2"
     repository: oci://harbor.do.accuknox.com/accuknox-ecr/k9v9d5v2
     condition: global.agents.enabled
   - name: kubearmor-operator
-    version: v1.6.6
+    version: v1.6.17
     repository: https://kubearmor.github.io/charts
-    condition: kubearmor-operator.enabled
+    condition: global.kubearmor.enabled
   - name: cis-k8s-job
     version: "0.1.0"
     repository: "file://../kspm-jobs/cis-k8s-job"
@@ -29,7 +29,7 @@ dependencies:
     repository: "file://../kspm-jobs/kiem-job"
     condition: global.kiem.enabled
   - name: knoxguard-chart
-    version: v0.2.3
+    version: v0.2.4
     repository: oci://harbor.do.accuknox.com/accuknox-ecr/k9v9d5v2
     condition: admissionController.enabled
   - name: kyverno
@@ -37,6 +37,6 @@ dependencies:
     repository: oci://harbor.do.accuknox.com/accuknox-ecr/k9v9d5v2
     condition: kyverno.enabled
   - name: kubeshield-chart
-    version: v0.3.5
+    version: v0.3.9
     repository: oci://harbor.do.accuknox.com/accuknox-ecr/k9v9d5v2
     condition: global.inClusterScan.enabled
