@@ -34,7 +34,7 @@ dependencies:
     condition: admissionController.enabled
   - name: kyverno
     version: v1.17.2
-    repository: oci://harbor.do.accuknox.com/accuknox-ecr/k9v9d5v2
+    repository: oci://harbor.do.accuknox.com/accuknox-ecr/k9v9d5v2/kyverno
     condition: kyverno.enabled
   - name: kubeshield-chart
     version: v0.3.9
