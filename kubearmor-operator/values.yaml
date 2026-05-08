@@ -1,6 +1,6 @@
 autoDeploy: false
 # operator will deploy pinned images for each application
-imagePinning: false
+imagePinning: true
   
 # To use existing secret updated {registry.secretName} with your secret name.
 registry: 
