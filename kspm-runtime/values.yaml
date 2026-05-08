@@ -95,10 +95,10 @@ kubearmor:
   images:
     kubearmor:
       image: kubearmor
-      tag: stable
+      tag: v1.7.0
     kubearmorInit:
       image: kubearmor-init
-      tag: stable
+      tag: v1.7.0
     kubearmorRelay:
       image: kubearmor-relay-server
       tag: latest
