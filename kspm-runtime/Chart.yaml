@@ -14,7 +14,7 @@ dependencies:
     condition: global.agents.enabled
   - name: kubearmor-operator
     version: v1.6.17
-    repository: https://kubearmor.github.io/charts
+    repository: file://../kubearmor-operator
     condition: global.kubearmor.enabled
   - name: cis-k8s-job
     version: "0.1.0"
