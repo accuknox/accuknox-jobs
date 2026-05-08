@@ -1,0 +1,78 @@
+autoDeploy: false
+# operator will deploy pinned images for each application
+imagePinning: false
+  
+# To use existing secret updated {registry.secretName} with your secret name.
+registry: 
+  secretName: ""
+
+# pinned images
+kubearmor:
+  repo: kubearmor
+  images:
+    kubearmor:
+      image: kubearmor
+      tag: v1.7.0
+    kubearmorInit:
+      image: kubearmor-init
+      tag: v1.7.0
+    kubearmorRelay:
+      image: kubearmor-relay-server
+      tag: latest
+    kubearmorController:
+      image: kubearmor-controller
+      tag: latest
+    kubearmorSnitch:
+      image: kubearmor-snitch
+      tag: latest
+    kubearmorOperator:
+      image: kubearmor-operator
+      tag: latest
+
+# in case if image pinning is disabled
+kubearmorOperator:
+  enableOCIHooks: false
+  annotateResource: false
+  annotateExisting: false
+  name: kubearmor-operator
+  # If not set, the operator will auto-detect the CRI socket
+  socketFile: ""
+  image:
+    repository: docker.io/kubearmor/kubearmor-operator
+    tag: ""
+    # Optional, but if there are a lot of image pulls required, Docker might be rate-limited. So, it's good to add pull secrets for production.
+    imagePullSecrets: []
+  imagePullPolicy: IfNotPresent
+  args: []
+  # https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/
+  tolerations: []
+  resources: {} 
+  podLabels: {}
+  podAnnotations: {}
+  podSecurityContext: {}
+  securityContext: {}
+  env: []
+  nodeSelector: {}
+
+kubearmorConfig:
+  defaultCapabilitiesPosture: audit
+  defaultFilePosture: audit
+  defaultNetworkPosture: audit
+  defaultVisibility: process,network
+  enableStdOutLogs: false
+  enableStdOutAlerts: false
+  enableStdOutMsgs: false
+  seccompEnabled: false
+  alertThrottling: true
+  maxAlertPerSec: 10
+  throttleSec: 30
+  matchArgs: true
+
+# DO NOT CHANGE THIS VALUES 
+# changing these values will require code changes with the operator
+# these secret names should match with the secrets managed by the operator
+tlsSecrets:
+  kubearmorCa: kubearmor-ca
+  kubearmorClient: kubearmor-client-certs
+  relayServer: kubearmor-relay-server-certs
+  controllerWebhook: kubearmor-controller-webhook-server-cert
