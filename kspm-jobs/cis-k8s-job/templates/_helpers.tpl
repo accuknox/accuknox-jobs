@@ -67,11 +67,9 @@ Create the name of the service account to use
 - name: var-lib-kubelet
   hostPath:
     path: "/var/lib/kubelet"
-{{- if eq .Values.global.talosEnv "true" }}
 - name: etc-systemd
   hostPath:
     path: "/etc/systemd"
-{{- end }}
 - name: etc-kubernetes
   hostPath:
     path: "/etc/kubernetes"
@@ -128,11 +126,9 @@ Create the name of the service account to use
 - name: var-lib-kubelet
   mountPath: /var/lib/kubelet
   readOnly: true
-{{- if eq .Values.global.talosEnv "true" }}
 - name: etc-systemd
   mountPath: /etc/systemd
   readOnly: true
-{{- end }}
 - name: etc-kubernetes
   mountPath: /etc/kubernetes
   readOnly: true
