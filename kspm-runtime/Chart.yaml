@@ -15,7 +15,7 @@ dependencies:
   - name: kubearmor-operator
     version: v1.7.0
     repository: https://kubearmor.github.io/charts
-    condition: global.kubearmor.enabled
+    condition: kubearmor-operator.enabled
   - name: cis-k8s-job
     version: "0.1.0"
     repository: "file://../kspm-jobs/cis-k8s-job"
