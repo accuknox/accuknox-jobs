@@ -12,7 +12,7 @@ jobs:
   clusterID: {{ .Values.global.clusterID }}
   printData: true
   insecure: {{ .Values.global.skipTLSVerification }}
-  caPath: {{ .Values.global.certPath | quote }}
+  caPath: /certs/tls.crt
   caUrl: {{ .Values.global.certURL | quote }}
 
 spire:
