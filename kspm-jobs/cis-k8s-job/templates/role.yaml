@@ -9,6 +9,7 @@ rules:
     - serviceaccounts
     - configmaps
     - services
+    - pods
   verbs: ["get", "list"]
 - apiGroups: ["admissionregistration.k8s.io"]
   resources:
