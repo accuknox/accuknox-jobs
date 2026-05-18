@@ -185,7 +185,7 @@ Create the name of the service account to use
 - --config-dir
 - /opt/kube-bench/cfg
 - --benchmark
-- v1.11.0
+- cis-1.11
 {{- if not (.platform | empty) }}
 - --config-dir
 - /opt/kube-bench/cfg
