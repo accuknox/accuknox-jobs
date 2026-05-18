@@ -182,6 +182,10 @@ Create the name of the service account to use
 - --benchmark
 - {{ .benchmark }}
 {{- else }}
+- --config-dir
+- /opt/kube-bench/cfg
+- --benchmark
+- v1.11.0
 {{- if not (.platform | empty) }}
 - --config-dir
 - /opt/kube-bench/cfg
