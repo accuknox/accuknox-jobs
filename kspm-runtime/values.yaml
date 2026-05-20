@@ -13,6 +13,7 @@ global:
   url: ""
   airgapped: false
 
+  talosEnv: false
   cis:
     toolConfig:
       platform: ""
