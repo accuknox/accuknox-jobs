@@ -52,6 +52,33 @@ rules:
       - "kubearmor-relay-clusterrolebinding"
       - "kubearmor-snitch-binding"
       - "agents-cleanup-rolebinding"
+
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "delete", "list", "watch"]
+    resourceNames:
+      - "agents-kyverno"
+
+  - apiGroups: [""]
+    resources: ["secrets"]
+    verbs: ["get", "delete", "list", "watch"]
+    resourceNames:
+      - "agents-kyverno-svc.agents.svc.kyverno-tls-ca"
+      - "agents-kyverno-svc.agents.svc.kyverno-tls-pair"
+      - "kyverno-cleanup-controller.agents.svc.kyverno-tls-ca"
+      - "kyverno-cleanup-controller.agents.svc.kyverno-tls-pair"
+
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["roles"]
+    verbs: ["get", "delete", "list", "watch"]
+    resourceNames:
+      - "kubearmor-controller-leader-election-role"
+
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["rolebindings"]
+    verbs: ["get", "delete", "list", "watch"]
+    resourceNames:
+      - "kubearmor-controller-leader-election-rolebinding"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -127,7 +154,32 @@ spec:
             kubearmor-controller-clusterrolebinding \
             kubearmor-relay-clusterrolebinding \
             kubearmor-snitch-binding
-          
+
+          # Wait for controllers to terminate
+          sleep 20
+
+          echo "Deleting leftover ConfigMaps..."
+          kubectl delete configmap --ignore-not-found=true -n {{ .Release.Namespace }} \
+            agents-kyverno
+
+          # Delete leftover Kyverno TLS secrets
+          echo "Deleting leftover TLS secrets..."
+          kubectl delete secret --ignore-not-found=true -n {{ .Release.Namespace }} \
+            agents-kyverno-svc.agents.svc.kyverno-tls-ca \
+            agents-kyverno-svc.agents.svc.kyverno-tls-pair \
+            kyverno-cleanup-controller.agents.svc.kyverno-tls-ca \
+            kyverno-cleanup-controller.agents.svc.kyverno-tls-pair
+
+          # Delete leftover Roles
+          echo "Deleting leftover Roles..."
+          kubectl delete role --ignore-not-found=true -n {{ .Release.Namespace }} \
+            kubearmor-controller-leader-election-role
+
+          # Delete leftover RoleBindings
+          echo "Deleting leftover RoleBindings..."
+          kubectl delete rolebinding --ignore-not-found=true -n {{ .Release.Namespace }} \
+            kubearmor-controller-leader-election-rolebinding
+
           # Delete release namespace
           #echo "Deleting {{ .Release.Namespace }} namespace..."
           #kubectl delete ns {{ .Release.Namespace }} --ignore-not-found=true
