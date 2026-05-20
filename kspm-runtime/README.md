@@ -62,6 +62,8 @@ The **kspm-runtime** Helm chart consolidates multiple AccuKnox and third-party c
 |----------------------|------------------------|----------------------------|
 | global.SingleEndpointDeployment    | true         | On-prem IP based deployment |
 | global.airgapped    | true          | Air-gapped installation mode (k8s-risk-assessment job) |
+| global.certEnabled    | true/false          | Set this for cert need to be enabled |
+| global.certSecretName    | random name      | if we enable cert, we need to install a secret with the cert |
 | global.certPath    | /path/to/cert          | Local certificate path |
 | global.certURL    | https://cert-url/        | Remote certificate URL |
 | global.skipTLSVerification    | false          | To skip TLS verification |
