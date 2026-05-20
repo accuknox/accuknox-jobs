@@ -27,6 +27,8 @@ global:
 
   SingleEndpointDeployment: false
 
+  certEnabled: false   #Set this for cert need to be enabled
+  certSecretName: ""  #we need to pass a secret name the cert will be stored in this secret.
   certPath: ""  # Set this for cert local path if needed .
   certURL: ""  # Set this for cert URL if needed (if certPath is set as well certPath will take precedent)
   skipTLSVerification: true  # Set to true if insecure connection is needed
@@ -88,33 +90,33 @@ global:
   nodeSelector: {} # Node selector for scheduling the job --set nodeSelector."kubernetes.io/os"=linux
   tolerations: [] # Tolerations for scheduling pods on tainted nodes e.g. --set global.tolerations[0].key=dedicated --set global.tolerations[0].operator=Equal --set global.tolerations[0].value=accuknox --set global.tolerations[0].effect=NoSchedule
 
-# kubearmor images
-kubearmor:
+# Values specific to KubeArmorOperator sub-chart
+kubearmor-operator:
   enabled: false
-  repo: kubearmor #(default to kubearmor)
-  images:
-    kubearmor:
-      image: kubearmor
-      tag: stable
-    kubearmorInit:
-      image: kubearmor-init
-      tag: stable
-    kubearmorRelay:
-      image: kubearmor-relay-server
-      tag: latest
-    kubearmorController:
-      image: kubearmor-controller
-      tag: latest
-    kubearmorSnitch:
-      image: kubearmor-snitch
-      tag: latest
-    kubearmorOperator:
-      image: kubearmor-operator
-      tag: latest
-
-# kubearmor config
-autoDeploy: false
-imagePinning: false
+  autoDeploy: false
+  imagePinning: false
+# kubearmor images
+  kubearmor:
+    repo: kubearmor #(default to kubearmor)
+    images:
+      kubearmor:
+        image: kubearmor
+        tag: stable
+      kubearmorInit:
+        image: kubearmor-init
+        tag: stable
+      kubearmorRelay:
+        image: kubearmor-relay-server
+        tag: latest
+      kubearmorController:
+        image: kubearmor-controller
+        tag: latest
+      kubearmorSnitch:
+        image: kubearmor-snitch
+        tag: latest
+      kubearmorOperator:
+        image: kubearmor-operator
+        tag: latest
 
 
 # Values specific to knoxguard and kyverno sub-charts

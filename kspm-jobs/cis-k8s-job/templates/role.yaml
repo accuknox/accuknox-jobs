@@ -9,6 +9,14 @@ rules:
     - serviceaccounts
     - configmaps
     - services
+    - pods
+    - daemonsets
+    - deployments
+    - statefulsets
+    - replicasets
+    - jobs
+    - cronjobs
+    - horizontalpodautoscalers
   verbs: ["get", "list"]
 - apiGroups: ["admissionregistration.k8s.io"]
   resources:

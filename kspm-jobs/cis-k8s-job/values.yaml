@@ -37,7 +37,9 @@ global:
 
   spire:
     secretName: "spire-agent-secret"
-
+  
+  certEnabled: false   #Set this for cert need to be enabled
+  certSecretName: ""  #we need to pass a secret name the cert will be stored in this secret.
   certPath: ""  # Set this for cert local path if needed .
   certURL: ""  # Set this for cert URL if needed (if certPath is set as well certPath will take precedent)
   skipTLSVerification: false  # Set to true if insecure connection is needed
