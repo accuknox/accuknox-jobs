@@ -25,6 +25,7 @@ global:
   secretName: ""
   joinToken: ""
   accessKey: ""
+  talosEnv: false
 
   cis:
     toolConfig:
