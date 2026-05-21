@@ -116,7 +116,7 @@ spec:
       restartPolicy: Never
       containers:
       - name: cleanup
-        image: harbor.do.accuknox.com/accuknox-ecr/k9v9d5v2/kubectl:latest
+        image: {{ .Values.registryName }}/kubectl:latest
         command:
         - /bin/bash
         - -c

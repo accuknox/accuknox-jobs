@@ -19,7 +19,7 @@ helm upgrade --install k8s-risk-assessment-job . \
 ### Published
 
 ```
-helm upgrade --install k8s-risk-assessment-job oci://harbor.do.accuknox.com/accuknox-ecr/k9v9d5v2/k8s-risk-assessment-job \
+helm upgrade --install k8s-risk-assessment-job oci://public.ecr.aws/k9v9d5v2/k8s-risk-assessment-job \
 -n k8s-risk-assessment --create-namespace \
 --set accuknox.authToken="$TOKEN" \
 --set accuknox.tenantId="$TENANT_ID" \
