@@ -63,7 +63,7 @@ spec:
         {{- include "cmd" .Values.global.cis.toolConfig | trim | nindent 9 }}
         name: kube-bench
         volumeMounts:
-        {{- include "volumeMounts" .Values.global.cis.toolConfig | trim | nindent 9 }}
+        {{- include "volumeMounts" (dict "platform" .Values.global.cis.toolConfig.platform "targets" .Values.global.cis.toolConfig.targets "benchmark" .Values.global.cis.toolConfig.benchmark "check" .Values.global.cis.toolConfig.check "skip" .Values.global.cis.toolConfig.skip "talosEnv" .Values.global.talosEnv) | trim | nindent 9 }}
       hostPID: true
       restartPolicy: Never
       volumes:
@@ -82,4 +82,4 @@ spec:
        - name: spirepath
          emptyDir: {}
        {{- end }}
-      {{- include "volumes" .Values.global.cis.toolConfig | trim | nindent 7 }}
+      {{- include "volumes" (dict "platform" .Values.global.cis.toolConfig.platform "targets" .Values.global.cis.toolConfig.targets "benchmark" .Values.global.cis.toolConfig.benchmark "check" .Values.global.cis.toolConfig.check "skip" .Values.global.cis.toolConfig.skip "talosEnv" .Values.global.talosEnv) | trim | nindent 7 }}

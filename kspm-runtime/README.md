@@ -50,7 +50,7 @@ The **kspm-runtime** Helm chart consolidates multiple AccuKnox and third-party c
 
 | Variable             | Sample Value           | Description                |
 |----------------------|------------------------|----------------------------|
-| global.registry.url    | harbor.do.accuknox.com/kspm          | Private registry URL |
+| global.registry.url    | public.ecr.aws/k9v9d5v2             | Private registry URL |
 | global.registry.secretName    | secrets          | Image pull secret name |
 | global.registry.username    | admin          | Registry username |
 | global.registry.password    | password          | Registry password |
