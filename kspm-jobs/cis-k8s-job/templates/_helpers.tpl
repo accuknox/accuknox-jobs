@@ -180,6 +180,7 @@ Create the name of the service account to use
 - run
 - --json
 - --outputfile=/data/report.json
+- --targets=node
 {{- if not (.benchmark | empty) }}
 - --config-dir
 - /opt/kube-bench/cfg
@@ -189,7 +190,7 @@ Create the name of the service account to use
 - --config-dir
 - /opt/kube-bench/cfg
 - --benchmark
-- cis-1.11
+- cis-1.12
 {{- if not (.platform | empty) }}
 - --config-dir
 - /opt/kube-bench/cfg
@@ -201,7 +202,7 @@ Create the name of the service account to use
 - aks-1.7
 {{- else if eq .platform "EKS" }}
 - --benchmark
-- eks-1.7.0
+- eks-1.8.0
 {{- end }}
 {{- end }}
 {{- end }}
