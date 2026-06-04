@@ -32,11 +32,14 @@ rules:
       - "discoveries.kubeshield.accuknox.com"
       - "imagescans.kubeshield.accuknox.com"
       - "scheduleclusterscans.kubeshield.accuknox.com"
+      # Admission CRD
+      - "admissionpolicies.admission.accuknox.com"
       # KubeArmor CRDs
       - "kubearmorpolicies.security.kubearmor.com"
       - "kubearmorhostpolicies.security.kubearmor.com"
       - "kubearmorclusterpolicies.security.kubearmor.com"
       - "kubearmorconfigs.operator.kubearmor.com"
+      - "kubearmornetworkpolicies.security.kubearmor.com"
   - apiGroups: ["rbac.authorization.k8s.io"]
     resources: ["clusterrolebindings"]
     verbs: ["get", "delete", "list", "watch"]
@@ -52,6 +55,15 @@ rules:
       - "kubearmor-relay-clusterrolebinding"
       - "kubearmor-snitch-binding"
       - "agents-cleanup-rolebinding"
+
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources: ["clusterroles"]
+    verbs: ["get", "delete", "list", "watch"]
+    resourceNames:
+      - "kubearmor-clusterrole"
+      - "kubearmor-controller-clusterrole"
+      - "kubearmor-relay-clusterrole"
+      - "kubearmor-snitch"
 
   - apiGroups: [""]
     resources: ["configmaps"]
@@ -80,6 +92,10 @@ rules:
     resources:
       - mutatingwebhookconfigurations
       - validatingwebhookconfigurations
+    verbs: ["get", "delete", "list", "watch"]
+
+  - apiGroups: ["admission.accuknox.com"]
+    resources: ["admissionpolicies"]
     verbs: ["get", "delete", "list", "watch"]
 
   - apiGroups: ["rbac.authorization.k8s.io"]
@@ -156,7 +172,7 @@ spec:
               kubectl wait --for=delete pod \
                 -l app.kubernetes.io/name=kyverno \
                 -n {{ .Release.Namespace }} \
-                --timeout=180s
+                --timeout=180s || true
 
               ###########################################################
               # STEP 2 - Delete Kyverno webhook configurations
@@ -182,7 +198,7 @@ spec:
               sleep 20
 
               ###########################################################
-              # STEP 2 - Delete leftover TLS secrets
+              # STEP 3 - Delete leftover TLS secrets and ConfigMaps
               ###########################################################
 
               echo "Deleting leftover Kyverno TLS secrets..."
@@ -192,10 +208,6 @@ spec:
                 agents-kyverno-svc.agents.svc.kyverno-tls-pair \
                 kyverno-cleanup-controller.agents.svc.kyverno-tls-ca \
                 kyverno-cleanup-controller.agents.svc.kyverno-tls-pair
-
-              ###########################################################
-              # STEP 3 - Delete leftover ConfigMaps
-              ###########################################################
 
               echo "Deleting leftover ConfigMaps..."
 
@@ -211,10 +223,25 @@ spec:
               kubectl delete crd --ignore-not-found=true \
                 clusterscans.kubeshield.accuknox.com \
                 discoveries.kubeshield.accuknox.com \
-                imagescans.kubeshield.accuknox.com
+                imagescans.kubeshield.accuknox.com \
+                scheduleclusterscans.kubeshield.accuknox.com
 
               ###########################################################
-              # STEP 5 - Delete KubeArmor CRDs
+              # STEP 5 - Delete Admission Policies and CRDs
+              ###########################################################
+
+              echo "Deleting Admission Policies..."
+
+              kubectl delete admissionpolicies.admission.accuknox.com \
+                --all --ignore-not-found=true
+
+              echo "Deleting AdmissionPolicy CRD..."
+
+              kubectl delete crd --ignore-not-found=true \
+                admissionpolicies.admission.accuknox.com
+
+              ###########################################################
+              # STEP 6 - Delete KubeArmor CRDs
               ###########################################################
 
               echo "Deleting KubeArmor CRDs..."
@@ -223,10 +250,11 @@ spec:
                 kubearmorpolicies.security.kubearmor.com \
                 kubearmorhostpolicies.security.kubearmor.com \
                 kubearmorclusterpolicies.security.kubearmor.com \
-                kubearmorconfigs.operator.kubearmor.com
+                kubearmorconfigs.operator.kubearmor.com \
+                kubearmornetworkpolicies.security.kubearmor.com
 
               ###########################################################
-              # STEP 6 - Delete ClusterRoleBindings
+              # STEP 7 - Delete ClusterRoleBindings
               ###########################################################
 
               echo "Deleting KubeArmor ClusterRoleBindings..."
@@ -243,7 +271,19 @@ spec:
                 kubearmor-snitch-binding
 
               ###########################################################
-              # STEP 7 - Delete leftover Roles/RoleBindings
+              # STEP 8 - Delete ClusterRoles
+              ###########################################################
+
+              echo "Deleting KubeArmor ClusterRoles..."
+
+              kubectl delete clusterrole --ignore-not-found=true \
+                kubearmor-clusterrole \
+                kubearmor-controller-clusterrole \
+                kubearmor-relay-clusterrole \
+                kubearmor-snitch
+
+              ###########################################################
+              # STEP 9 - Delete leftover Roles/RoleBindings
               ###########################################################
 
               echo "Deleting leftover Roles..."
@@ -259,4 +299,3 @@ spec:
               echo "Cleanup completed successfully!"
 
 {{- end }}
-
