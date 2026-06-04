@@ -10,7 +10,7 @@ cluster_job:
   image: ""
   
 kiem:
-  owner: accuknox
+  owner: docker.io/accuknox
   repository: kiem
   tag: "latest"
   image: ""
