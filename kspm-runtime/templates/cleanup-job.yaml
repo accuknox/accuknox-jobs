@@ -172,7 +172,7 @@ spec:
               kubectl wait --for=delete pod \
                 -l app.kubernetes.io/name=kyverno \
                 -n {{ .Release.Namespace }} \
-                --timeout=180s || true
+                --timeout=100s || true
 
               ###########################################################
               # STEP 2 - Delete Kyverno webhook configurations
@@ -187,12 +187,12 @@ spec:
                 kyverno-global-context-validating-webhook-cfg \
                 kyverno-policy-validating-webhook-cfg \
                 kyverno-resource-validating-webhook-cfg \
-                kyverno-ttl-validating-webhook-cfg
+                kyverno-ttl-validating-webhook-cfg || true
 
               kubectl delete mutatingwebhookconfiguration --ignore-not-found=true \
                 kyverno-policy-mutating-webhook-cfg \
                 kyverno-resource-mutating-webhook-cfg \
-                kyverno-verify-mutating-webhook-cfg
+                kyverno-verify-mutating-webhook-cfg || true
 
               echo "Waiting for webhook configurations deletion..."         
               sleep 20
@@ -233,7 +233,7 @@ spec:
               echo "Deleting Admission Policies..."
 
               kubectl delete admissionpolicies.admission.accuknox.com \
-                --all --ignore-not-found=true
+                --all --ignore-not-found=true || true
 
               echo "Deleting AdmissionPolicy CRD..."
 
@@ -241,7 +241,24 @@ spec:
                 admissionpolicies.admission.accuknox.com
 
               ###########################################################
-              # STEP 6 - Delete KubeArmor CRDs
+              # STEP 6 - Delete KubeArmor deployments
+              ###########################################################
+
+              kubectl delete deployment -n {{ .Release.Namespace }} \
+                kubearmor-controller \
+                kubearmor-operator \
+                kubearmor-relay \
+                accuknox-knoxguard-controller-manager \
+                kubeshield-controller-manager \
+                --ignore-not-found=true
+
+              kubectl wait --for=delete pod \
+                -n {{ .Release.Namespace }} \
+                -l control-plane=controller-manager \
+                --timeout=100s || true
+
+              ###########################################################
+              # STEP 7 - Delete KubeArmor CRDs
               ###########################################################
 
               echo "Deleting KubeArmor CRDs..."
@@ -254,7 +271,7 @@ spec:
                 kubearmornetworkpolicies.security.kubearmor.com
 
               ###########################################################
-              # STEP 7 - Delete ClusterRoleBindings
+              # STEP 8 - Delete ClusterRoleBindings
               ###########################################################
 
               echo "Deleting KubeArmor ClusterRoleBindings..."
@@ -271,7 +288,7 @@ spec:
                 kubearmor-snitch-binding
 
               ###########################################################
-              # STEP 8 - Delete ClusterRoles
+              # STEP 9 - Delete ClusterRoles
               ###########################################################
 
               echo "Deleting KubeArmor ClusterRoles..."
@@ -283,7 +300,7 @@ spec:
                 kubearmor-snitch
 
               ###########################################################
-              # STEP 9 - Delete leftover Roles/RoleBindings
+              # STEP 10 - Delete leftover Roles/RoleBindings
               ###########################################################
 
               echo "Deleting leftover Roles..."
@@ -299,4 +316,3 @@ spec:
               echo "Cleanup completed successfully!"
 
 {{- end }}
-
