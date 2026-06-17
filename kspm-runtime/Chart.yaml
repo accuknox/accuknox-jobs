@@ -29,11 +29,11 @@ dependencies:
     repository: "file://../kspm-jobs/kiem-job"
     condition: global.kiem.enabled
   - name: knoxguard-chart
-    version: v0.2.5-test-1
+    version: v0.2.5
     repository: oci://public.ecr.aws/k9v9d5v2
     condition: admissionController.enabled
   - name: kyverno
-    version: v1.16.4-test-1
+    version: v1.16.4
     repository: oci://public.ecr.aws/k9v9d5v2
     condition: kyverno.enabled
   - name: kubeshield-chart
