@@ -98,6 +98,8 @@ kubearmor-operator:
   enabled: false
   autoDeploy: false
   imagePinning: false
+  registry:
+    secretName: ""
 # kubearmor images
   kubearmor:
     repo: kubearmor #(default to kubearmor)
