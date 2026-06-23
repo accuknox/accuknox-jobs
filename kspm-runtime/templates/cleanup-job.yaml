@@ -146,7 +146,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: cleanup
-          image: {{ .Values.registryName }}/kubectl:latest
+          image: {{ default .Values.registryName .Values.global.registry.url }}/kubectl:latest
 
           command:
             - /bin/bash
