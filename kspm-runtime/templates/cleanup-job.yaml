@@ -143,6 +143,12 @@ spec:
       name: {{ .Release.Name }}-cleanup-{{ .Release.Revision }}
     spec:
       serviceAccountName: {{ .Release.Name }}-cleanup-sa-{{ .Release.Revision }}
+
+      {{- if .Values.global.registry.secretName }}
+      imagePullSecrets:
+        - name: {{ .Values.global.registry.secretName }}
+      {{- end }}
+
       restartPolicy: Never
       containers:
         - name: cleanup
