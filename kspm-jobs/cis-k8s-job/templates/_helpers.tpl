@@ -180,7 +180,6 @@ Create the name of the service account to use
 - run
 - --json
 - --outputfile=/data/report.json
-- --targets=node
 {{- if not (.benchmark | empty) }}
 - --config-dir
 - /opt/kube-bench/cfg
