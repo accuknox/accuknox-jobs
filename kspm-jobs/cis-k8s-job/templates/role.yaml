@@ -10,27 +10,44 @@ rules:
     - configmaps
     - services
     - pods
-    - daemonsets
-    - deployments
-    - statefulsets
-    - replicasets
-    - jobs
-    - cronjobs
-    - horizontalpodautoscalers
+    - endpoints
+    - replicationcontrollers
   verbs: ["get", "list"]
+
 - apiGroups: ["admissionregistration.k8s.io"]
   resources:
     - validatingwebhookconfigurations
     - mutatingwebhookconfigurations
   verbs: ["get", "list"]
+
 - apiGroups: ["policy"]
   resources:
     - podsecuritypolicies
   verbs: ["get", "list"]
+
 - apiGroups: ["rbac.authorization.k8s.io"]
   resources:
     - "roles"
     - "rolebindings"
     - "clusterroles"
     - "clusterrolebindings"
+  verbs: ["get", "list"]
+
+- apiGroups: ["apps"]
+  resources:
+    - deployments
+    - daemonsets
+    - statefulsets
+    - replicasets
+  verbs: ["get", "list"]
+
+- apiGroups: ["batch"]
+  resources:
+    - jobs
+    - cronjobs
+  verbs: ["get", "list"]
+
+- apiGroups: ["autoscaling"]
+  resources:
+    - horizontalpodautoscalers
   verbs: ["get", "list"]
