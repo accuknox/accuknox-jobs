@@ -61,7 +61,7 @@ jobs:
 
       - name: Chart versioning
         run: |
-          sed -i "s/^version:.*$/version: latest/" kspm-runtime/Chart.yaml
+          sed -i "s/^version:.*$/version: v0.1/" kspm-runtime/Chart.yaml
           sed -i "s/^appVersion:.*$/appVersion: latest/" kspm-runtime/Chart.yaml
 
       - name: Package and Push Helm Chart
