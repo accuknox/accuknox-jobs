@@ -6,7 +6,7 @@ registryName: public.ecr.aws/k9v9d5v2
 
 cluster_job:
   repository: knoxjobs
-  tag: "v0.1.9"
+  tag: "v0.1.10"
   image: ""
 
 kubeBench:
