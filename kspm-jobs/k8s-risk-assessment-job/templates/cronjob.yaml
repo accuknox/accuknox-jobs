@@ -32,6 +32,7 @@ spec:
           {{- end }}
           initContainers:
             - name: job-init-container
+              imagePullPolicy: IfNotPresent
               image: "{{ include "kubescape.image" . }}"
               {{- if .Values.global.kraCustomConfig }}
               command: ["/bin/sh", "-c"]
@@ -80,7 +81,7 @@ spec:
               args: 
               - -config 
               - /jobs/conf/app.yaml
-              imagePullPolicy: Always
+              imagePullPolicy: IfNotPresent
               volumeMounts:
                 - mountPath: /data
                   name: datapath
