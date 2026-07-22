@@ -153,6 +153,7 @@ spec:
       containers:
         - name: cleanup
           image: {{ default .Values.registryName .Values.global.registry.url }}/kubectl:latest
+          imagePullPolicy: IfNotPresent
 
           command:
             - /bin/bash
