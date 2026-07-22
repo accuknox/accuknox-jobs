@@ -123,6 +123,15 @@ kubearmor-operator:
         image: kubearmor-operator
         tag: latest
 
+  kubearmorConfig:
+    kubearmorInitImage:
+      imagePullPolicy: IfNotPresent
+    kubearmorImage:
+      imagePullPolicy: IfNotPresent
+    kubearmorControllerImage:
+      imagePullPolicy: IfNotPresent
+    kubearmorRelayImage:
+      imagePullPolicy: IfNotPresent
 
 # Values specific to knoxguard and kyverno sub-charts
 admissionController:
