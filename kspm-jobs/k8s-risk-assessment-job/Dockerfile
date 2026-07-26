@@ -1,6 +1,6 @@
 FROM alpine:3.23 AS downloader
 RUN apk add --no-cache ca-certificates curl
-ENV KUBESCAPE_VERSION=4.0.10
+ENV KUBESCAPE_VERSION=4.0.11
 ARG ARCH=""
 RUN curl \
     -L "https://github.com/kubescape/kubescape/releases/download/v${KUBESCAPE_VERSION}/kubescape_${KUBESCAPE_VERSION}_linux_${ARCH}" \
