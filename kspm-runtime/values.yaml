@@ -60,7 +60,6 @@ global:
 
   spireHost: ""
   spirePort: 8081
-  OnePort: ""
   healthPort: 9090
 
   ppsHost: ""
