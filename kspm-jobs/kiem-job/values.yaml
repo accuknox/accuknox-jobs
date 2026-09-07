@@ -31,6 +31,8 @@ global:
 
   spire:
     secretName: "spire-agent-secret"
+
+  OnePort: ""
  
   certEnabled: false   #Set this for cert need to be enabled
   certSecretName: ""  #we need to pass a secret name the cert will be stored in this secret.
