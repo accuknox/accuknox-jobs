@@ -62,7 +62,7 @@ joinTokenPath: "/secrets/tokens/JOIN_TOKEN"
 accessKeyPath: "/secrets/tokens/ACCESS_KEY"
 
 spireHost: "localhost"
-spirePort: 8081
+spirePort: 443
 knoxGateway: "kgw:8080"
 spireConfigFile: "/jobs/spire/agent.conf"
 tokenURL: "localhost"

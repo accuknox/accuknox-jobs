@@ -54,7 +54,7 @@ joinTokenPath: "/secrets/tokens/JOIN_TOKEN"
 accessKeyPath: "/secrets/tokens/ACCESS_KEY"
 
 
-spirePort: 8081
+spirePort: 443
 spireConfigFile: "/jobs/spire/agent.conf"
 
 
