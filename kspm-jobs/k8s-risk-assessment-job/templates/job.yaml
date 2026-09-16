@@ -40,7 +40,7 @@ spec:
               --output /data/report.json
               --cluster-name=$CLUSTER_NAME
               {{- if .Values.global.airgapped }}
-              --use-artifacts-from /opt/kubescape/artifacts
+              --use-artifacts-from /data/kubescape-cache
               {{- end }}
               --controls-config /tmp/controls.json
           {{- else }}
@@ -60,7 +60,7 @@ spec:
             - --cluster-name=$(CLUSTER_NAME)
             {{- if .Values.global.airgapped }}
             - --use-artifacts-from
-            - /opt/kubescape/artifacts
+            - /data/kubescape-cache
             {{- end }}
           {{- end }}
           env:

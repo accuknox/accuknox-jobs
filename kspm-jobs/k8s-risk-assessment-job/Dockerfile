@@ -10,9 +10,7 @@ RUN chmod +x /usr/local/bin/kubescape
 FROM alpine:3.23 AS runner
 RUN apk add --no-cache ca-certificates
 COPY --from=downloader /usr/local/bin/kubescape /usr/local/bin/kubescape
-RUN mkdir -p /opt/kubescape/artifacts && \
-    kubescape download artifacts --output /opt/kubescape/artifacts && \
-    kubescape download framework clusterscan --output /opt/kubescape/artifacts/clusterscan.json
+RUN mkdir -p /data/kubescape-cache && kubescape download artifacts --output /data/kubescape-cache
 RUN adduser --disabled-password --no-create-home kubescape
 RUN mkdir -p /data && chown kubescape:kubescape /data
 USER kubescape
