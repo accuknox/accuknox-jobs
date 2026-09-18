@@ -32,6 +32,9 @@ spec:
           {{- if .Values.global.kraCustomConfig }}
           args:
             - >
+              {{- if .Values.global.airgapped }}
+              mkdir -p /data/kubescape-cache && cp -a /opt/kubescape/artifacts/. /data/kubescape-cache/ &&
+              {{- end }}
               wget -O /tmp/controls.json '{{ .Values.global.kraCustomConfig }}' &&
               kubescape scan framework allcontrols,clusterscan,mitre,nsa
               --exclude-namespaces openshift-ovn-kubernetes
@@ -44,24 +47,20 @@ spec:
               {{- end }}
               --controls-config /tmp/controls.json
           {{- else }}
-          command: ["kubescape"]
           args:
-            - scan
-            - framework
-            - allcontrols,clusterscan,mitre,nsa
-            - --exclude-namespaces
-            - openshift-ovn-kubernetes
-            - --format
-            - json
-            - --cache-dir
-            - /data/kubescape-cache
-            - --output
-            - /data/report.json
-            - --cluster-name=$(CLUSTER_NAME)
-            {{- if .Values.global.airgapped }}
-            - --use-artifacts-from
-            - /opt/kubescape/artifacts
-            {{- end }}
+            - >
+              {{- if .Values.global.airgapped }}
+              mkdir -p /data/kubescape-cache && cp -a /opt/kubescape/artifacts/. /data/kubescape-cache/ &&
+              {{- end }}
+              exec kubescape scan framework allcontrols,clusterscan,mitre,nsa
+              --exclude-namespaces openshift-ovn-kubernetes
+              --format json
+              --cache-dir /data/kubescape-cache
+              --output /data/report.json
+              --cluster-name="$CLUSTER_NAME"
+              {{- if .Values.global.airgapped }}
+              --use-artifacts-from /opt/kubescape/artifacts
+              {{- end }}
           {{- end }}
           env:
             - name: CLUSTER_NAME
