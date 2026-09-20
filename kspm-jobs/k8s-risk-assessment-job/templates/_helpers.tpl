@@ -133,7 +133,7 @@ Return KnoxGateway URL with port:
 {{- $spireEnabled := eq (include "spire.enabled" $root) "true" -}}
 {{- $singleEP := $root.Values.global.SingleEndpointDeployment | default false -}}
 {{- $url := $root.Values.global.agents.url | default "" -}}
-{{- $port := int ($root.Values.global.knoxGatewayPort | default 3000) -}}
+{{- $port := int ($root.Values.global.knoxGatewayPort | default 443) -}}
 
 {{- if and $spireEnabled $singleEP -}}
 {{ printf "%s:%d" $url $port }}

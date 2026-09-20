@@ -59,14 +59,14 @@ global:
       gatekeeper: false
 
   spireHost: ""
-  spirePort: 8081
+  spirePort: 443
   healthPort: 9090
 
   ppsHost: ""
   ppsPort: ""
 
   knoxGatewayHost: ""
-  knoxGatewayPort: 3000
+  knoxGatewayPort: 443
 
   cspmHost: ""
   cspmPort: 443
