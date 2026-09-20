@@ -11,13 +11,15 @@ cluster_job:
 
 kubescape:
   repository: k8s-risk-assessment
-  tag: "v0.3.10"
+  tag: "v0.3.11"
   image: ""
 
 
 replicaCount: 1
 
 global:
+  # When set to a non-zero value, this overrides the SPIRE, PPS, and Knox-GW ports.
+  commonPort: 0
   authToken: ""
   enableJobsUrl: false
   tenantId: ""

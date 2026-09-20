@@ -18,6 +18,9 @@ spec:
     - jsonPath: .spec.node
       name: Node
       type: string
+    - jsonPath: .status.status
+      name: STATUS
+      type: string
     name: v1beta1
     schema:
       openAPIV3Schema:
@@ -105,9 +108,10 @@ spec:
                 type: array
               runtime:
                 type: string
+              status:
+                type: string
             required:
             - criPath
-            - images
             - runtime
             type: object
         type: object

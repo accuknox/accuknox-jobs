@@ -17,6 +17,8 @@ kubeBench:
 
 
 global:
+  # When set to a non-zero value, this overrides the SPIRE, PPS, and Knox-GW ports.
+  commonPort: 0
   authToken: ""
   enableJobsUrl: false
   tenantId: ""
