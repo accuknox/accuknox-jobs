@@ -59,7 +59,6 @@ global:
       gatekeeper: false
 
   spireHost: ""
-  commonPort: 0
   spirePort: 443
   healthPort: 9090
 
