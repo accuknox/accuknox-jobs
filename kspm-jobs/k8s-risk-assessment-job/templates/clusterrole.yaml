@@ -3,13 +3,12 @@ kind: ClusterRole
 metadata:
   name: {{ .Release.Namespace }}-k8s-assessment-crole
 rules:
-  - apiGroups:
-      - ''
+  # Core Kubernetes resources
+  - apiGroups: [""]
     resources:
       - pods
       - pods/proxy
       - namespaces
-      - secrets
       - nodes
       - configmaps
       - services
@@ -22,10 +21,13 @@ rules:
       - podtemplates
       - resourcequotas
       - events
+      - secrets
     verbs:
       - get
-      - watch
       - list
+      - watch
+
+  # Admission
   - apiGroups:
       - admissionregistration.k8s.io
     resources:
@@ -35,16 +37,30 @@ rules:
       - validatingadmissionpolicybindings
     verbs:
       - get
-      - watch
       - list
+      - watch
+
+  # API registration
   - apiGroups:
       - apiregistration.k8s.io
     resources:
       - apiservices
     verbs:
       - get
-      - watch
       - list
+      - watch
+
+  # API extensions / CRDs
+  - apiGroups:
+      - apiextensions.k8s.io
+    resources:
+      - customresourcedefinitions
+    verbs:
+      - get
+      - list
+      - watch
+
+  # Workloads
   - apiGroups:
       - apps
     resources:
@@ -55,16 +71,20 @@ rules:
       - controllerrevisions
     verbs:
       - get
-      - watch
       - list
+      - watch
+
+  # Autoscaling
   - apiGroups:
       - autoscaling
     resources:
       - horizontalpodautoscalers
     verbs:
       - get
-      - watch
       - list
+      - watch
+
+  # Batch
   - apiGroups:
       - batch
     resources:
@@ -72,51 +92,133 @@ rules:
       - cronjobs
     verbs:
       - get
-      - watch
       - list
+      - watch
+
+  # Coordination
   - apiGroups:
       - coordination.k8s.io
     resources:
       - leases
     verbs:
       - get
-      - watch
       - list
+      - watch
+
+  # Discovery
   - apiGroups:
       - discovery.k8s.io
     resources:
       - endpointslices
     verbs:
       - get
-      - watch
       - list
+      - watch
+
+  # Events
   - apiGroups:
       - events.k8s.io
     resources:
       - events
     verbs:
       - get
-      - watch
       - list
+      - watch
+
+  # Kubescape host data
+  - apiGroups:
+      - hostdata.kubescape.cloud
+    resources:
+      - apiserverinfos
+      - controlplaneinfos
+      - osreleasefiles
+      - kernelversions
+      - linuxsecurityhardeningstatuses
+      - openportslists
+      - linuxkernelvariables
+      - kubeletinfos
+      - kubeproxyinfos
+      - cloudproviderinfos
+      - cniinfos
+    verbs:
+      - get
+      - list
+      - watch
+
+  # Kubernetes networking
   - apiGroups:
       - networking.k8s.io
     resources:
       - networkpolicies
-      - Ingress
+      - ingresses
     verbs:
       - get
-      - watch
       - list
+      - watch
+
+  # Legacy extensions networking
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+
+  # Cilium
+  - apiGroups:
+      - cilium.io
+    resources:
+      - ciliumnetworkpolicies
+      - ciliumclusterwidenetworkpolicies
+    verbs:
+      - get
+      - list
+      - watch
+
+  # Calico
+  - apiGroups:
+      - projectcalico.org
+    resources:
+      - networkpolicies
+    verbs:
+      - get
+      - list
+      - watch
+
+  # Istio
+  - apiGroups:
+      - networking.istio.io
+    resources:
+      - gateways
+      - virtualservices
+    verbs:
+      - get
+      - list
+      - watch
+
+  - apiGroups:
+      - security.istio.io
+    resources:
+      - authorizationpolicies
+    verbs:
+      - get
+      - list
+      - watch
+
+  # Pod security / disruption
   - apiGroups:
       - policy
     resources:
       - poddisruptionbudgets
       - podsecuritypolicies
-      - PodSecurityPolicy
     verbs:
       - get
-      - watch
       - list
+      - watch
+
+  # RBAC
   - apiGroups:
       - rbac.authorization.k8s.io
     resources:
@@ -126,33 +228,43 @@ rules:
       - rolebindings
     verbs:
       - get
-      - watch
       - list
+      - watch
+
+  # Storage
   - apiGroups:
       - storage.k8s.io
     resources:
       - csistoragecapacities
       - storageclasses
+      - volumeattachments
+      - csinodes
     verbs:
       - get
-      - watch
       - list
+      - watch
+
+  # Scheduling
   - apiGroups:
-      - networking.k8s.io
+      - scheduling.k8s.io
     resources:
-      - ingresses
+      - priorityclasses
     verbs:
       - get
-      - watch
       - list
+      - watch
+
+  # Certificates
   - apiGroups:
-      - extensions
+      - certificates.k8s.io
     resources:
-      - Ingress
+      - certificatesigningrequests
     verbs:
       - get
-      - watch
       - list
+      - watch
+
+  # Gateway API
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
@@ -164,11 +276,76 @@ rules:
       - udproutes
     verbs:
       - get
-      - watch
       - list
+      - watch
+
+  # Kubescape workload scan results
   - apiGroups:
-      - ''
+      - spdx.softwarecomposition.kubescape.io
     resources:
-      - namespaces
+      - workloadconfigurationscans
+      - workloadconfigurationscansummaries
     verbs:
+      - create
+      - get
       - update
+      - patch
+
+  # Kubescape service scan results
+  - apiGroups:
+      - kubescape.io
+    resources:
+      - servicesscanresults
+    verbs:
+      - get
+      - list
+      - watch
+
+  # Agent runtime posture
+  - apiGroups:
+      - agents.x-k8s.io
+    resources:
+      - sandboxes
+    verbs:
+      - get
+      - list
+      - watch
+
+  - apiGroups:
+      - extensions.agents.x-k8s.io
+    resources:
+      - sandboxtemplates
+    verbs:
+      - get
+      - list
+      - watch
+
+  - apiGroups:
+      - ate.dev
+    resources:
+      - actortemplates
+      - workerpools
+    verbs:
+      - get
+      - list
+      - watch
+
+  # Risk acceptance
+  - apiGroups:
+      - kubescape.io
+    resources:
+      - securityexceptions
+      - clustersecurityexceptions
+    verbs:
+      - get
+      - list
+      - watch
+
+  # Required when risk acceptance is enabled
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
