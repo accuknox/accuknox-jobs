@@ -169,10 +169,10 @@ spec:
               echo "Deleting Kyverno deployments..."
 
               kubectl delete deployment --ignore-not-found=true -n {{ .Release.Namespace }} \
-                kyverno-admission-controller \
-                kyverno-background-controller \
-                kyverno-cleanup-controller \
-                kyverno-reports-controller
+                kyverno-chart-admission-controller \
+                kyverno-chart-background-controller \
+                kyverno-chart-cleanup-controller \
+                kyverno-chart-reports-controller
 
               echo "Waiting for controllers to stop..."
 
