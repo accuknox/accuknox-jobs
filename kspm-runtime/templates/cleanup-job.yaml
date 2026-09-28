@@ -69,7 +69,7 @@ rules:
     resources: ["configmaps"]
     verbs: ["get", "delete", "list", "watch"]
     resourceNames:
-      - "agents-kyverno"
+      - "agents-kyverno-chart"
 
   - apiGroups: ["apps"]
     resources: ["deployments"]
@@ -83,10 +83,10 @@ rules:
     resources: ["secrets"]
     verbs: ["get", "delete", "list", "watch"]
     resourceNames:
-      - "agents-kyverno-svc.agents.svc.kyverno-tls-ca"
-      - "agents-kyverno-svc.agents.svc.kyverno-tls-pair"
-      - "kyverno-cleanup-controller.agents.svc.kyverno-tls-ca"
-      - "kyverno-cleanup-controller.agents.svc.kyverno-tls-pair"
+      - "agents-kyverno-chart-svc.agents.svc.kyverno-tls-ca"
+      - "agents-kyverno-chart-svc.agents.svc.kyverno-tls-pair"
+      - "kyverno-chart-cleanup-controller.agents.svc.kyverno-tls-ca"
+      - "kyverno-chart-cleanup-controller.agents.svc.kyverno-tls-pair"
 
   - apiGroups: ["admissionregistration.k8s.io"]
     resources:
@@ -211,15 +211,15 @@ spec:
               echo "Deleting leftover Kyverno TLS secrets..."
 
               kubectl delete secret --ignore-not-found=true -n {{ .Release.Namespace }} \
-                agents-kyverno-svc.agents.svc.kyverno-tls-ca \
-                agents-kyverno-svc.agents.svc.kyverno-tls-pair \
-                kyverno-cleanup-controller.agents.svc.kyverno-tls-ca \
-                kyverno-cleanup-controller.agents.svc.kyverno-tls-pair
+                agents-kyverno-chart-svc.agents.svc.kyverno-tls-ca \
+                agents-kyverno-chart-svc.agents.svc.kyverno-tls-pair \
+                kyverno-chart-cleanup-controller.agents.svc.kyverno-tls-ca \
+                kyverno-chart-cleanup-controller.agents.svc.kyverno-tls-pair
 
               echo "Deleting leftover ConfigMaps..."
 
               kubectl delete configmap --ignore-not-found=true -n {{ .Release.Namespace }} \
-                agents-kyverno
+                agents-kyverno-chart
 
               ###########################################################
               # STEP 4 - Delete Kubeshield CRDs
