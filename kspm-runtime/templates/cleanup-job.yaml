@@ -264,6 +264,12 @@ spec:
                 -l control-plane=controller-manager \
                 --timeout=100s || true
 
+              echo "Deleting KubeArmor mutating webhook configuration..."
+
+              kubectl delete mutatingwebhookconfiguration \
+                kubearmor-controller-mutating-webhook-configuration \
+                --ignore-not-found=true
+
               ###########################################################
               # STEP 7 - Delete KubeArmor CRDs
               ###########################################################
