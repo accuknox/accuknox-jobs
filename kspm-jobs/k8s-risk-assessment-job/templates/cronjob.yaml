@@ -33,6 +33,8 @@ spec:
           initContainers:
             - name: job-init-container
               imagePullPolicy: IfNotPresent
+              resources:
+              {{- toYaml .Values.global.job.resources | nindent 16 }}
               image: "{{ include "kubescape.image" . }}"
               command: ["/bin/sh", "-c"]
               {{- if .Values.global.kraCustomConfig }}
@@ -81,6 +83,8 @@ spec:
               - -config 
               - /jobs/conf/app.yaml
               imagePullPolicy: IfNotPresent
+              resources:
+              {{- toYaml .Values.global.job.resources | nindent 16 }}
               volumeMounts:
                 - mountPath: /data
                   name: datapath

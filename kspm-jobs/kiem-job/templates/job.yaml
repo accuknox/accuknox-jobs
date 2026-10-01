@@ -27,6 +27,8 @@ spec:
       initContainers:
         - name: kiem-init
           imagePullPolicy: IfNotPresent
+          resources:
+          {{- toYaml .Values.global.job.resources | nindent 12 }}
           image: "{{ include "kiem.image" . }}"
           args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
           env:
@@ -41,6 +43,8 @@ spec:
           - -config 
           - /jobs/conf/app.yaml
           imagePullPolicy: IfNotPresent
+          resources:
+          {{- toYaml .Values.global.job.resources | nindent 12 }}
           name: accuknox-kiem-job
           volumeMounts:
             - mountPath: /data

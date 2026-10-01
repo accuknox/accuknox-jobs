@@ -18,6 +18,13 @@ kubescape:
 replicaCount: 1
 
 global:
+  job:
+    resources:
+      requests:
+        memory: 200Mi
+      limits:
+        memory: 500Mi
+
   authToken: ""
   enableJobsUrl: false
   tenantId: ""
