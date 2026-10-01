@@ -33,10 +33,7 @@ spec:
             - name: kiem-init
               imagePullPolicy: IfNotPresent
               resources:
-                requests:
-                  memory: 200Mi
-                limits:
-                  memory: 500Mi
+              {{- toYaml .Values.global.job.resources | nindent 16 }}
               image: "{{ include "kiem.image" . }}"
               args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
               env:
@@ -52,10 +49,7 @@ spec:
               - /jobs/conf/app.yaml
               imagePullPolicy: IfNotPresent
               resources:
-                requests:
-                  memory: 200Mi
-                limits:
-                  memory: 500Mi
+              {{- toYaml .Values.global.job.resources | nindent 16 }}
               name: accuknox-kiem-cronjob
               volumeMounts:
                 - mountPath: /data
