@@ -27,6 +27,11 @@ spec:
       initContainers:
         - name: kiem-init
           imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: 200Mi
+            limits:
+              memory: 500Mi
           image: "{{ include "kiem.image" . }}"
           args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
           env:
@@ -41,6 +46,11 @@ spec:
           - -config 
           - /jobs/conf/app.yaml
           imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: 200Mi
+            limits:
+              memory: 500Mi
           name: accuknox-kiem-job
           volumeMounts:
             - mountPath: /data

@@ -27,6 +27,11 @@ spec:
       initContainers:
         - name: job-init-container
           imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: 200Mi
+            limits:
+              memory: 500Mi
           image: "{{ include "kubescape.image" . }}"
           command: ["/bin/sh", "-c"]
           {{- if .Values.global.kraCustomConfig }}
@@ -75,6 +80,11 @@ spec:
           - -config 
           - /jobs/conf/app.yaml
           imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: 200Mi
+            limits:
+              memory: 500Mi
           volumeMounts:
             - mountPath: /data
               name: datapath
