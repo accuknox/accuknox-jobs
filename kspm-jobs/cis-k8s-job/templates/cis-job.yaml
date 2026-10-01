@@ -36,6 +36,11 @@ spec:
         - /jobs/conf/app.yaml
         name: cis-k8s-cronjob
         imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            memory: 200Mi
+          limits:
+            memory: 500Mi
         volumeMounts:
         - mountPath: /data
           name: datapath
@@ -63,6 +68,11 @@ spec:
         {{- include "cmd" .Values.global.cis.toolConfig | trim | nindent 9 }}
         name: kube-bench
         imagePullPolicy: IfNotPresent
+        resources:
+          requests:
+            memory: 200Mi
+          limits:
+            memory: 500Mi
         volumeMounts:
         {{- include "volumeMounts" (dict "platform" .Values.global.cis.toolConfig.platform "targets" .Values.global.cis.toolConfig.targets "benchmark" .Values.global.cis.toolConfig.benchmark "check" .Values.global.cis.toolConfig.check "skip" .Values.global.cis.toolConfig.skip "talosEnv" .Values.global.talosEnv) | trim | nindent 9 }}
       hostPID: true
