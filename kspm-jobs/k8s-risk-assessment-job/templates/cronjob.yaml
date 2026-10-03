@@ -45,6 +45,7 @@ spec:
                   {{- end }}
                   wget -O /tmp/controls.json '{{ .Values.global.kraCustomConfig }}' &&
                   kubescape scan framework
+                  --enable-streaming
                   --exclude-namespaces openshift-ovn-kubernetes
                   --format json
                   --cache-dir /data/kubescape-cache
@@ -61,6 +62,7 @@ spec:
                   mkdir -p /data/kubescape-cache && cp -a /opt/kubescape/artifacts/. /data/kubescape-cache/ &&
                   {{- end }}
                   exec kubescape scan framework allcontrols,clusterscan,mitre,nsa
+                  --enable-streaming
                   --exclude-namespaces openshift-ovn-kubernetes
                   --format json
                   --cache-dir /data/kubescape-cache
