@@ -6,7 +6,7 @@ registryName: docker.io/seswarrajan
 
 cluster_job:
   repository: knoxjobs
-  tag: "v0.1.11"
+  tag: "v0.1.12"
   image: ""
 
 kubescape:
