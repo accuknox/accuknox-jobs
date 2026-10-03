@@ -22,9 +22,9 @@ global:
   job:
     resources:
       requests:
-        memory: 200Mi
-      limits:
         memory: 500Mi
+      limits:
+        memory: 1Gi
 
   authToken: ""
   enableJobsUrl: false
