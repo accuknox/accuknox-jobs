@@ -1,7 +1,7 @@
 FROM alpine:3.23 AS downloader
 RUN apk add --no-cache ca-certificates curl
 ENV KUBESCAPE_VERSION=4.0.15
-ARG ARCH=""
+ARG ARCH="amd64"
 RUN curl \
     -L "https://github.com/kubescape/kubescape/releases/download/v${KUBESCAPE_VERSION}/kubescape_${KUBESCAPE_VERSION}_linux_${ARCH}" \
     -o /usr/local/bin/kubescape
@@ -12,9 +12,9 @@ RUN apk add --no-cache ca-certificates python3 py3-ijson
 RUN python3 -c 'import ijson, sqlite3'
 COPY --from=downloader /usr/local/bin/kubescape /usr/local/bin/kubescape
 RUN mkdir -p /opt/kubescape/artifacts && \
-    kubescape download artifacts --output /opt/kubescape/artifacts && \
-    kubescape download framework clusterscan --output /opt/kubescape/artifacts/clusterscan.json
+    kubescape download artifacts --output /opt/kubescape/artifacts
 RUN adduser --disabled-password --no-create-home kubescape
 RUN mkdir -p /data && chown kubescape:kubescape /data
+COPY scripts/scan-control-namespaces.py /usr/local/bin/scan-control-namespaces.py
 USER kubescape
 #ENTRYPOINT ["/usr/local/bin/kubescape"]

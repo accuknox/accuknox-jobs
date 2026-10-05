@@ -2,11 +2,12 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-registryName: public.ecr.aws/k9v9d5v2
+#registryName: public.ecr.aws/k9v9d5v2
+registryName: docker.io/seswarrajan
 
 cluster_job:
   repository: knoxjobs
-  tag: "v0.1.13"
+  tag: "v0.1.14"
   image: ""
 
 kubescape:
@@ -18,6 +19,8 @@ kubescape:
 replicaCount: 1
 
 global:
+  # Empty: discover all namespaces except openshift-ovn-kubernetes.
+  scanNamespaces: []
   job:
     resources:
       requests:
@@ -68,6 +71,5 @@ spireConfigFile: "/jobs/spire/agent.conf"
 
 configPaths:
 - "/data/kubescape-cache/allcontrols.json"
-- "/data/kubescape-cache/clusterscan.json"
 - "/data/kubescape-cache/mitre.json"
 - "/data/kubescape-cache/nsa.json"
