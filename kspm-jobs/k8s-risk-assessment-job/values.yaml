@@ -2,7 +2,8 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-registryName: public.ecr.aws/k9v9d5v2
+#registryName: public.ecr.aws/k9v9d5v2
+registryName: docker.io/seswarrajan
 
 cluster_job:
   repository: knoxjobs
@@ -11,7 +12,7 @@ cluster_job:
 
 kubescape:
   repository: k8s-risk-assessment
-  tag: "v0.3.13"
+  tag: "v0.3.14"
   image: ""
 
 
