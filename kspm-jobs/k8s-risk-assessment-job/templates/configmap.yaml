@@ -4,6 +4,10 @@ metadata:
   name: k8s-risk-assessment-job-script-configmap
   namespace: {{ .Release.Namespace }}
 data:
+  scan-frameworks.sh: |
+    {{- tpl (.Files.Get "scripts/scan-frameworks.sh") . | nindent 4 }}
+  merge-frameworks.py: |
+    {{- .Files.Get "scripts/merge-frameworks.py" | nindent 4 }}
   augment-and-push-results.sh: |
     #! /bin/sh
 

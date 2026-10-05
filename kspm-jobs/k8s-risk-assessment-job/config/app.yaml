@@ -10,7 +10,7 @@ jobs:
   saveToS3: true
   reportFile: "/data/report.json"
   clusterID: {{ .Values.global.clusterID }}
-  printData: true
+  printData: false
   insecure: {{ .Values.global.skipTLSVerification }}
   {{- if .Values.global.certEnabled }}
   caPath: /certs/tls.crt

@@ -8,7 +8,8 @@ RUN curl \
 RUN chmod +x /usr/local/bin/kubescape
 
 FROM alpine:3.23 AS runner
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates python3 py3-ijson
+RUN python3 -c 'import ijson, sqlite3'
 COPY --from=downloader /usr/local/bin/kubescape /usr/local/bin/kubescape
 RUN mkdir -p /opt/kubescape/artifacts && \
     kubescape download artifacts --output /opt/kubescape/artifacts && \
