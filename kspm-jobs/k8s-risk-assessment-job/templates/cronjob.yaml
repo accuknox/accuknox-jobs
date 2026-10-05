@@ -36,48 +36,22 @@ spec:
               resources:
               {{- toYaml .Values.global.job.resources | nindent 16 }}
               image: "{{ include "kubescape.image" . }}"
-              command: ["/bin/sh", "-c"]
-              {{- if .Values.global.kraCustomConfig }}
-              args:
-                - >
-                  {{- if .Values.global.airgapped }}
-                  mkdir -p /data/kubescape-cache && cp -a /opt/kubescape/artifacts/. /data/kubescape-cache/ &&
-                  {{- end }}
-                  wget -O /tmp/controls.json '{{ .Values.global.kraCustomConfig }}' &&
-                  kubescape scan framework
-                  --enable-streaming
-                  --exclude-namespaces openshift-ovn-kubernetes
-                  --format json
-                  --cache-dir /data/kubescape-cache
-                  --output /data/report.json
-                  --cluster-name=$CLUSTER_NAME
-                  {{- if .Values.global.airgapped }}
-                  --use-artifacts-from /opt/kubescape/artifacts
-                  {{- end }}
-                  --controls-config /tmp/controls.json
-              {{- else }}
-              args:
-                - >
-                  {{- if .Values.global.airgapped }}
-                  mkdir -p /data/kubescape-cache && cp -a /opt/kubescape/artifacts/. /data/kubescape-cache/ &&
-                  {{- end }}
-                  exec kubescape scan framework allcontrols,clusterscan,mitre,nsa
-                  --enable-streaming
-                  --exclude-namespaces openshift-ovn-kubernetes
-                  --format json
-                  --cache-dir /data/kubescape-cache
-                  --output /data/report.json
-                  --cluster-name="$CLUSTER_NAME"
-                  {{- if .Values.global.airgapped }}
-                  --use-artifacts-from /opt/kubescape/artifacts
-                  {{- end }}
-              {{- end }}
+              command: ["/bin/sh"]
+              args: ["/data/scan-frameworks.sh"]
               env:
                 - name: CLUSTER_NAME
                   value: "{{ .Values.global.clusterName }}"
               volumeMounts:
                 - name: datapath
                   mountPath: /data
+                - name: scriptpath
+                  mountPath: /data/scan-frameworks.sh
+                  subPath: scan-frameworks.sh
+                  readOnly: true
+                - name: scriptpath
+                  mountPath: /data/merge-frameworks.py
+                  subPath: merge-frameworks.py
+                  readOnly: true
           containers:
             - image: "{{ include "cluster_job.image" . }}"
               name: artifact-api-container
@@ -90,8 +64,9 @@ spec:
               volumeMounts:
                 - mountPath: /data
                   name: datapath
-                - mountPath: /script
+                - mountPath: /data/augment-and-push-results.sh
                   name: scriptpath
+                  subPath: augment-and-push-results.sh
                 - name: secret-volume
                   mountPath: /secrets/tokens
                   readOnly: true
