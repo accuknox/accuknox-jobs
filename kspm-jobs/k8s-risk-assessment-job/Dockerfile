@@ -1,14 +1,15 @@
 FROM alpine:3.23 AS downloader
 RUN apk add --no-cache ca-certificates curl
 ENV KUBESCAPE_VERSION=4.0.15
-ARG ARCH=""
+ARG ARCH="amd64"
 RUN curl \
     -L "https://github.com/kubescape/kubescape/releases/download/v${KUBESCAPE_VERSION}/kubescape_${KUBESCAPE_VERSION}_linux_${ARCH}" \
     -o /usr/local/bin/kubescape
 RUN chmod +x /usr/local/bin/kubescape
 
 FROM alpine:3.23 AS runner
-RUN apk add --no-cache ca-certificates
+RUN apk add --no-cache ca-certificates python3 py3-ijson
+RUN python3 -c 'import ijson, sqlite3'
 COPY --from=downloader /usr/local/bin/kubescape /usr/local/bin/kubescape
 RUN mkdir -p /opt/kubescape/artifacts && \
     kubescape download artifacts --output /opt/kubescape/artifacts && \
