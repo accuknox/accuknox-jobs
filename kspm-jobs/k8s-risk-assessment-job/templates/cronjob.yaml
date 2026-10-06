@@ -36,22 +36,19 @@ spec:
               resources:
               {{- toYaml .Values.global.job.resources | nindent 16 }}
               image: "{{ include "kubescape.image" . }}"
-              command: ["/bin/sh"]
-              args: ["/data/scan-frameworks.sh"]
+              command: ["python3", "/usr/local/bin/scan-control-namespaces.py"]
               env:
                 - name: CLUSTER_NAME
                   value: "{{ .Values.global.clusterName }}"
+                - name: AIRGAPPED
+                  value: {{ .Values.global.airgapped | quote }}
+                - name: CONTROLS_CONFIG_URL
+                  value: {{ .Values.global.kraCustomConfig | default "" | quote }}
+                - name: SCAN_NAMESPACES
+                  value: {{ .Values.global.scanNamespaces | default (list) | toJson | quote }}
               volumeMounts:
                 - name: datapath
                   mountPath: /data
-                - name: scriptpath
-                  mountPath: /data/scan-frameworks.sh
-                  subPath: scan-frameworks.sh
-                  readOnly: true
-                - name: scriptpath
-                  mountPath: /data/merge-frameworks.py
-                  subPath: merge-frameworks.py
-                  readOnly: true
           containers:
             - image: "{{ include "cluster_job.image" . }}"
               name: artifact-api-container

@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 
-spec = importlib.util.spec_from_file_location("merge", Path(__file__).parents[1] / "scripts/merge-frameworks.py")
+spec = importlib.util.spec_from_file_location("merge", Path(__file__).parents[1] / "scripts/scan-control-namespaces.py")
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
 
@@ -38,7 +38,7 @@ class MergeTests(unittest.TestCase):
     def test_merge_preserves_controls_resources_and_frameworks(self):
         with tempfile.TemporaryDirectory() as temp:
             paths = []
-            for i, name in enumerate(("allcontrols", "clusterscan", "mitre", "nsa")):
+            for i, name in enumerate(("allcontrols", "mitre", "nsa")):
                 report = {"clusterName": "test", "summaryDetails": {
                     "score": i, "frameworks": [{"name": name, "score": i}],
                     "controls": {f"C-{i}": {"name": name}}},
@@ -55,14 +55,14 @@ class MergeTests(unittest.TestCase):
             merged = json.loads(output.read_text())
             self.assertEqual(len(merged["results"]), 1)
             controls = merged["results"][0]["controls"]
-            self.assertEqual(len(controls), 5)
+            self.assertEqual(len(controls), 4)
             overlap = next(c for c in controls if c["controlID"] == "overlap")
-            self.assertEqual(len(overlap["rules"]), 4)
+            self.assertEqual(len(overlap["rules"]), 3)
             self.assertEqual(overlap["status"]["status"], "failed")
-            self.assertEqual(len(merged["resources"]), 5)
+            self.assertEqual(len(merged["resources"]), 4)
             self.assertEqual(merged["resources"][0]["object"]["first"], 0)
-            self.assertEqual(len(merged["summaryDetails"]["frameworks"]), 4)
-            self.assertEqual(len(merged["summaryDetails"]["controls"]), 4)
+            self.assertEqual(len(merged["summaryDetails"]["frameworks"]), 3)
+            self.assertEqual(len(merged["summaryDetails"]["controls"]), 3)
             self.assertEqual(merged["summaryDetails"]["score"], 0)
             self.assertEqual(len(merged["attributes"]), 1)
             self.assertEqual(sorted(p.name for p in Path(temp).iterdir()),
