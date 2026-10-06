@@ -12,7 +12,7 @@ cluster_job:
 
 kubescape:
   repository: k8s-risk-assessment
-  tag: "v0.3.14"
+  tag: "v0.3.15"
   image: ""
 
 
