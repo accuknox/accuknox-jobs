@@ -131,6 +131,8 @@ rules:
     resources:
       - apiserverinfos
       - controlplaneinfos
+      # Kubescape also requests this exact, case-sensitive resource name.
+      - ControlPlaneInfo
       - osreleasefiles
       - kernelversions
       - linuxsecurityhardeningstatuses

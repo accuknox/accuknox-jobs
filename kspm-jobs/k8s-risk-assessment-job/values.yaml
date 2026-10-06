@@ -11,13 +11,15 @@ cluster_job:
 
 kubescape:
   repository: k8s-risk-assessment
-  tag: "v0.3.14"
+  tag: "v0.3.15"
   image: ""
 
 
 replicaCount: 1
 
 global:
+  # Empty: discover all namespaces except openshift-ovn-kubernetes.
+  scanNamespaces: []
   job:
     resources:
       requests:
@@ -68,6 +70,5 @@ spireConfigFile: "/jobs/spire/agent.conf"
 
 configPaths:
 - "/data/kubescape-cache/allcontrols.json"
-- "/data/kubescape-cache/clusterscan.json"
 - "/data/kubescape-cache/mitre.json"
 - "/data/kubescape-cache/nsa.json"
