@@ -51,9 +51,9 @@ class BatchTests(unittest.TestCase):
             merged = json.loads(output.read_text())
             self.assertEqual(len(merged["results"]), 2)
             self.assertEqual(len(merged["summaryDetails"]["controls"]), 2)
-            self.assertFalse(list(Path(temp).glob("control-ns-scans-*")))
+            self.assertFalse((Path(temp) / ".control-ns-scans").exists())
 
-    def test_failed_scan_removes_temporary_json_and_database(self):
+    def test_failed_scan_continues_and_records_failure(self):
         with tempfile.TemporaryDirectory() as temp:
             paths = self.definitions(temp)
             output = Path(temp) / "report.json"
@@ -68,11 +68,55 @@ class BatchTests(unittest.TestCase):
                 path.write_text(json.dumps({"summaryDetails": {"frameworks": []},
                                            "results": [{"resourceID": "r", "controls": [{"controlID": command[3]}]}]}))
 
-            with self.assertRaises(subprocess.CalledProcessError):
-                module.run_batches(["ns-a"], paths, output, "cluster", Path(temp), run=scan)
-            self.assertEqual(calls, ["C-0001", "C-0002"])
+            module.run_batches(["ns-a", "ns-b"], paths, output, "cluster", Path(temp), run=scan)
+            self.assertEqual(calls, ["C-0001", "C-0002", "C-0001", "C-0002"])
+            failures = [json.loads(line) for line in (Path(temp) / "scan-failures.jsonl").read_text().splitlines()]
+            self.assertEqual(failures[0]["namespace"], "ns-a")
+            self.assertEqual(failures[0]["controlID"], "C-0002")
+            self.assertEqual(json.loads(output.read_text())["scanBatchStatus"], {"attempted": 4, "succeeded": 3, "failed": 1})
             self.assertEqual(json.loads(output.read_text())["results"][0]["controls"][0]["controlID"], "C-0001")
-            self.assertFalse(list(Path(temp).glob("control-ns-scans-*")))
+            self.assertFalse((Path(temp) / ".control-ns-scans").exists())
+
+    def test_restart_resumes_successful_batches(self):
+        with tempfile.TemporaryDirectory() as temp:
+            paths = self.definitions(temp)
+            output = Path(temp) / "report.json"
+            attempted = []
+            def interrupted(command, check):
+                attempted.append(command[3])
+                if len(attempted) == 2:
+                    raise KeyboardInterrupt()
+                Path(command[command.index("--output") + 1]).write_text(json.dumps(
+                    {"summaryDetails": {"frameworks": []}, "results": [
+                        {"resourceID": "r", "controls": [{"controlID": command[3]}]}]}))
+            with self.assertRaises(KeyboardInterrupt):
+                module.run_batches(["ns-a"], paths, output, "cluster", Path(temp), run=interrupted)
+            self.assertTrue((Path(temp) / ".control-ns-scans" / "merge.sqlite").exists())
+            self.assertFalse((Path(temp) / ".control-ns-scans" / "scan.json").exists())
+            resumed = []
+            def scan(command, check):
+                resumed.append(command[3])
+                Path(command[command.index("--output") + 1]).write_text(json.dumps(
+                    {"summaryDetails": {"frameworks": []}, "results": [
+                        {"resourceID": "r", "controls": [{"controlID": command[3]}]}]}))
+            module.run_batches(["ns-a"], paths, output, "cluster", Path(temp), run=scan)
+            self.assertEqual(resumed, ["C-0002"])
+            self.assertEqual(len(json.loads(output.read_text())["results"][0]["controls"]), 2)
+            self.assertFalse((Path(temp) / ".control-ns-scans").exists())
+
+    def test_all_failed_batches_do_not_upload_empty_report(self):
+        with tempfile.TemporaryDirectory() as temp:
+            paths = self.definitions(temp)
+            output = Path(temp) / "report.json"
+            calls = []
+            def scan(command, check):
+                calls.append(command[3])
+                raise subprocess.CalledProcessError(1, command)
+            with self.assertRaisesRegex(RuntimeError, "All 2 batches failed"):
+                module.run_batches(["ns-a"], paths, output, "cluster", Path(temp), run=scan)
+            self.assertEqual(len(calls), 2)
+            self.assertFalse(output.exists())
+            self.assertEqual(len((Path(temp) / "scan-failures.jsonl").read_text().splitlines()), 2)
 
     def test_cache_is_bounded_and_mmap_disabled(self):
         with tempfile.TemporaryDirectory() as temp:

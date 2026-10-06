@@ -19,12 +19,23 @@ For every namespace/control pair it performs these steps in order:
    Python objects before starting the next scan.
 
 Knoxjobs uploads one final `/data/report.json` after every batch succeeds.
-A failed scan or merge fails the init container, preventing partial upload.
-The last successfully merged snapshot remains on disk for diagnosis. Retries
-restart the scan plan. The SQLite database is retained between batches to
-retain accumulated results and is deleted when the run exits normally or
-through a handled exception. SIGKILL/OOM can prevent cleanup; the pod's emptyDir
-is removed with the pod.
+A failed Kubescape control/namespace scan is logged and skipped; remaining
+batches continue. No JSON from a nonzero-exit scan is merged. The final report
+includes `scanBatchStatus` counts, and `/data/scan-failures.jsonl` lists skipped
+pairs. Successful findings can be uploaded even if some controls could not run;
+a missing control is not treated as a passed control. If all batches fail, the
+init container fails rather than uploading an empty report. Merge/I/O errors
+also fail the init container.
+
+Completed/failed batches and merged results are checkpointed in
+`/data/.control-ns-scans/merge.sqlite`. Results and successful batch checkpoints
+are committed together. An init-container restart in the same pod resumes the
+plan, skipping already attempted pairs and rebuilding the snapshot if necessary.
+Failed pairs are not retried automatically within that plan. A replacement pod
+gets a fresh emptyDir and starts over. A SIGKILL/OOM can leave a temporary JSON;
+the next attempt removes it before scanning. The checkpoint database is removed
+only after final report generation succeeds. Policy artifacts are not refreshed
+when resuming a saved plan.
 
 SQLite's page cache is capped at approximately 1 MiB, memory mapping is disabled,
 and SQL temporary data is stored on disk. Merge connections close between scans.

@@ -104,7 +104,7 @@ def ingest_result(db, result):
                    (resource_id, control_id, encode(control)))
 
 
-def ingest(db, path):
+def ingest(db, path, commit=True):
     with open(path, "rb") as source:
         events = iter(ijson.parse(source, use_float=True))
         if next(events)[1] != "start_map":
@@ -132,7 +132,8 @@ def ingest(db, path):
             raise ValueError("Trailing data after report")
         if not has_summary:
             raise ValueError("Missing Kubescape v2 summaryDetails")
-    db.commit()
+    if commit:
+        db.commit()
 
 
 def records(db, kind):
@@ -184,6 +185,8 @@ def open_database(path):
     db.execute("PRAGMA temp_store=FILE")
     db.execute("CREATE TABLE IF NOT EXISTS records(kind TEXT, key TEXT, data TEXT, UNIQUE(kind,key))")
     db.execute("CREATE TABLE IF NOT EXISTS controls(resource_id TEXT, control_id TEXT, data TEXT, PRIMARY KEY(resource_id,control_id))")
+    db.execute("CREATE TABLE IF NOT EXISTS progress(namespace TEXT, control_id TEXT, outcome TEXT, error TEXT, PRIMARY KEY(namespace,control_id))")
+    db.execute("CREATE TABLE IF NOT EXISTS state(key TEXT PRIMARY KEY)")
     db.execute("CREATE TABLE IF NOT EXISTS namespaces(name TEXT PRIMARY KEY)")
     db.execute("CREATE TABLE IF NOT EXISTS scan_controls(id TEXT PRIMARY KEY)")
     return db
@@ -292,44 +295,99 @@ def iter_plan(database_path, table, column):
 def run_batches(namespaces, framework_paths, output, cluster_name, artifacts,
                 controls_config=None, run=subprocess.run):
     output = Path(output)
-    with tempfile.TemporaryDirectory(prefix="control-ns-scans-", dir=output.parent) as temp:
-        database_path = Path(temp) / "merge.sqlite"
-        db = open_database(database_path)
-        try:
+    temp = output.parent / ".control-ns-scans"
+    temp.mkdir(mode=0o700, exist_ok=True)
+    database_path = temp / "merge.sqlite"
+    db = open_database(database_path)
+    try:
+        if not db.execute("SELECT 1 FROM state WHERE key='initialized'").fetchone():
+            db.execute("DELETE FROM namespaces")
+            db.execute("DELETE FROM scan_controls")
             add_namespaces(db, namespaces)
             add_controls(db, framework_paths)
-            total = db.execute("SELECT (SELECT count(*) FROM namespaces) * (SELECT count(*) FROM scan_controls)").fetchone()[0]
-        finally:
-            db.close()
-        completed = 0
-        # Plan cursors read from disk; close the merge connection between batches
-        # to release its page cache before starting the next Kubescape process.
-        for namespace in iter_plan(database_path, "namespaces", "name"):
-            for control_id in iter_plan(database_path, "scan_controls", "id"):
-                report = Path(temp) / "scan.json"
-                command = ["kubescape", "scan", "control", control_id,
-                           "--include-namespaces", namespace, "--enable-streaming",
-                           "--exclude-namespaces", "openshift-ovn-kubernetes",
-                           "--format", "json", "--format-version", "v2",
-                           "--cache-dir", str(artifacts), "--use-artifacts-from", str(artifacts),
-                           "--output", str(report), "--cluster-name", cluster_name]
-                if controls_config:
-                    command += ["--controls-config", str(controls_config)]
-                print(f"[{completed + 1}/{total}] Scanning control {control_id} in namespace {namespace}", flush=True)
+            db.execute("INSERT INTO state VALUES ('initialized')")
+            db.commit()
+        total = db.execute("SELECT (SELECT count(*) FROM namespaces) * (SELECT count(*) FROM scan_controls)").fetchone()[0]
+        attempted = db.execute("SELECT count(*) FROM progress").fetchone()[0]
+        if db.execute("SELECT 1 FROM progress WHERE outcome='success' LIMIT 1").fetchone():
+            # Recover a snapshot if a restart occurred between commit and rename.
+            publish_report(db, output)
+        if attempted:
+            print(f"Resuming: {attempted}/{total} batches already attempted", flush=True)
+    finally:
+        db.close()
+    for namespace in iter_plan(database_path, "namespaces", "name"):
+        for control_id in iter_plan(database_path, "scan_controls", "id"):
+            db = open_database(database_path)
+            try:
+                done = db.execute("SELECT 1 FROM progress WHERE namespace=? AND control_id=?",
+                                  (namespace, control_id)).fetchone()
+            finally:
+                db.close()
+            if done:
+                continue
+            report = temp / "scan.json"
+            report.unlink(missing_ok=True)
+            command = ["kubescape", "scan", "control", control_id,
+                       "--include-namespaces", namespace, "--enable-streaming",
+                       "--exclude-namespaces", "openshift-ovn-kubernetes",
+                       "--format", "json", "--format-version", "v2",
+                       "--cache-dir", str(artifacts), "--use-artifacts-from", str(artifacts),
+                       "--output", str(report), "--cluster-name", cluster_name]
+            if controls_config:
+                command += ["--controls-config", str(controls_config)]
+            print(f"[{attempted + 1}/{total}] Scanning control {control_id} in namespace {namespace}", flush=True)
+            try:
                 try:
                     run(command, check=True)
+                except subprocess.CalledProcessError as error:
+                    # Missing host-data CRDs and other scan failures must not
+                    # prevent unrelated controls/namespaces from being scanned.
+                    message = f"Kubescape exited with status {error.returncode}"
                     db = open_database(database_path)
                     try:
-                        ingest(db, report)
-                        publish_report(db, output)
+                        db.execute("INSERT INTO progress VALUES (?, ?, 'failed', ?)",
+                                   (namespace, control_id, message))
+                        db.commit()
                     finally:
                         db.close()
+                    attempted += 1
+                    print(f"[{attempted}/{total}] FAILED {control_id} in {namespace}: {message}; continuing", flush=True)
+                    continue
+                db = open_database(database_path)
+                try:
+                    # Commit results and checkpoint together. Merge/I/O errors
+                    # still abort so corrupted data is never treated as success.
+                    ingest(db, report, commit=False)
+                    db.execute("INSERT INTO progress VALUES (?, ?, 'success', '')",
+                               (namespace, control_id))
+                    db.commit()
+                    publish_report(db, output)
                 finally:
-                    report.unlink(missing_ok=True)
-                    gc.collect()
-                completed += 1
-                print(f"[{completed}/{total}] Merged into {output}; temporary JSON removed", flush=True)
-    print(f"Completed {completed} control/namespace scans; merge database removed", flush=True)
+                    db.close()
+            finally:
+                report.unlink(missing_ok=True)
+                gc.collect()
+            attempted += 1
+            print(f"[{attempted}/{total}] Merged into {output}; temporary JSON removed", flush=True)
+    db = open_database(database_path)
+    try:
+        succeeded = db.execute("SELECT count(*) FROM progress WHERE outcome='success'").fetchone()[0]
+        failed = db.execute("SELECT count(*) FROM progress WHERE outcome='failed'").fetchone()[0]
+        failures = output.parent / "scan-failures.jsonl"
+        with failures.open("w", encoding="utf-8") as out:
+            for namespace, control_id, error in db.execute(
+                    "SELECT namespace, control_id, error FROM progress WHERE outcome='failed' ORDER BY namespace,control_id"):
+                out.write(encode({"namespace": namespace, "controlID": control_id, "error": error}) + "\n")
+        if not succeeded:
+            raise RuntimeError(f"All {failed} batches failed; no scan results available for upload")
+        store(db, "metadata", "scanBatchStatus", {"attempted": total, "succeeded": succeeded, "failed": failed})
+        db.commit()
+        publish_report(db, output)
+    finally:
+        db.close()
+    shutil.rmtree(temp)
+    print(f"Finished: {succeeded} succeeded, {failed} failed; failures listed in {failures}; merge database removed", flush=True)
 
 
 def main():
@@ -337,9 +395,10 @@ def main():
     cache = Path("/data/kubescape-cache")
     cache.mkdir(parents=True, exist_ok=True)
     # Policy artifacts are disk files, distinct from SQLite's bounded page cache.
-    shutil.copytree("/opt/kubescape/artifacts", cache, dirs_exist_ok=True)
-    if os.environ.get("AIRGAPPED", "false").lower() != "true":
-        subprocess.run(["kubescape", "download", "artifacts", "--output", str(cache)], check=True)
+    if not (output.parent / ".control-ns-scans" / "merge.sqlite").exists():
+        shutil.copytree("/opt/kubescape/artifacts", cache, dirs_exist_ok=True)
+        if os.environ.get("AIRGAPPED", "false").lower() != "true":
+            subprocess.run(["kubescape", "download", "artifacts", "--output", str(cache)], check=True)
     url = os.environ.get("CONTROLS_CONFIG_URL", "")
     config_path = None
     if url:
