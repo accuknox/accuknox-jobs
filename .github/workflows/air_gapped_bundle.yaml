@@ -96,12 +96,38 @@ jobs:
           print(Path("bundle/images.txt").read_text())
           PY
 
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to AWS Public ECR
+        run: |
+          set -euo pipefail
+          aws ecr-public get-login-password --region us-east-1 \
+            | docker login --username AWS --password-stdin public.ecr.aws
+
       - name: Pull every image and save Docker archive
         run: |
           set -euo pipefail
           mapfile -t images < bundle/images.txt
           for image in "${images[@]}"; do
-            docker pull --platform "$IMAGE_PLATFORM" "$image"
+            max_attempts=5
+            delay=30
+            for ((attempt=1; attempt<=max_attempts; attempt++)); do
+              if docker pull --platform "$IMAGE_PLATFORM" "$image"; then
+                break
+              fi
+              if (( attempt == max_attempts )); then
+                echo "::error::Failed to pull $image after $max_attempts attempts"
+                exit 1
+              fi
+              echo "::warning::Pull failed for $image (attempt $attempt/$max_attempts). Retrying in ${delay}s."
+              sleep "$delay"
+              delay=$((delay * 2))
+            done
           done
           docker image inspect "${images[@]}" > bundle/image-metadata.json
           docker save --output bundle/images.tar "${images[@]}"
