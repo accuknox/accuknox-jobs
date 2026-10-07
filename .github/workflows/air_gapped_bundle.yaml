@@ -1,0 +1,126 @@
+name: KSPM Runtime Air-Gapped Bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Container image platform to bundle
+        required: true
+        default: linux/amd64
+        type: choice
+        options:
+          - linux/amd64
+          - linux/arm64
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    env:
+      IMAGE_PLATFORM: ${{ inputs.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4.3.0
+        with:
+          version: v3.19.0
+
+      - name: Install YAML parser
+        run: python3 -m pip install 'PyYAML==6.0.3'
+
+      - name: Build Helm dependencies
+        run: helm dependency build kspm-runtime
+
+      - name: Render all enabled components
+        working-directory: kspm-runtime
+        run: |
+          set -euo pipefail
+          mkdir -p ../bundle
+          helm template kspm-runtime . \
+            --set global.agents.enabled=true \
+            --set kubearmor-operator.enabled=true \
+            --set global.cis.enabled=true \
+            --set global.riskassessment.enabled=true \
+            --set global.kiem.enabled=true \
+            --set admissionController.enabled=true \
+            --set kyverno.enabled=true \
+            --set global.inClusterScan.enabled=true \
+            --include-crds > ../bundle/kspm-runtime-all.yaml
+          helm package . --destination ../bundle
+
+      - name: Extract unique image references
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          images = set()
+
+          def collect(node):
+              if isinstance(node, dict):
+                  for key, value in node.items():
+                      if key == "image" or str(key).endswith("Image"):
+                          if isinstance(value, str) and value.strip():
+                              images.add(value.strip())
+                      collect(value)
+                  # Operators can create workloads using images configured in env.
+                  name = str(node.get("name", ""))
+                  value = node.get("value")
+                  if name.endswith("_IMAGE") and isinstance(value, str) and value.strip():
+                      images.add(value.strip())
+              elif isinstance(node, list):
+                  for item in node:
+                      collect(item)
+
+          with Path("bundle/kspm-runtime-all.yaml").open() as manifest:
+              for document in yaml.safe_load_all(manifest):
+                  if isinstance(document, dict) and document.get("kind") != "CustomResourceDefinition":
+                      collect(document)
+
+          if not images:
+              raise SystemExit("No container images found in the rendered manifests")
+          for image in images:
+              if any(character.isspace() for character in image):
+                  raise SystemExit(f"Invalid image reference: {image!r}")
+          Path("bundle/images.txt").write_text("\n".join(sorted(images)) + "\n")
+          print(f"Found {len(images)} unique images:")
+          print(Path("bundle/images.txt").read_text())
+          PY
+
+      - name: Pull every image and save Docker archive
+        run: |
+          set -euo pipefail
+          mapfile -t images < bundle/images.txt
+          for image in "${images[@]}"; do
+            docker pull --platform "$IMAGE_PLATFORM" "$image"
+          done
+          docker image inspect "${images[@]}" > bundle/image-metadata.json
+          docker save --output bundle/images.tar "${images[@]}"
+          printf '%s\n' "$IMAGE_PLATFORM" > bundle/platform.txt
+
+      - name: Create bundle and checksums
+        run: |
+          set -euo pipefail
+          (cd bundle && sha256sum kspm-runtime-all.yaml images.txt images.tar image-metadata.json platform.txt kspm-runtime-*.tgz > SHA256SUMS)
+          tar -czf kspm-runtime-air-gapped-bundle.tar.gz -C bundle .
+          sha256sum kspm-runtime-air-gapped-bundle.tar.gz > kspm-runtime-air-gapped-bundle.tar.gz.sha256
+
+      - name: Upload air-gapped bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: kspm-runtime-air-gapped-bundle-${{ github.run_id }}
+          path: |
+            kspm-runtime-air-gapped-bundle.tar.gz
+            kspm-runtime-air-gapped-bundle.tar.gz.sha256
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
