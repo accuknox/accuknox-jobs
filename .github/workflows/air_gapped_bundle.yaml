@@ -1,32 +1,37 @@
 name: KSPM Runtime Air-Gapped Bundle
 
 on:
+  workflow_run:
+    workflows:
+      - KSPM-Runtime Workflow
+    types:
+      - completed
   workflow_dispatch:
-    inputs:
-      platform:
-        description: Container image platform to bundle
-        required: true
-        default: linux/amd64
-        type: choice
-        options:
-          - linux/amd64
-          - linux/arm64
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   bundle:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
     runs-on: ubuntu-latest
     timeout-minutes: 90
     defaults:
       run:
         shell: bash
     env:
-      IMAGE_PLATFORM: ${{ inputs.platform }}
+      IMAGE_PLATFORM: linux/amd64
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
 
       - name: Install Helm
         uses: azure/setup-helm@v4.3.0
@@ -36,14 +41,39 @@ jobs:
       - name: Install YAML parser
         run: python3 -m pip install 'PyYAML==6.0.3'
 
+      - name: Download published Helm chart
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: published-kspm-runtime-chart
+          path: bundle
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+
       - name: Build Helm dependencies
+        if: github.event_name == 'workflow_dispatch'
         run: helm dependency build kspm-runtime
 
-      - name: Render all enabled components
-        working-directory: kspm-runtime
+      - name: Package Helm chart for manual bundle
+        if: github.event_name == 'workflow_dispatch'
+        run: helm package kspm-runtime --destination bundle
+
+      - name: Prepare bundled Helm chart
         run: |
           set -euo pipefail
-          mkdir -p ../bundle
+          charts=(bundle/kspm-runtime-*.tgz)
+          if (( ${#charts[@]} != 1 )) || [[ ! -f "${charts[0]}" ]]; then
+            echo "::error::Expected exactly one packaged kspm-runtime chart"
+            exit 1
+          fi
+          helm show chart "${charts[0]}" > bundle/chart-metadata.yaml
+          mkdir -p rendered-chart
+          tar -xzf "${charts[0]}" -C rendered-chart
+
+      - name: Render all enabled components
+        working-directory: rendered-chart/kspm-runtime
+        run: |
+          set -euo pipefail
           helm template kspm-runtime . \
             --set global.agents.enabled=true \
             --set kubearmor-operator.enabled=true \
@@ -53,8 +83,7 @@ jobs:
             --set admissionController.enabled=true \
             --set kyverno.enabled=true \
             --set global.inClusterScan.enabled=true \
-            --include-crds > ../bundle/kspm-runtime-all.yaml
-          helm package . --destination ../bundle
+            --include-crds > ../../bundle/kspm-runtime-all.yaml
 
       - name: Extract unique image references
         run: |
@@ -136,17 +165,45 @@ jobs:
       - name: Create bundle and checksums
         run: |
           set -euo pipefail
-          (cd bundle && sha256sum kspm-runtime-all.yaml images.txt images.tar image-metadata.json platform.txt kspm-runtime-*.tgz > SHA256SUMS)
-          tar -czf kspm-runtime-air-gapped-bundle.tar.gz -C bundle .
-          sha256sum kspm-runtime-air-gapped-bundle.tar.gz > kspm-runtime-air-gapped-bundle.tar.gz.sha256
+          (cd bundle && sha256sum kspm-runtime-all.yaml images.txt images.tar image-metadata.json platform.txt chart-metadata.yaml kspm-runtime-*.tgz > SHA256SUMS)
+          chart_version=$(python3 -c 'import yaml; print(yaml.safe_load(open("bundle/chart-metadata.yaml"))["version"])')
+          if [[ ! "$chart_version" =~ ^[A-Za-z0-9_][A-Za-z0-9_.+-]*$ ]]; then
+            echo "::error::Invalid chart version for bundle filename"
+            exit 1
+          fi
+          bundle_file="kspm-runtime-air-gapped-bundle-${chart_version}.tar.gz"
+          tar -czf "$bundle_file" -C bundle .
+          sha256sum "$bundle_file" > "$bundle_file.sha256"
+          printf 'BUNDLE_FILE=%s\n' "$bundle_file" >> "$GITHUB_ENV"
 
       - name: Upload air-gapped bundle
         uses: actions/upload-artifact@v4
         with:
           name: kspm-runtime-air-gapped-bundle-${{ github.run_id }}
           path: |
-            kspm-runtime-air-gapped-bundle.tar.gz
-            kspm-runtime-air-gapped-bundle.tar.gz.sha256
+            ${{ env.BUNDLE_FILE }}
+            ${{ env.BUNDLE_FILE }}.sha256
           compression-level: 0
           if-no-files-found: error
           retention-days: 7
+
+      - name: Upload bundle to Hetzner Object Storage
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.HETZNER_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HETZNER_SECRET_KEY }}
+          AWS_SESSION_TOKEN: ''
+          AWS_DEFAULT_REGION: eu-central
+          AWS_EC2_METADATA_DISABLED: 'true'
+        run: |
+          set -euo pipefail
+          : "${AWS_ACCESS_KEY_ID:?Missing HETZNER_ACCESS_KEY secret}"
+          : "${AWS_SECRET_ACCESS_KEY:?Missing HETZNER_SECRET_KEY secret}"
+          ENDPOINT="https://nbg1.your-objectstorage.com"
+          BUCKET="accuknox-onprem-artifacts"
+          destination="s3://${BUCKET}/kspm-runtime/airgapped-bundle"
+          aws --endpoint-url "$ENDPOINT" s3 cp \
+            "$BUNDLE_FILE" \
+            "$destination/$BUNDLE_FILE" --only-show-errors
+          aws --endpoint-url "$ENDPOINT" s3 cp \
+            "$BUNDLE_FILE.sha256" \
+            "$destination/$BUNDLE_FILE.sha256" --only-show-errors
