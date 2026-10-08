@@ -1,20 +1,25 @@
 name: KSPM Runtime Air-Gapped Bundle
 
 on:
-  workflow_dispatch:
-    inputs:
-      kspm_chart_tag:
-        description: Optional kspm-chart container image tag to pull and bundle
-        required: false
-        type: string
-      platform:
-        description: Container image platform to bundle
-        required: true
-        default: linux/amd64
-        type: choice
-        options:
-          - linux/amd64
-          - linux/arm64
+  push:
+    branches:
+      - main
+    paths:
+      - 'kspm-runtime/**'
+  # workflow_dispatch:
+  #   inputs:
+  #     kspm_chart_tag:
+  #       description: Optional kspm-chart container image tag to pull and bundle
+  #       required: false
+  #       type: string
+  #     platform:
+  #       description: Container image platform to bundle
+  #       required: true
+  #       default: linux/amd64
+  #       type: choice
+  #       options:
+  #         - linux/amd64
+  #         - linux/arm64
 
 permissions:
   contents: read
@@ -27,8 +32,10 @@ jobs:
       run:
         shell: bash
     env:
-      IMAGE_PLATFORM: ${{ inputs.platform }}
-      KSPM_CHART_TAG: ${{ inputs.kspm_chart_tag }}
+      # IMAGE_PLATFORM: ${{ inputs.platform }}
+      # KSPM_CHART_TAG: ${{ inputs.kspm_chart_tag }}
+      IMAGE_PLATFORM: linux/amd64
+      KSPM_CHART_TAG: "0.2.2"
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
