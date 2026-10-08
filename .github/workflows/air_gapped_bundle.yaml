@@ -3,7 +3,7 @@ name: KSPM Runtime Air-Gapped Bundle
 on:
   push:
     branches:
-      - main
+      - airgapped-bundle
     paths:
       - 'kspm-runtime/**'
   # workflow_dispatch:
