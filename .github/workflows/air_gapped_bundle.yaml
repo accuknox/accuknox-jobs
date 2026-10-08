@@ -1,25 +1,16 @@
 name: KSPM Runtime Air-Gapped Bundle
 
 on:
-  push:
-    branches:
-      - airgapped-bundle
-    paths:
-      - '.github/workflows/air_gapped_bundle.yaml'
-  # workflow_dispatch:
-  #   inputs:
-  #     kspm_chart_tag:
-  #       description: Optional kspm-chart container image tag to pull and bundle
-  #       required: false
-  #       type: string
-  #     platform:
-  #       description: Container image platform to bundle
-  #       required: true
-  #       default: linux/amd64
-  #       type: choice
-  #       options:
-  #         - linux/amd64
-  #         - linux/arm64
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Container image platform to bundle
+        required: true
+        default: linux/amd64
+        type: choice
+        options:
+          - linux/amd64
+          - linux/arm64
 
 permissions:
   contents: read
@@ -32,10 +23,7 @@ jobs:
       run:
         shell: bash
     env:
-      # IMAGE_PLATFORM: ${{ inputs.platform }}
-      # KSPM_CHART_TAG: ${{ inputs.kspm_chart_tag }}
-      IMAGE_PLATFORM: linux/amd64
-      KSPM_CHART_TAG: "0.2.2"
+      IMAGE_PLATFORM: ${{ inputs.platform }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -73,8 +61,6 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
-          import os
-          import re
           import yaml
 
           images = set()
@@ -102,11 +88,6 @@ jobs:
 
           if not images:
               raise SystemExit("No container images found in the rendered manifests")
-          chart_tag = os.environ.get("KSPM_CHART_TAG", "")
-          if chart_tag:
-              if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,127}", chart_tag):
-                  raise SystemExit("Invalid kspm-chart tag: use a valid container image tag (maximum 128 characters)")
-              images.add(f"public.ecr.aws/k9v9d5v2/kspm-chart:{chart_tag}")
           for image in images:
               if any(character.isspace() for character in image):
                   raise SystemExit(f"Invalid image reference: {image!r}")
