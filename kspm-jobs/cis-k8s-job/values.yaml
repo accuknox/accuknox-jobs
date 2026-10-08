@@ -13,7 +13,8 @@ kubeBench:
   owner: public.ecr.aws/k9v9d5v2
   repository: kube-bench
   tag: "v0.15.5"
-  image: ""
+  # cis112-perf-test-1: pin the tested build for reproducible comparisons.
+  image: "docker.io/accx3435/kube-bench@sha256:b5f8f23f5885bf3005690b8204b572bcc035f68bd921ab10713e0faf55003015"
 
 
 global:
