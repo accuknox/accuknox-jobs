@@ -5,7 +5,7 @@ on:
     branches:
       - airgapped-bundle
     paths:
-      - 'kspm-runtime/**'
+      - '.github/workflows/air_gapped_bundle.yaml'
   # workflow_dispatch:
   #   inputs:
   #     kspm_chart_tag:
