@@ -189,24 +189,21 @@ jobs:
 
       - name: Upload bundle to Hetzner Object Storage
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.HETZNER_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.HETZNER_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.HETZNER_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HETZNER_SECRET_KEY }}
           AWS_SESSION_TOKEN: ''
-          AWS_DEFAULT_REGION: ${{ secrets.HETZNER_REGION }}
+          AWS_DEFAULT_REGION: eu-central
           AWS_EC2_METADATA_DISABLED: 'true'
-          HETZNER_ENDPOINT_URL: ${{ secrets.HETZNER_ENDPOINT_URL }}
-          HETZNER_BUCKET: ${{ secrets.HETZNER_BUCKET }}
         run: |
           set -euo pipefail
-          : "${AWS_ACCESS_KEY_ID:?Missing HETZNER_ACCESS_KEY_ID secret}"
-          : "${AWS_SECRET_ACCESS_KEY:?Missing HETZNER_SECRET_ACCESS_KEY secret}"
-          : "${AWS_DEFAULT_REGION:?Missing HETZNER_REGION secret}"
-          : "${HETZNER_ENDPOINT_URL:?Missing HETZNER_ENDPOINT_URL secret}"
-          : "${HETZNER_BUCKET:?Missing HETZNER_BUCKET secret}"
-          destination="s3://${HETZNER_BUCKET}/kspm-runtime/airgapped-bundle"
-          aws --endpoint-url "$HETZNER_ENDPOINT_URL" s3 cp \
+          : "${AWS_ACCESS_KEY_ID:?Missing HETZNER_ACCESS_KEY secret}"
+          : "${AWS_SECRET_ACCESS_KEY:?Missing HETZNER_SECRET_KEY secret}"
+          ENDPOINT="https://nbg1.your-objectstorage.com"
+          BUCKET="accuknox-onprem-artifacts"
+          destination="s3://${BUCKET}/kspm-runtime/airgapped-bundle"
+          aws --endpoint-url "$ENDPOINT" s3 cp \
             "$BUNDLE_FILE" \
             "$destination/$BUNDLE_FILE" --only-show-errors
-          aws --endpoint-url "$HETZNER_ENDPOINT_URL" s3 cp \
+          aws --endpoint-url "$ENDPOINT" s3 cp \
             "$BUNDLE_FILE.sha256" \
             "$destination/$BUNDLE_FILE.sha256" --only-show-errors
