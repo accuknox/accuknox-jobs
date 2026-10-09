@@ -3,6 +3,12 @@ kind: ClusterRole
 metadata:
   name: {{ .Release.Namespace }}-k8s-assessment-crole
 rules:
+  # Snapshot every discoverable resource, including namespaced CRDs and secrets.
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["get", "list"]
+  - nonResourceURLs: ["/api", "/api/*", "/apis", "/apis/*"]
+    verbs: ["get"]
   # Core Kubernetes resources
   - apiGroups: [""]
     resources:

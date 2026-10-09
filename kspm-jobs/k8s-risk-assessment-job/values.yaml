@@ -4,11 +4,6 @@
 
 registryName: public.ecr.aws/k9v9d5v2
 
-cluster_job:
-  repository: knoxjobs
-  tag: "v0.1.13"
-  image: ""
-
 kubescape:
   repository: k8s-risk-assessment
   tag: "v0.3.15"
@@ -18,8 +13,8 @@ kubescape:
 replicaCount: 1
 
 global:
-  # Empty: discover all namespaces except openshift-ovn-kubernetes.
-  scanNamespaces: []
+  # Optional full artifact HTTP endpoint; otherwise use the existing SaaS host settings.
+  artifactURL: ""
   job:
     resources:
       requests:
@@ -36,11 +31,6 @@ global:
   label: ""
   secretName: ""
   airgapped: false
-  joinToken: ""
-  accessKey: ""
-
-  spire:
-    secretName: "spire-agent-secret"
 
   certEnabled: false   #Set this for cert need to be enabled
   certSecretName: ""  #we need to pass a secret name the cert will be stored in this secret.
@@ -60,15 +50,3 @@ global:
     preserveUpstream: true
 
 authTokenPath: "/secrets/tokens/AUTH_TOKEN"
-joinTokenPath: "/secrets/tokens/JOIN_TOKEN"
-accessKeyPath: "/secrets/tokens/ACCESS_KEY"
-
-
-spirePort: 443
-spireConfigFile: "/jobs/spire/agent.conf"
-
-
-configPaths:
-- "/data/kubescape-cache/allcontrols.json"
-- "/data/kubescape-cache/mitre.json"
-- "/data/kubescape-cache/nsa.json"

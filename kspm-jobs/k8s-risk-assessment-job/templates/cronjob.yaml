@@ -30,78 +30,9 @@ spec:
           tolerations:
             {{- toYaml .Values.global.tolerations | nindent 12 }}
           {{- end }}
-          initContainers:
-            - name: job-init-container
-              imagePullPolicy: IfNotPresent
-              resources:
-              {{- toYaml .Values.global.job.resources | nindent 16 }}
-              image: "{{ include "kubescape.image" . }}"
-              command: ["python3", "/usr/local/bin/scan-control-namespaces.py"]
-              env:
-                - name: CLUSTER_NAME
-                  value: "{{ .Values.global.clusterName }}"
-                - name: AIRGAPPED
-                  value: {{ .Values.global.airgapped | quote }}
-                - name: CONTROLS_CONFIG_URL
-                  value: {{ .Values.global.kraCustomConfig | default "" | quote }}
-                - name: SCAN_NAMESPACES
-                  value: {{ .Values.global.scanNamespaces | default (list) | toJson | quote }}
-              volumeMounts:
-                - name: datapath
-                  mountPath: /data
           containers:
-            - image: "{{ include "cluster_job.image" . }}"
-              name: artifact-api-container
-              args: 
-              - -config 
-              - /jobs/conf/app.yaml
-              imagePullPolicy: IfNotPresent
-              resources:
-              {{- toYaml .Values.global.job.resources | nindent 16 }}
-              volumeMounts:
-                - mountPath: /data
-                  name: datapath
-                - mountPath: /data/augment-and-push-results.sh
-                  name: scriptpath
-                  subPath: augment-and-push-results.sh
-                - name: secret-volume
-                  mountPath: /secrets/tokens
-                  readOnly: true
-                - name: config
-                  mountPath: /jobs/conf/app.yaml
-                  subPath: app.yaml
-              {{- if .Values.global.certEnabled }}
-                - name: certs
-                  mountPath: /certs
-                  readOnly: true
-              {{- end }}              
-                {{- if eq (include "spire.enabled" . ) "true" }}    
-                - name: config
-                  mountPath: /jobs/spire/agent.conf
-                  subPath: agent.conf 
-                - name: spirepath
-                  mountPath: /run/spire/agent
-                {{- end }}
+            {{- include "risk-assessment.container" . | nindent 12 }}
           volumes:
-            - name: datapath
-              emptyDir: {}
-            - name: scriptpath
-              configMap:
-                name: k8s-risk-assessment-job-script-configmap
-            - name: secret-volume
-              secret:
-                secretName: {{ .Values.global.secretName | default "jobs-token" }}
-            - name: config
-              configMap:
-                name: risk-assessment-config-{{ .Release.Name }}
-          {{- if .Values.global.certEnabled }}
-            - name: certs
-              secret:
-                secretName: {{ .Values.global.certSecretName | default "jobs-cert" }}
-          {{- end }}                
-            {{- if eq (include "spire.enabled" . ) "true" }}   
-            - name: spirepath
-              emptyDir: {}
-            {{- end }}
+            {{- include "risk-assessment.volumes" . | nindent 12 }}
           restartPolicy: OnFailure
           serviceAccount: k8s-risk-assessment-job-service-account

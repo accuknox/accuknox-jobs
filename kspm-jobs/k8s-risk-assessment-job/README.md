@@ -2,62 +2,54 @@
 
 A job for scanning cluster misconfiguration through kubescape
 
-Both the Job and CronJob run one control in one namespace at a time. The single
-script `scripts/scan-control-namespaces.py` is copied into the scanner image by
-the Dockerfile and invoked as `/usr/local/bin/scan-control-namespaces.py`.
-No scan/merge scripts are mounted from a ConfigMap.
+Both Job and CronJob use one `k8s-risk-assessment` container. Its image-bundled
+`scripts/scan-and-upload.py` processes all namespaces sequentially:
 
-The script streams the unique control IDs from `allcontrols`, `mitre`, and `nsa` definitions into a disk-backed scan plan. It discovers
-namespaces using the service account token and Kubernetes API, or uses an
-explicit `global.scanNamespaces` list. `openshift-ovn-kubernetes` is excluded.
-For every namespace/control pair it performs these steps in order:
+1. Discover every listable namespaced Kubernetes resource type, including Secrets,
+   Roles, RoleBindings, workloads and custom resources. Download one namespace
+   into a multi-document manifest on disk, with API pagination and streaming JSON.
+2. Run `kubescape scan framework allcontrols,clusterscan,nsa,mitre <manifest.yaml>`
+   against that file, producing `report.json` for that namespace.
+3. Add generation time, deduplicated control definitions and `accuknox_metadata`
+   containing the cluster identity, label and namespace.
+4. Upload the completed report once to the SaaS artifact API as a multipart
+   `file` containing `report.json.tar.gz`, using `Authorization: Bearer AUTH_TOKEN`
+   and `Tenant-Id`. HTTP 200 confirms acceptance; failed uploads retry three times.
+5. Delete the namespace manifest, report, SQLite metadata database, archive and
+   multipart body before moving to the next namespace, including after failures.
 
-1. Run `kubescape scan control <ID> --include-namespaces <namespace>`.
-2. Write the result into a temporary JSON on `/data`.
-3. Merge it through SQLite and atomically update `/data/report.json`.
-4. Close the merge database, remove the temporary JSON, and collect transient
-   Python objects before starting the next scan.
+Failures during collection, scanning or upload are logged, and remaining
+namespaces are attempted. Incomplete snapshots are never uploaded. The job exits
+unsuccessfully after processing all namespaces if any failed. A pod restart starts
+again; this loop does not persist progress checkpoints.
 
-Knoxjobs uploads one final `/data/report.json` after every batch succeeds.
-A failed Kubescape control/namespace scan is logged and skipped; remaining
-batches continue. No JSON from a nonzero-exit scan is merged. The final report
-includes `scanBatchStatus` counts, and `/data/scan-failures.jsonl` lists skipped
-pairs. Successful findings can be uploaded even if some controls could not run;
-a missing control is not treated as a passed control. If all batches fail, the
-init container fails rather than uploading an empty report. Merge/I/O errors
-also fail the init container.
+The service account has read access to all resources and API discovery so new
+namespaced CRDs are included. Cluster-scoped resources (such as ClusterRoles,
+ClusterRoleBindings and Nodes) are outside namespace snapshots. Consequently,
+controls requiring cluster or host context cannot be fully assessed from these
+manifests. Every namespace is included, including `openshift-ovn-kubernetes`.
 
-Completed/failed batches and merged results are checkpointed in
-`/data/.control-ns-scans/merge.sqlite`. Results and successful batch checkpoints
-are committed together. An init-container restart in the same pod resumes the
-plan, skipping already attempted pairs and rebuilding the snapshot if necessary.
-Failed pairs are not retried automatically within that plan. A replacement pod
-gets a fresh emptyDir and starts over. A SIGKILL/OOM can leave a temporary JSON;
-the next attempt removes it before scanning. The checkpoint database is removed
-only after final report generation succeeds. Policy artifacts are not refreshed
-when resuming a saved plan.
+No knoxjobs container is needed. Supply an `AUTH_TOKEN` key in
+`global.secretName` (default `jobs-token`), read from `authTokenPath`. Set
+`global.tenantId`, `global.label`, `global.clusterName` and `global.clusterID`.
+The token's `tenant-id` claim overrides the configured tenant header as in knoxjobs.
+Set `global.artifactURL` to the full endpoint including required query parameters,
+or configure the existing SaaS host settings. Custom CA certificates and
+`global.skipTLSVerification` remain supported for the artifact API; Kubernetes
+API connections always use the service-account CA and token.
 
-SQLite's page cache is capped at approximately 1 MiB, memory mapping is disabled,
-and SQL temporary data is stored on disk. Merge connections close between scans.
-Reports are streamed one record at a time; whole reports are not held in memory.
-Runtime buffers and the current resource/summary record still require RAM, and
-Kubescape still needs working memory. This is not a guarantee that every batch
-fits into 1 GiB. Keep `/data` as disk-backed `emptyDir: {}`, not `medium: Memory`.
-Allow space for the growing SQLite index, old/new final report, and one batch.
+Temporary files stay in private directories on the disk-backed `/data` volume.
+Reports and request bodies are streamed rather than loaded entirely into Python
+memory. Kubescape still needs RAM for one namespace's manifest; a large namespace
+can exceed the configured limit. Policy artifacts are cached on disk across
+namespaces. Secrets are included in snapshots and may appear in uploaded results;
+manifest contents and complete reports are not printed by this script.
 
-Resources and resource/control findings are deduplicated, retaining distinct rule
-evidence and preferring failed observations over passes. Global scores/counters
-and repeated summary entries remain from their first scan; they are not a
-recalculated cluster-wide compliance score. Single-control scans also do not
-recreate the three original framework compliance scores. Cross-namespace checks
-can behave differently when input resources are restricted to one namespace.
-
-Airgapped mode uses image-bundled artifacts copied to `/data/kubescape-cache`.
-Online mode refreshes these disk artifacts once before scanning. Custom controls
-configuration is downloaded once and applied to every batch. Rebuild and publish
-the scanner image and set `kubescape.tag` or `kubescape.image` before deployment.
-Use a knoxjobs image supporting streaming Kubescape uploads. Full report logging
-is disabled. Artifact definitions remain on disk for the uploader's metadata.
+Online mode downloads policy artifacts and the requested `clusterscan` definition.
+Airgapped mode uses image-bundled artifacts. Rebuild and publish the scanner image,
+then update `kubescape.tag` or `kubescape.image` before deploying. Artifact API
+acceptance is verified locally by tests; SaaS retention and display of separate
+namespace artifacts require validation in your environment.
 
 ## Helm install
 

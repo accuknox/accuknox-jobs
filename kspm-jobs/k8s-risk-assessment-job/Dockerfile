@@ -12,9 +12,10 @@ RUN apk add --no-cache ca-certificates python3 py3-ijson
 RUN python3 -c 'import ijson, sqlite3'
 COPY --from=downloader /usr/local/bin/kubescape /usr/local/bin/kubescape
 RUN mkdir -p /opt/kubescape/artifacts && \
-    kubescape download artifacts --output /opt/kubescape/artifacts
+    kubescape download artifacts --output /opt/kubescape/artifacts && \
+    kubescape download framework clusterscan --output /opt/kubescape/artifacts/clusterscan.json
 RUN adduser --disabled-password --no-create-home kubescape
 RUN mkdir -p /data && chown kubescape:kubescape /data
-COPY scripts/scan-control-namespaces.py /usr/local/bin/scan-control-namespaces.py
+COPY scripts/scan-and-upload.py /usr/local/bin/scan-and-upload.py
 USER kubescape
 #ENTRYPOINT ["/usr/local/bin/kubescape"]

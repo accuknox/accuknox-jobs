@@ -44,10 +44,6 @@
 {{- end -}}
 
 
-{{- define "cluster_job.image" -}}
-  {{ include "image-name" (dict "url" .Values.global.registry.url "owner" .Values.registryName "repoName" .Values.cluster_job.repository "tag" .Values.cluster_job.tag "preserve" .Values.global.registry.preserveUpstream "image" .Values.cluster_job.image ) }}
-{{- end -}}
-
 {{- define "kubescape.image" -}}
   {{ include "image-name" (dict "url" .Values.global.registry.url "owner" .Values.registryName "repoName" .Values.kubescape.repository "tag" .Values.kubescape.tag "preserve" .Values.global.registry.preserveUpstream "image" .Values.kubescape.image ) }}
 {{- end -}}
@@ -56,7 +52,8 @@
 {{- define "global.jobURL" -}}
 {{- $root := .Top | default . -}}
 {{- $enableJobs := $root.Values.global.enableJobsUrl | default false -}}
-{{- $url := $root.Values.global.agents.url | default "" -}}
+{{- $agents := $root.Values.global.agents | default dict -}}
+{{- $url := $agents.url | default "" -}}
 {{- $singleEP := $root.Values.global.SingleEndpointDeployment | default false -}}
 
 {{- if and $enableJobs $root.Values.global.cspmHost -}}
@@ -76,117 +73,65 @@ cspm.{{ $url }}
 
 
 
-{{- define "spire.enabled" -}}
-  {{- if or .Values.global.agents.enabled .Values.global.inClusterScan.enabled -}}
-    false
-  {{- else -}}
-    true
-  {{- end -}}
+{{/* One scanner container performs the combined scan and direct HTTP upload. */}}
+{{- define "risk-assessment.container" -}}
+- name: k8s-risk-assessment
+  image: {{ include "kubescape.image" . | quote }}
+  imagePullPolicy: IfNotPresent
+  command: ["python3", "/usr/local/bin/scan-and-upload.py"]
+  resources:
+    {{- toYaml .Values.global.job.resources | nindent 4 }}
+  env:
+    - name: ARTIFACT_URL
+      {{- if .Values.global.artifactURL }}
+      value: {{ .Values.global.artifactURL | quote }}
+      {{- else }}
+      value: {{ printf "https://%s/api/v1/artifact/?tenant_id=%s&data_type=KS&label_id=%s&save_to_s3=true" (include "global.jobURL" .) (printf "%v" .Values.global.tenantId | urlquery) (printf "%v" .Values.global.label | urlquery) | quote }}
+      {{- end }}
+    - name: AUTH_TOKEN_PATH
+      value: {{ .Values.authTokenPath | quote }}
+    - name: TENANT_ID
+      value: {{ .Values.global.tenantId | toString | quote }}
+    - name: CLUSTER_NAME
+      value: {{ .Values.global.clusterName | quote }}
+    - name: CLUSTER_ID
+      value: {{ .Values.global.clusterID | toString | quote }}
+    - name: LABEL_NAME
+      value: {{ .Values.global.label | toString | quote }}
+    - name: AIRGAPPED
+      value: {{ .Values.global.airgapped | quote }}
+    - name: CONTROLS_CONFIG_URL
+      value: {{ .Values.global.kraCustomConfig | default "" | quote }}
+    - name: SKIP_TLS_VERIFICATION
+      value: {{ .Values.global.skipTLSVerification | quote }}
+    {{- if .Values.global.certEnabled }}
+    - name: CA_PATH
+      value: /certs/tls.crt
+    - name: CA_URL
+      value: {{ .Values.global.certURL | default "" | quote }}
+    {{- end }}
+  volumeMounts:
+    - name: datapath
+      mountPath: /data
+    - name: secret-volume
+      mountPath: /secrets/tokens
+      readOnly: true
+    {{- if .Values.global.certEnabled }}
+    - name: certs
+      mountPath: /certs
+      readOnly: true
+    {{- end }}
 {{- end -}}
 
-{{/*
-Return full spire host:
-0. If global spireHost set → use it
-1. If spire enabled AND SingleEndpointDeployment enabled → <url>
-2. If spire enabled → spire.<url>
-3. If SingleEndpointDeployment enabled → <url>
-4. Else → localhost
-*/}}
-
-{{- define "jobs.spireHost" -}}
-{{- $root := .Top | default . -}}
-{{- $spireHost := $root.Values.global.spireHost | default "" -}}
-{{- $spireEnabled := $root.Values.global.agents.enableSpire | default false -}}
-{{- $singleEP := $root.Values.global.SingleEndpointDeployment | default false -}}
-{{- $url := $root.Values.global.agents.url | default "" -}}
-
-{{- if $spireHost -}}
-{{ $spireHost }}
-
-{{- else if and $spireEnabled $singleEP -}}
-{{ $url }}
-
-{{- else if $spireEnabled -}}
-{{ printf "spire.%s" $url }}
-
-{{- else if $singleEP -}}
-{{ $url }}
-
-{{- else -}}
-localhost
-
-{{- end -}}
+{{- define "risk-assessment.volumes" -}}
+- name: datapath
+  emptyDir: {}
+- name: secret-volume
+  secret:
+    secretName: {{ .Values.global.secretName | default "jobs-token" }}
+{{- if .Values.global.certEnabled }}
+- name: certs
+  secret:
+    secretName: {{ .Values.global.certSecretName | default "jobs-cert" }}
 {{- end }}
-
-
-
-
-{{/*
-Return KnoxGateway URL with port:
-1. If spire enabled AND SingleEndpointDeployment enabled → <url>:<port>
-2. If ONLY SingleEndpointDeployment enabled → <url>:<port>
-3. If spire enabled only → knox-gw.<url>:<port>
-4. Else → ""
-*/}}
-{{- define "jobs.knoxGatewayHost" -}}
-{{- $root := .Top | default . -}}
-{{- $spireEnabled := eq (include "spire.enabled" $root) "true" -}}
-{{- $singleEP := $root.Values.global.SingleEndpointDeployment | default false -}}
-{{- $url := $root.Values.global.agents.url | default "" -}}
-{{- $port := int ($root.Values.global.knoxGatewayPort | default 443) -}}
-
-{{- if and $spireEnabled $singleEP -}}
-{{ printf "%s:%d" $url $port }}
-
-{{- else if and (not $spireEnabled) $singleEP -}}
-{{ printf "%s:%d" $url $port }}
-
-{{- else -}}
-{{ printf "knox-gw.%s:%d" $url $port }}
-
-{{- end }}
-{{- end }}
-
-
-
-{{/*
-Return access key URL:
-1. If accessKey exists AND SingleEndpointDeployment enabled → <url>/access-token/api/v1/process
-2. If accessKey exists only → https://cwpp.<url>/access-token/api/v1/process
-3. Else → ""
-*/}}
-{{- define "jobs.accessKeyUrl" -}}
-{{- $root := .Top | default . -}}
-{{- $accessKey := $root.Values.global.agents.accessKey | default "" -}}
-{{- $singleEP := $root.Values.global.SingleEndpointDeployment | default false -}}
-{{- $url := $root.Values.global.agents.url | default "" -}}
-
-{{- if and $accessKey $singleEP -}}
-{{ printf "%s/access-token/api/v1/process" $url }}
-
-{{- else if $accessKey -}}
-{{ printf "https://cwpp.%s/access-token/api/v1/process" $url }}
-
-{{- else -}}
-{{ "" }}
-{{- end }}
-{{- end }}
-
-
-{{/*
-Return cluster name for spire access keys
-*/}}
-{{- define "jobs.clusterName" -}}
-{{- coalesce .Values.global.clusterName .Values.global.agents.clusterName -}}
-{{- end -}}
-
-
-{{- define "spire.agent" -}}
-  {{- if eq .Values.global.agents.enabled true -}}
-    {{- printf "agents-operator.%s.svc.cluster.local:9091" .Release.Namespace -}}
-  {{- else if eq .Values.global.inClusterScan.enabled true -}}
-    {{- printf "kubeshield-spire-agent.%s.svc.cluster.local:9091" .Release.Namespace -}}
-  {{- else -}}
-    "localhost:9091"
-  {{- end -}}
 {{- end -}}
