@@ -12,6 +12,8 @@ kubescape:
   pullPolicy: Always
 
 
+namespaceConcurrency: 1
+
 replicaCount: 1
 
 global:

@@ -220,6 +220,55 @@ class UploadTests(unittest.TestCase):
         with patch.object(api,'discovery',side_effect=discovery):
             self.assertEqual(list(api.resources()),[('/api/v1','widgets','Widget'),('/apis/example.io/v1','widgets','Widget')])
 
+    def test_concurrency_is_bounded_and_failure_does_not_stop_remaining_work(self):
+        release = threading.Event()
+        started = threading.Event()
+        lock = threading.Lock()
+        active = peak = yielded = 0
+        processed = []
+        result = []
+        def namespaces():
+            nonlocal yielded
+            for i in range(20):
+                yielded += 1
+                yield str(i)
+        def worker(namespace):
+            nonlocal active, peak
+            with lock:
+                active += 1
+                peak = max(peak, active)
+                if active == 3:
+                    started.set()
+            if not release.wait(5):
+                raise RuntimeError('worker timed out')
+            with lock:
+                active -= 1
+                processed.append(namespace)
+            return namespace != '0'
+        def run():
+            result.append(module.run_namespaces(namespaces(),worker,3))
+        thread = threading.Thread(target=run)
+        thread.start()
+        try:
+            self.assertTrue(started.wait(5))
+            self.assertEqual(yielded,3)
+            self.assertEqual(peak,3)
+        finally:
+            release.set()
+            thread.join(5)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(result,[(19,1)])
+        self.assertEqual(len(processed),20)
+        self.assertLessEqual(peak,3)
+
+    def test_concurrency_setting_requires_positive_integer(self):
+        for value in ('0','-1','abc','1.5',''):
+            with patch.dict(os.environ,{'NAMESPACE_CONCURRENCY':value}):
+                with self.assertRaisesRegex(ValueError,'positive integer'):
+                    module.namespace_concurrency()
+        with patch.dict(os.environ,{'NAMESPACE_CONCURRENCY':'4'}):
+            self.assertEqual(module.namespace_concurrency(),4)
+
     def test_token_tenant_and_configured_fallback(self):
         payload = base64.urlsafe_b64encode(b'{"tenant-id":42}').decode().rstrip('=')
         url, tenant = module.tenant_settings('https://example.com/?tenant_id=', 'header.'+payload+'.signature', '1')

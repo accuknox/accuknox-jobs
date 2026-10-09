@@ -82,6 +82,11 @@ cspm.{{ $url }}
   resources:
     {{- toYaml .Values.global.job.resources | nindent 4 }}
   env:
+    - name: NAMESPACE_CONCURRENCY
+      valueFrom:
+        configMapKeyRef:
+          name: {{ .Release.Name }}-namespace-scan-config
+          key: NAMESPACE_CONCURRENCY
     - name: ARTIFACT_URL
       {{- if .Values.global.artifactURL }}
       value: {{ .Values.global.artifactURL | quote }}

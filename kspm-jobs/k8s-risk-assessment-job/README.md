@@ -3,7 +3,7 @@
 A job for scanning cluster misconfiguration through kubescape
 
 Both Job and CronJob use one `k8s-risk-assessment` container. Its image-bundled
-`scripts/scan-and-upload.py` processes all namespaces sequentially:
+`scripts/scan-and-upload.py` processes all namespaces with configurable concurrency:
 
 1. Discover every listable namespaced Kubernetes resource type, including Secrets,
    Roles, RoleBindings, workloads and custom resources. Download one namespace
@@ -107,3 +107,18 @@ export CLUSTER_ID=0
 
 curl -s https://raw.githubusercontent.com/accuknox/tools/main/ks/k8srisk.sh | bash
 ```
+
+## Namespace concurrency
+
+Set `namespaceConcurrency: 3` in Helm values to process up to three namespaces
+at once. The chart writes this setting to ConfigMap
+`<release-name>-namespace-scan-config`, key `NAMESPACE_CONCURRENCY`; both Job and
+CronJob read it through their environment. The default is `1`. Only positive
+integers are accepted. ConfigMap changes apply to newly created pods; recreate
+the Job to use a new setting immediately. Helm upgrades restore the Helm value.
+
+Each worker independently downloads, scans, uploads and deletes its namespace
+files. Workers use separate temporary directories and writable Kubescape caches;
+downloaded policy artifacts are shared as input. Only `n` namespace tasks are
+queued at a time. Higher concurrency runs multiple Kubescape processes and
+increases peak RAM and disk use; size container limits accordingly.

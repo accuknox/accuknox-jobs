@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Snapshot, scan, upload and clean up one namespace at a time."""
+from concurrent.futures import ThreadPoolExecutor, wait, FIRST_COMPLETED
 from contextlib import closing
 from datetime import datetime, timezone
 import base64
@@ -299,8 +300,43 @@ class KubernetesAPI:
         return count
 
 
+def namespace_concurrency():
+    value = os.environ.get("NAMESPACE_CONCURRENCY", "1")
+    if not value.isdecimal() or int(value) < 1:
+        raise ValueError("NAMESPACE_CONCURRENCY must be a positive integer")
+    return int(value)
+
+
+def run_namespaces(namespaces, worker, concurrency):
+    """Bound both active workers and queued futures to the configured limit."""
+    namespaces = iter(namespaces)
+    completed = failed = 0
+    with ThreadPoolExecutor(max_workers=concurrency) as pool:
+        pending = set()
+        exhausted = False
+        while pending or not exhausted:
+            while not exhausted and len(pending) < concurrency:
+                try:
+                    namespace = next(namespaces)
+                except StopIteration:
+                    exhausted = True
+                    break
+                pending.add(pool.submit(worker, namespace))
+            if not pending:
+                break
+            done, pending = wait(pending, return_when=FIRST_COMPLETED)
+            for future in done:
+                if future.result():
+                    completed += 1
+                else:
+                    failed += 1
+    return completed, failed
+
+
 def main(data_dir="/data", artifact_dir="/opt/kubescape/artifacts"):
-    print("Namespace manifest scanner: typemeta-v2", flush=True)
+    print("Namespace manifest scanner: concurrency-v3", flush=True)
+    concurrency = namespace_concurrency()
+    print(f"Namespace concurrency: {concurrency}", flush=True)
     url = os.environ.get("ARTIFACT_URL", "")
     parsed = urllib.parse.urlsplit(url)
     if parsed.scheme not in ("https", "http") or not parsed.hostname:
@@ -334,16 +370,18 @@ def main(data_dir="/data", artifact_dir="/opt/kubescape/artifacts"):
             extra = ["--controls-config", str(controls_config)]
         api = KubernetesAPI()
         resources = tuple(api.resources())
-        for namespace in api.namespaces(directory):
+        def process_namespace(namespace):
             try:
                 with tempfile.TemporaryDirectory(prefix="namespace-", dir=directory) as scratch:
                     manifest = Path(scratch) / (namespace + ".manifest.yaml")
                     report = Path(scratch) / "report.json"
                     print(f"Downloading resources for namespace {namespace}", flush=True)
-                    count = api.snapshot(namespace, resources, manifest)
+                    count = KubernetesAPI().snapshot(namespace, resources, manifest)
+                    worker_cache = Path(scratch) / "cache"
+                    worker_cache.mkdir()
                     print(f"Scanning namespace {namespace}: {count} resources", flush=True)
                     command = ["kubescape", "scan", "framework", ",".join(FRAMEWORKS), str(manifest),
-                               "--format", "json", "--format-version", "v2", "--cache-dir", str(cache),
+                               "--format", "json", "--format-version", "v2", "--cache-dir", str(worker_cache),
                                "--use-artifacts-from", str(cache), "--output", str(report),
                                "--cluster-name", metadata["cluster_name"]] + extra
                     subprocess.run(command, check=True)
@@ -352,11 +390,12 @@ def main(data_dir="/data", artifact_dir="/opt/kubescape/artifacts"):
                     body, content_type = prepare_body(report, scratch)
                     print(f"Uploading report for namespace {namespace}", flush=True)
                     upload(body, content_type, url, token, tenant, context)
-                    completed += 1
                 print(f"Deleted manifest, report and temporary files for {namespace}", flush=True)
+                return True
             except Exception as error:
-                failed += 1
                 print(f"Namespace {namespace} failed ({type(error).__name__}: {error}); temporary files deleted; continuing", flush=True)
+                return False
+        completed, failed = run_namespaces(api.namespaces(directory), process_namespace, concurrency)
         print(f"Namespace processing finished: {completed} uploaded, {failed} failed", flush=True)
     if failed:
         raise RuntimeError(f"{failed} namespace(s) failed; all remaining namespaces were attempted")

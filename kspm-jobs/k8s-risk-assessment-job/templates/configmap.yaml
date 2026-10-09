@@ -1,0 +1,11 @@
+{{- $concurrency := toString .Values.namespaceConcurrency -}}
+{{- if not (regexMatch "^[1-9][0-9]*$" $concurrency) -}}
+{{- fail "namespaceConcurrency must be a positive integer" -}}
+{{- end }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-namespace-scan-config
+  namespace: {{ .Release.Namespace }}
+data:
+  NAMESPACE_CONCURRENCY: {{ $concurrency | quote }}
