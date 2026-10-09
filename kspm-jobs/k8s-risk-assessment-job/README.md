@@ -17,8 +17,8 @@ restarting scans inside the same pod; Kubernetes Job retries can still create
 another pod.
 
 Namespace scans run first, using only resources from each namespace. After all
-namespace workers finish, a separate cluster-scoped scan runs with only cluster
-resources. `includeClusterScoped: true` enables that second phase by default
+namespace workers finish, cluster-scoped types are processed sequentially: download one type,
+scan its manifest, and save its report before collecting the next type. `includeClusterScoped: true` enables that second phase by default
 (ConfigMap key `INCLUDE_CLUSTER_SCOPED`); set it to `false` to skip the phase.
 
 ## Resource selection and reports
@@ -32,14 +32,24 @@ For each namespace, collect only:
 - Roles, RoleBindings and ConfigMaps.
 
 Secrets, ReplicaSets and controller-owned Pods are excluded. Cluster collection
-includes ClusterRoles, ClusterRoleBindings, Namespaces, ValidatingWebhookConfigurations
+includes ClusterRoles, ClusterRoleBindings, ValidatingWebhookConfigurations
 and MutatingWebhookConfigurations.
 
 The scanner writes `/data/<namespace>.json` for each namespace and
-`/data/cluster.resources.json` for the cluster scan. These are Kubescape reports,
+separate cluster-scoped reports:
+
+- `/data/clusterrole.json`
+- `/data/clusterrolebinding.json`
+- `/data/validatingwebhookconfiguration.json`
+- `/data/mutatingwebhookconfiguration.json`
+
+Namespace objects are used only for namespace discovery, not as scan input.
+Each cluster manifest contains only one resource type; empty types are skipped.
+Failure of one type is logged, and remaining types are still attempted. These are Kubescape reports,
 not raw manifests. Raw manifests remain in temporary directories under `/data`
 and are deleted when scanning finishes. Report names preserve namespace identity;
-each is uploaded as a separate artifact.
+each is uploaded as a separate artifact. If a namespace name matches a cluster
+report stem, its report uses `/data/namespace.<name>.json` to avoid overwriting.
 
 Namespace and cluster manifests/reports are never merged. Original names,
 namespaces, UIDs, ownerReferences, roleRef, subjects and webhook references remain

@@ -91,37 +91,56 @@ class ResourceTests(unittest.TestCase):
             self.assertEqual(len(paths),2)
             self.assertEqual({d['kind'] for d in m.documents(context)},{'Service','ServiceAccount'})
 
-    def test_namespace_scans_finish_before_separate_cluster_scan(self):
+    def test_namespace_scans_then_download_scan_and_report_each_cluster_type(self):
         with tempfile.TemporaryDirectory() as temp:
             temp=Path(temp);data=temp/'data';(data/'config').mkdir(parents=True)
             (data/'config/uploader.json').write_text('{"jobs":{"authTokenFile":"/secrets/tokens/AUTH_TOKEN"}}')
             artifacts=temp/'artifacts';artifacts.mkdir()
-            cluster_objects=[obj('Namespace','first'),obj('Namespace','second'),obj('ClusterRole','reader')]
-            scans=[]
+            events=[]
+            cluster_resources=[('/apis/rbac.authorization.k8s.io/v1','clusterroles','ClusterRole',False),
+                               ('/apis/rbac.authorization.k8s.io/v1','clusterrolebindings','ClusterRoleBinding',False),
+                               ('/api/v1','namespaces','Namespace',False),
+                               ('/apis/admissionregistration.k8s.io/v1','validatingwebhookconfigurations','ValidatingWebhookConfiguration',False),
+                               ('/apis/admissionregistration.k8s.io/v1','mutatingwebhookconfigurations','MutatingWebhookConfiguration',False)]
             def snapshot(namespace, resources, output):
-                manifest(output,cluster_objects if namespace is None else [obj('RoleBinding','binding',namespace,roleRef={'kind':'ClusterRole','name':'reader'})])
-            def references(cluster,output):
-                manifest(output,[])
-            def scan(source,report,cache,scratch,extra,concurrent_scans=1):
-                docs=list(m.documents(source));scans.append(docs)
-                if source.name == 'cluster.manifest.yaml':
-                    self.assertEqual(len(scans),3)
-                    self.assertTrue(any(d['kind']=='ClusterRole' for d in docs))
-                    self.assertTrue(all('namespace' not in d['metadata'] for d in docs))
+                if namespace is None:
+                    self.assertEqual(len(resources),1)
+                    kind=resources[0][2]
+                    if events:
+                        previous=events[-1][1].lower()
+                        self.assertTrue((data/(previous+'.json')).exists())
+                    events.append(('download',kind))
+                    manifest(output,[obj(kind,'example')])
                 else:
-                    self.assertTrue(all(d['kind']=='RoleBinding' for d in docs))
+                    manifest(output,[obj('RoleBinding','binding',namespace,roleRef={'kind':'ClusterRole','name':'reader'})])
+                return 1
+            def scan(source,report,cache,scratch,extra,concurrent_scans=1):
+                docs=list(m.documents(source))
+                kind=docs[0]['kind']
+                if kind!='RoleBinding':
+                    self.assertTrue((data/'first.json').exists())
+                    self.assertTrue((data/'second.json').exists())
+                    events.append(('scan',kind))
+                    self.assertTrue(all('namespace' not in d['metadata'] for d in docs))
+                self.assertTrue(all(d['kind']==kind for d in docs))
                 report.write_text(json.dumps({'resources':docs}))
             with patch.dict(os.environ,{'AIRGAPPED':'true','NAMESPACE_CONCURRENCY':'2','INCLUDE_CLUSTER_SCOPED':'true'}),patch.object(m,'KubernetesAPI') as api,patch.object(m,'scan_manifest',side_effect=scan):
-                api.return_value.resources.return_value=[('/api/v1','configmaps','ConfigMap',True),('/api/v1','namespaces','Namespace',False)]
+                api.return_value.resources.return_value=[('/api/v1','configmaps','ConfigMap',True)]+cluster_resources
                 api.return_value.namespaces.return_value=iter(['first','second'])
                 api.return_value.snapshot.side_effect=snapshot
-                api.return_value.referenced_context.side_effect=references
                 m.main(data,artifacts)
-            self.assertEqual(len(scans),3)
-            for name in ('first','second','cluster.resources'):
+            self.assertEqual(events,[('download','ClusterRole'),('scan','ClusterRole'),
+                                     ('download','ClusterRoleBinding'),('scan','ClusterRoleBinding'),
+                                     ('download','ValidatingWebhookConfiguration'),('scan','ValidatingWebhookConfiguration'),
+                                     ('download','MutatingWebhookConfiguration'),('scan','MutatingWebhookConfiguration')])
+            for name in ('first','second','clusterrole','clusterrolebinding',
+                         'validatingwebhookconfiguration','mutatingwebhookconfiguration'):
                 self.assertTrue((data/(name+'.json')).exists())
                 conf=json.loads((data/'upload-configs'/(name+'.json')).read_text())
                 self.assertEqual(conf['jobs']['reportFile'],str(data/(name+'.json')))
+            self.assertFalse((data/'cluster.resources.json').exists())
+            self.assertFalse((data/'namespace.json').exists())
+            self.assertFalse((data/'upload-configs/namespace.json').exists())
             api.return_value.referenced_context.assert_not_called()
             self.assertFalse(list(data.glob('resource-scans-*')))
             self.assertFalse((data/'scan-failures.txt').exists())

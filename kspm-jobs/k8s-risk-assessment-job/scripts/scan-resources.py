@@ -314,7 +314,7 @@ def main(data_dir="/data", artifact_dir="/opt/kubescape/artifacts"):
         resources = tuple(api.resources())
         include_cluster = os.environ.get("INCLUDE_CLUSTER_SCOPED", "true").lower() == "true"
         namespace_resources = tuple(resource for resource in resources if resource[3])
-        cluster_resources = tuple(resource for resource in resources if not resource[3])
+        cluster_resources = tuple(resource for resource in resources if not resource[3] and resource[2] != "Namespace")
         namespaces = api.namespaces(directory)
 
         def process_namespace(namespace):
@@ -328,8 +328,12 @@ def main(data_dir="/data", artifact_dir="/opt/kubescape/artifacts"):
                     print(f"Scanning namespace {namespace}: {count} resources, namespace-scoped resources only", flush=True)
                     report = scratch / "report.json"
                     scan_manifest(manifest, report, cache, scratch, extra, concurrent_scans=concurrency)
-                    publish_report(report, namespace, data, uploader_config)
-                print(f"Report ready: {data / (namespace + '.json')}", flush=True)
+                    # Namespace names may equal a cluster report stem.
+                    reserved = {"clusterrole", "clusterrolebinding",
+                                "validatingwebhookconfiguration", "mutatingwebhookconfiguration"}
+                    report_name = "namespace." + namespace if namespace in reserved else namespace
+                    publish_report(report, report_name, data, uploader_config)
+                print(f"Report ready: {data / (report_name + '.json')}", flush=True)
                 return True
             except Exception as error:
                 print(f"Namespace {namespace} failed: {error}; continuing", flush=True)
@@ -339,19 +343,29 @@ def main(data_dir="/data", artifact_dir="/opt/kubescape/artifacts"):
         failed += namespace_failed
         print(f"Namespace scanning finished: {completed} reports, {namespace_failed} failed", flush=True)
         if include_cluster:
-            try:
-                with tempfile.TemporaryDirectory(prefix="cluster-", dir=directory) as scratch:
-                    scratch = Path(scratch)
-                    manifest = scratch / "cluster.manifest.yaml"
-                    print("Collecting cluster-scoped resources after namespace scans", flush=True)
-                    api.snapshot(None, cluster_resources, manifest)
-                    report = scratch / "report.json"
-                    scan_manifest(manifest, report, cache, scratch, extra)
-                    publish_report(report, "cluster.resources", data, uploader_config)
-                print("Cluster-scoped report ready", flush=True)
-            except Exception as error:
-                failed += 1
-                print(f"Cluster scan failed: {error}; completed namespace reports remain available", flush=True)
+            # Complete download -> scan -> report for one type before the next.
+            order = {name: index for index, name in enumerate((
+                "clusterroles", "clusterrolebindings",
+                "validatingwebhookconfigurations", "mutatingwebhookconfigurations"))}
+            for resource in sorted(cluster_resources, key=lambda item: order[item[1]]):
+                kind = resource[2]
+                name = kind.lower()
+                try:
+                    with tempfile.TemporaryDirectory(prefix=name + "-", dir=directory) as scratch:
+                        scratch = Path(scratch)
+                        manifest = scratch / (name + ".manifest.yaml")
+                        print(f"Collecting cluster-scoped type {kind}", flush=True)
+                        count = api.snapshot(None, (resource,), manifest)
+                        if count == 0:
+                            print(f"No {kind} objects found; moving to next type", flush=True)
+                            continue
+                        report = scratch / "report.json"
+                        scan_manifest(manifest, report, cache, scratch, extra)
+                        publish_report(report, name, data, uploader_config)
+                    print(f"Cluster-scoped report ready: {data / (name + '.json')}", flush=True)
+                except Exception as error:
+                    failed += 1
+                    print(f"Cluster-scoped type {kind} failed: {error}; continuing to next type", flush=True)
         else:
             print("Cluster-scoped collection and scan disabled", flush=True)
     if failed:
