@@ -107,25 +107,33 @@ jobs:
           manifest = (bundle / "kspm-runtime-all.yaml").read_text()
           references = set(re.findall(r'(?:public\.ecr\.aws/k9v9d5v2|docker\.io/kubearmor)/[\w.:/@+-]+', manifest))
           images = set()
-          for repository in selection["images"]:
-              matches = {ref for ref in references if ref.startswith((repository + ":", repository + "@"))}
-              if not matches:
-                  raise SystemExit(f"Selected image not found in chart render: {repository}")
-              images.update(matches)
-
           chart = Path("rendered-chart/kspm-runtime")
           operator = chart / "charts/kubearmor-operator"
           if not operator.is_dir():
-              operator = next((chart / "charts").glob("kubearmor-operator-*.tgz"))
-          metadata = yaml.safe_load(subprocess.check_output(["helm", "show", "chart", str(operator)]))
-          values = yaml.safe_load(subprocess.check_output(["helm", "show", "values", str(operator)]))
-          overrides = yaml.safe_load((chart / "values.yaml").read_text())["kubearmor-operator"]
-          for item in selection["kubearmor"]:
-              key = item["config"]
-              config = dict(values["kubearmor"]["images"][key])
-              config.update(overrides.get("kubearmor", {}).get("images", {}).get(key, {}))
-              tag = metadata["version"] if item.get("useChartVersion") and not overrides.get("imagePinning", values["imagePinning"]) else config["tag"]
-              images.add(f'{item["repository"]}:{tag}')
+              operator = next((chart / "charts").glob("kubearmor-operator-*.tgz"), None)
+          metadata = {}
+          values = {}
+          if operator is not None:
+              metadata = yaml.safe_load(subprocess.check_output(["helm", "show", "chart", str(operator)]))
+              values = yaml.safe_load(subprocess.check_output(["helm", "show", "values", str(operator)]))
+          overrides = yaml.safe_load((chart / "values.yaml").read_text()).get("kubearmor-operator", {})
+          for item in selection["images"] + selection["kubearmor"]:
+              repository = item["repository"]
+              matches = {ref for ref in references if ref.startswith((repository + ":", repository + "@"))}
+              if matches:
+                  images.update(matches)
+                  continue
+              config = dict(values.get("kubearmor", {}).get("images", {}).get(item.get("config"), {}))
+              config.update(overrides.get("kubearmor", {}).get("images", {}).get(item.get("config"), {}))
+              tag = config.get("tag")
+              if config and item.get("useChartVersion") and not overrides.get("imagePinning", values.get("imagePinning", False)):
+                  tag = metadata.get("version", tag)
+              if tag:
+                  images.add(f"{repository}:{tag}")
+              else:
+                  fallbacks = {f"{repository}:{tag}" for tag in item["fallbackTags"]}
+                  print(f"Repository absent from chart; using fallback: {', '.join(sorted(fallbacks))}")
+                  images.update(fallbacks)
 
           databases = set()
           def collect(node):
