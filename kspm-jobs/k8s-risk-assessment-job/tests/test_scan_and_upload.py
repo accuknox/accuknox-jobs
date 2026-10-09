@@ -128,7 +128,7 @@ class UploadTests(unittest.TestCase):
             env = {'ARTIFACT_URL':url, 'AUTH_TOKEN_PATH':str(token), 'TENANT_ID':'10',
                    'LABEL_NAME':'label','CLUSTER_NAME':'test','CLUSTER_ID':'42','AIRGAPPED':'true'}
             with patch.dict(os.environ,env,clear=True), patch.object(module.subprocess,'run',side_effect=scan), patch.object(module, 'KubernetesAPI') as api:
-                api.return_value.resources.return_value = [('/api/v1', 'pods')]
+                api.return_value.resources.return_value = [('/api/v1', 'pods', 'Pod')]
                 api.return_value.namespaces.return_value = iter(['first', 'second'])
                 def snapshot(namespace, resources, manifest):
                     self.assertFalse(list(data.glob('scan-upload-*/namespace-*/report.json')))
@@ -186,9 +186,9 @@ class UploadTests(unittest.TestCase):
     def test_streamed_snapshot_pagination_and_all_resource_types(self):
         api = object.__new__(module.KubernetesAPI)
         pages = [
-            {"metadata":{"continue":"next"}, "items":[{"apiVersion":"v1","kind":"Secret","data":{"password":"abc"}}]},
+            {"metadata":{"continue":"next"}, "items":[{"data":{"password":"abc"}}]},
             {"items":[{"apiVersion":"v1","kind":"Secret","metadata":{"name":"second"}}],"metadata":{}},
-            {"items":[{"apiVersion":"rbac.authorization.k8s.io/v1","kind":"Role"}],"metadata":{}}
+            {"items":[{"metadata":{"name":"reader"}}],"metadata":{}}
         ]
         paths = []
         def open_page(path):
@@ -196,10 +196,14 @@ class UploadTests(unittest.TestCase):
             return io.BytesIO(json.dumps(pages.pop(0)).encode())
         with tempfile.TemporaryDirectory() as temp, patch.object(api, 'open', side_effect=open_page):
             manifest = Path(temp)/'ns.yaml'
-            count = api.snapshot('ns', [('/api/v1','secrets'),('/apis/rbac.authorization.k8s.io/v1','roles')],manifest)
+            count = api.snapshot('ns', [('/api/v1','secrets','Secret'),('/apis/rbac.authorization.k8s.io/v1','roles','Role')],manifest)
             docs = [json.loads(line) for line in manifest.read_text().splitlines() if line.startswith('{')]
             self.assertEqual(count, 3)
             self.assertEqual(docs[0]['data']['password'], 'abc')
+            self.assertEqual(docs[0]['apiVersion'], 'v1')
+            self.assertEqual(docs[0]['kind'], 'Secret')
+            self.assertEqual(docs[2]['apiVersion'], 'rbac.authorization.k8s.io/v1')
+            self.assertEqual(docs[2]['kind'], 'Role')
             self.assertIn('continue=next',paths[1])
             self.assertIn('/namespaces/ns/roles?',paths[2])
 
@@ -209,12 +213,12 @@ class UploadTests(unittest.TestCase):
             if path == '/apis':
                 return {'groups':[{'preferredVersion':{'groupVersion':'example.io/v1'}}]}
             return {'resources':[
-                {'name':'widgets','namespaced':True,'verbs':['list']},
+                {'name':'widgets','kind':'Widget','namespaced':True,'verbs':['list']},
                 {'name':'widgets/status','namespaced':True,'verbs':['list']},
                 {'name':'nodes','namespaced':False,'verbs':['list']},
                 {'name':'reviews','namespaced':True,'verbs':['create']}]}
         with patch.object(api,'discovery',side_effect=discovery):
-            self.assertEqual(list(api.resources()),[('/api/v1','widgets'),('/apis/example.io/v1','widgets')])
+            self.assertEqual(list(api.resources()),[('/api/v1','widgets','Widget'),('/apis/example.io/v1','widgets','Widget')])
 
     def test_token_tenant_and_configured_fallback(self):
         payload = base64.urlsafe_b64encode(b'{"tenant-id":42}').decode().rstrip('=')

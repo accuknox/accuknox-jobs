@@ -240,9 +240,9 @@ class KubernetesAPI:
         for version in versions:
             for resource in self.discovery(version)["resources"]:
                 if resource.get("namespaced") and "list" in resource.get("verbs", []) and "/" not in resource["name"]:
-                    yield version, resource["name"]
+                    yield version, resource["name"], resource["kind"]
 
-    def list_into(self, path, out):
+    def list_into(self, path, out, api_version, kind):
         """Stream paginated items as JSON documents (valid multi-document YAML)."""
         continuation = ""
         count = 0
@@ -254,8 +254,20 @@ class KubernetesAPI:
                 for token in events:
                     if token[:2] == ("items.item", "start_map"):
                         out.write("---\n")
-                        copy_value(events, token, out)
-                        out.write("\n")
+                        # API List items can omit TypeMeta. Local file scans require it.
+                        out.write('{"apiVersion":' + encode(api_version) + ',"kind":' + encode(kind))
+                        for field in events:
+                            if field[1] == "end_map":
+                                break
+                            if field[1] != "map_key":
+                                raise ValueError("Invalid Kubernetes resource object")
+                            value = next(events)
+                            if field[2] in ("apiVersion", "kind"):
+                                copy_value(events, value, Discard())
+                            else:
+                                out.write("," + encode(field[2]) + ":")
+                                copy_value(events, value, out)
+                        out.write("}\n")
                         count += 1
                     elif token[:2] == ("metadata.continue", "string"):
                         continuation = token[2]
@@ -266,7 +278,7 @@ class KubernetesAPI:
         # Namespace enumeration is also disk backed, including on very large clusters.
         path = Path(directory) / "namespaces.yaml"
         with path.open("w", encoding="utf-8") as out:
-            self.list_into("/api/v1/namespaces", out)
+            self.list_into("/api/v1/namespaces", out, "v1", "Namespace")
         with path.open(encoding="utf-8") as source:
             for line in source:
                 if line.startswith("{"):
@@ -275,10 +287,10 @@ class KubernetesAPI:
     def snapshot(self, namespace, resources, manifest):
         count = 0
         with Path(manifest).open("w", encoding="utf-8") as out:
-            for version, resource in resources:
+            for version, resource, kind in resources:
                 path = version + "/namespaces/" + urllib.parse.quote(namespace, safe="") + "/" + resource
                 try:
-                    count += self.list_into(path, out)
+                    count += self.list_into(path, out, version.removeprefix("/apis/").removeprefix("/api/"), kind)
                 except urllib.error.HTTPError as error:
                     # Never publish a snapshot silently missing denied/unavailable resources.
                     status = error.code
