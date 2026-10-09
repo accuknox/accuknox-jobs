@@ -22,7 +22,12 @@ knoxjobs:
     limits:
       memory: 1Gi
 
+includeClusterScoped: false
 namespaceConcurrency: 1
+scannerMemory:
+  # Combined Go budget as a percentage of the scanner container's memory limit.
+  percent: 60
+  gogc: 20
 
 replicaCount: 1
 

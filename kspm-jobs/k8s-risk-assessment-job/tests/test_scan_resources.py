@@ -102,11 +102,11 @@ class ResourceTests(unittest.TestCase):
                 manifest(output,cluster_objects if namespace is None else [obj('RoleBinding','binding',namespace,roleRef={'kind':'ClusterRole','name':'reader'})])
             def references(cluster,output):
                 manifest(output,[])
-            def scan(source,report,cache,scratch,extra):
+            def scan(source,report,cache,scratch,extra,concurrent_scans=1):
                 docs=list(m.documents(source));scans.append(docs)
                 self.assertTrue(any(d['kind']=='ClusterRole' for d in docs))
                 report.write_text(json.dumps({'resources':docs}))
-            with patch.dict(os.environ,{'AIRGAPPED':'true','NAMESPACE_CONCURRENCY':'2'}),patch.object(m,'KubernetesAPI') as api,patch.object(m,'scan_manifest',side_effect=scan):
+            with patch.dict(os.environ,{'AIRGAPPED':'true','NAMESPACE_CONCURRENCY':'2','INCLUDE_CLUSTER_SCOPED':'true'}),patch.object(m,'KubernetesAPI') as api,patch.object(m,'scan_manifest',side_effect=scan):
                 api.return_value.resources.return_value=[]
                 api.return_value.snapshot.side_effect=snapshot
                 api.return_value.referenced_context.side_effect=references
@@ -119,6 +119,29 @@ class ResourceTests(unittest.TestCase):
             self.assertFalse(list(data.glob('resource-scans-*')))
             self.assertFalse((data/'scan-failures.txt').exists())
 
+    def test_disabled_cluster_scope_collects_and_scans_only_namespace_objects(self):
+        with tempfile.TemporaryDirectory() as temp:
+            temp=Path(temp);data=temp/'data';(data/'config').mkdir(parents=True)
+            (data/'config/uploader.json').write_text('{"jobs":{}}')
+            artifacts=temp/'artifacts';artifacts.mkdir()
+            def snapshot(namespace,resources,output):
+                self.assertEqual(namespace,'first')
+                self.assertTrue(all(resource[3] for resource in resources))
+                manifest(output,[obj('ConfigMap','cm',namespace)])
+            def scan(source,report,cache,scratch,extra,concurrent_scans=1):
+                self.assertEqual([d['kind'] for d in m.documents(source)],['ConfigMap'])
+                report.write_text('{"results":[]}')
+            with patch.dict(os.environ,{'AIRGAPPED':'true','NAMESPACE_CONCURRENCY':'1','INCLUDE_CLUSTER_SCOPED':'false'}),patch.object(m,'KubernetesAPI') as api,patch.object(m,'scan_manifest',side_effect=scan) as scanning:
+                api.return_value.resources.return_value=[('/api/v1','configmaps','ConfigMap',True),('/api/v1','namespaces','Namespace',False)]
+                api.return_value.namespaces.return_value=iter(['first'])
+                api.return_value.snapshot.side_effect=snapshot
+                m.main(data,artifacts)
+                api.return_value.referenced_context.assert_not_called()
+                self.assertEqual(scanning.call_count,1)
+            self.assertTrue((data/'first.json').exists())
+            self.assertFalse((data/'cluster.resources.json').exists())
+            self.assertFalse((data/'upload-configs/cluster.resources.json').exists())
+
     def test_scan_failure_still_hands_successful_reports_to_uploader(self):
         with tempfile.TemporaryDirectory() as temp:
             temp=Path(temp);data=temp/'data';(data/'config').mkdir(parents=True)
@@ -126,11 +149,11 @@ class ResourceTests(unittest.TestCase):
             artifacts=temp/'artifacts';artifacts.mkdir()
             def snapshot(namespace,resources,output):
                 manifest(output,[obj('Namespace','first'),obj('Namespace','second')] if namespace is None else [obj('ConfigMap','cm',namespace)])
-            def scan(source,report,cache,scratch,extra):
+            def scan(source,report,cache,scratch,extra,concurrent_scans=1):
                 if source.name=='first.manifest.yaml':
                     raise RuntimeError('scan failed')
                 report.write_text('{"results":[]}')
-            with patch.dict(os.environ,{'AIRGAPPED':'true','NAMESPACE_CONCURRENCY':'1'}),patch.object(m,'KubernetesAPI') as api,patch.object(m,'scan_manifest',side_effect=scan):
+            with patch.dict(os.environ,{'AIRGAPPED':'true','NAMESPACE_CONCURRENCY':'1','INCLUDE_CLUSTER_SCOPED':'true'}),patch.object(m,'KubernetesAPI') as api,patch.object(m,'scan_manifest',side_effect=scan):
                 api.return_value.resources.return_value=[]
                 api.return_value.snapshot.side_effect=snapshot
                 api.return_value.referenced_context.side_effect=lambda cluster,output:manifest(output,[])
@@ -155,6 +178,26 @@ class ResourceTests(unittest.TestCase):
             self.assertTrue((temp/'first.json').exists())
             self.assertFalse((temp/'second.json').exists())
             self.assertIn('retaining report and continuing',result.stdout)
+
+    def test_memory_budget_divides_across_concurrent_scans(self):
+        with patch.dict(os.environ, {'SCANNER_MEMORY_LIMIT_BYTES':str(1024**3),
+                                     'SCANNER_MEMORY_PERCENT':'60','SCANNER_GOGC':'20'}, clear=True):
+            single=m.scanner_environment(1)
+            multiple=m.scanner_environment(3)
+            self.assertEqual(single['GOGC'],'20')
+            self.assertEqual(single['GOMEMLIMIT'],str(1024**3*60//100)+'B')
+            self.assertEqual(multiple['GOMEMLIMIT'],str(1024**3*60//100//3)+'B')
+        with patch.dict(os.environ,{'SCANNER_MEMORY_PERCENT':'100'},clear=True):
+            with self.assertRaisesRegex(ValueError,'1 to 90'):
+                m.scanner_environment(1)
+
+    def test_scan_passes_budget_and_reports_killed_process(self):
+        with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ,{'SCANNER_MEMORY_LIMIT_BYTES':str(1024**3)},clear=True):
+            temp=Path(temp);source=temp/'input.yaml';source.write_text('---\n{}\n')
+            with patch.object(m.subprocess,'run',side_effect=subprocess.CalledProcessError(-9,['kubescape'])) as run:
+                with self.assertRaisesRegex(RuntimeError,'SIGKILL'):
+                    m.scan_manifest(source,temp/'report.json',temp,temp,[],2)
+                self.assertEqual(run.call_args.kwargs['env']['GOMEMLIMIT'],str(1024**3*60//100//2)+'B')
 
 
 if __name__=='__main__':

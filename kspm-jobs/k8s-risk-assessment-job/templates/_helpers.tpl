@@ -82,6 +82,27 @@ cspm.{{ $url }}
   resources:
     {{- toYaml .Values.global.job.resources | nindent 4 }}
   env:
+    - name: INCLUDE_CLUSTER_SCOPED
+      valueFrom:
+        configMapKeyRef:
+          name: {{ .Release.Name }}-namespace-scan-config
+          key: INCLUDE_CLUSTER_SCOPED
+    - name: SCANNER_MEMORY_LIMIT_BYTES
+      valueFrom:
+        resourceFieldRef:
+          containerName: k8s-risk-assessment
+          resource: limits.memory
+          divisor: "1"
+    - name: SCANNER_MEMORY_PERCENT
+      valueFrom:
+        configMapKeyRef:
+          name: {{ .Release.Name }}-namespace-scan-config
+          key: SCANNER_MEMORY_PERCENT
+    - name: SCANNER_GOGC
+      valueFrom:
+        configMapKeyRef:
+          name: {{ .Release.Name }}-namespace-scan-config
+          key: SCANNER_GOGC
     - name: NAMESPACE_CONCURRENCY
       valueFrom:
         configMapKeyRef:

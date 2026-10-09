@@ -16,6 +16,14 @@ all available reports have been attempted. Pod restart is disabled to avoid
 restarting scans inside the same pod; Kubernetes Job retries can still create
 another pod.
 
+Cluster-scoped collection and scanning are currently disabled by default with
+`includeClusterScoped: false` (ConfigMap key `INCLUDE_CLUSTER_SCOPED`). Namespace
+listing still discovers which namespaces to scan, but Namespace objects and other
+cluster objects are not added to scan inputs. No cluster report is produced.
+ClusterRole targets and other cluster references cannot be fully evaluated in this
+mode. Set `includeClusterScoped: true` to restore the cluster-context behavior
+outlined below.
+
 ## Resource selection and reports
 
 For each namespace, collect only:
@@ -97,3 +105,18 @@ helm upgrade --install k8s-risk-assessment-job . -n agents -f your-values.yaml
 Tests cover workload selection, paginated exports, missing TypeMeta, cluster
 references, deduplication, report handoff and continuation after scan/upload failures.
 SaaS retention and display of separate artifacts require validation in your environment.
+
+## Scanner memory tuning
+
+The ConfigMap also exposes `SCANNER_MEMORY_PERCENT` and `SCANNER_GOGC`, configured
+by `scannerMemory.percent` (default `60`) and `scannerMemory.gogc` (default `20`).
+The scanner reads its actual container memory limit through the Downward API and
+passes a Go soft memory limit to each Kubescape child. The cluster scan gets the
+full percentage; namespace scans each get that percentage divided by configured
+namespace concurrency. Lower GOGC runs garbage collection more frequently at a
+CPU cost. Each scan logs its manifest size and runtime budget.
+
+These settings reduce GC-related peaks; they do not enforce a hard process limit
+or shrink live resource/policy data. Large manifests or expensive controls can
+still exceed the Kubernetes limit. Keep concurrency at `1` while diagnosing a
+cluster-scan OOM; namespace concurrency does not affect the initial cluster scan.

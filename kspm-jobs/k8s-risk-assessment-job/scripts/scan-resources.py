@@ -104,17 +104,19 @@ class KubernetesAPI:
             return json.load(response)
 
     def resources(self):
+        include_cluster = os.environ.get("INCLUDE_CLUSTER_SCOPED", "false").lower() == "true"
+        selected = NAMESPACED | CLUSTER if include_cluster else NAMESPACED
         versions = ["/api/v1"]
         versions.extend("/apis/" + group["preferredVersion"]["groupVersion"]
                         for group in self.discovery("/apis")["groups"]
-                        if group["name"] in {g for g, _ in NAMESPACED | CLUSTER})
+                        if group["name"] in {g for g, _ in selected})
         for version in versions:
             group = version.split("/")[2] if version.startswith("/apis/") else ""
             for resource in self.discovery(version)["resources"]:
                 key = (group, resource["name"])
                 if "list" in resource.get("verbs", []) and (
                     key in NAMESPACED and resource.get("namespaced") or
-                    key in CLUSTER and not resource.get("namespaced")):
+                    include_cluster and key in CLUSTER and not resource.get("namespaced")):
                     yield version, resource["name"], resource["kind"], resource["namespaced"]
 
     def list_into(self, path, out, api_version, kind, resource):
@@ -145,6 +147,13 @@ class KubernetesAPI:
                 path = version + ("/namespaces/" + urllib.parse.quote(namespace, safe="") if namespaced else "") + "/" + resource
                 count += self.list_into(path, out, version.removeprefix("/apis/").removeprefix("/api/"), kind, resource)
         return count
+
+    def namespaces(self, directory):
+        path = Path(directory) / "namespace-discovery.yaml"
+        with path.open("w", encoding="utf-8") as out:
+            self.list_into("/api/v1/namespaces", out, "v1", "Namespace", "namespaces")
+        for obj in documents(path):
+            yield obj["metadata"]["name"]
 
     def referenced_context(self, cluster_manifest, output):
         """Resolve namespaced targets referenced by cluster bindings/webhooks."""
@@ -214,14 +223,43 @@ def run_namespaces(namespaces, worker, concurrency):
     return completed, failed
 
 
-def scan_manifest(manifest, report, cache, scratch, extra):
+def scanner_environment(concurrent_scans):
+    """Budget Go memory across child processes, leaving headroom for Python."""
+    env = dict(os.environ)
+    limit = env.get("SCANNER_MEMORY_LIMIT_BYTES", "")
+    percent = env.get("SCANNER_MEMORY_PERCENT", "60")
+    gc = env.get("SCANNER_GOGC", "20")
+    if not percent.isdecimal() or not 1 <= int(percent) <= 90:
+        raise ValueError("SCANNER_MEMORY_PERCENT must be an integer from 1 to 90")
+    if not gc.isdecimal() or int(gc) < 1:
+        raise ValueError("SCANNER_GOGC must be a positive integer")
+    env["GOGC"] = gc
+    if limit:
+        if not limit.isdecimal() or int(limit) < 1:
+            raise ValueError("SCANNER_MEMORY_LIMIT_BYTES must be positive bytes")
+        budget = int(limit) * int(percent) // 100 // concurrent_scans
+        env["GOMEMLIMIT"] = str(budget) + "B"
+    return env
+
+
+def scan_manifest(manifest, report, cache, scratch, extra, concurrent_scans=1):
     worker_cache = Path(scratch) / "cache"
     worker_cache.mkdir()
     command = ["kubescape", "scan", "framework", ",".join(FRAMEWORKS), str(manifest),
                "--format", "json", "--format-version", "v2", "--cache-dir", str(worker_cache),
                "--use-artifacts-from", str(cache), "--output", str(report),
                "--cluster-name", os.environ.get("CLUSTER_NAME", ""), "--keep-local", "--use-default"] + extra
-    subprocess.run(command, check=True)
+    env = scanner_environment(concurrent_scans)
+    print(f"Scanning {Path(manifest).name}: {Path(manifest).stat().st_size} manifest bytes, "
+          f"GOMEMLIMIT={env.get('GOMEMLIMIT', 'unset')}, GOGC={env['GOGC']}, "
+          f"concurrent scan budget={concurrent_scans}", flush=True)
+    try:
+        subprocess.run(command, check=True, env=env)
+    except subprocess.CalledProcessError as error:
+        if error.returncode in (-9, 137):
+            raise RuntimeError("Kubescape was killed (SIGKILL); check container OOM status. "
+                               "Go's memory budget cannot free live policy/resource data.") from error
+        raise
     # Validate before handing the file to the uploader, without retaining results.
     with Path(report).open("rb") as source:
         events = iter(ijson.parse(source))
@@ -245,6 +283,7 @@ def publish_report(report, name, data, uploader_config):
 def main(data_dir="/data", artifact_dir="/opt/kubescape/artifacts"):
     print("Namespace/context scanner: two-container-v4", flush=True)
     concurrency = namespace_concurrency()
+    scanner_environment(concurrency)  # Validate tuning before downloads/scans.
     data = Path(data_dir)
     data.mkdir(parents=True, exist_ok=True)
     os.environ["SCAN_DATA_DIR"] = str(data)
@@ -273,20 +312,28 @@ def main(data_dir="/data", artifact_dir="/opt/kubescape/artifacts"):
             extra = ["--controls-config", str(controls)]
         api = KubernetesAPI()
         resources = tuple(api.resources())
-        cluster = directory / "cluster.yaml"
-        api.snapshot(None, resources, cluster)
-        context = directory / "references.yaml"
-        api.referenced_context(cluster, context)
-        shared = directory / "cluster-context.yaml"
-        combine_manifests([cluster, context], shared)
-        try:
-            with tempfile.TemporaryDirectory(prefix="cluster-", dir=directory) as scratch:
-                report = Path(scratch) / "report.json"
-                scan_manifest(shared, report, cache, scratch, extra)
-                publish_report(report, "cluster.resources", data, uploader_config)
-        except Exception as error:
-            failed += 1
-            print(f"Cluster scan failed: {error}; continuing with namespace scans", flush=True)
+        include_cluster = os.environ.get("INCLUDE_CLUSTER_SCOPED", "false").lower() == "true"
+        shared = None
+        if include_cluster:
+            cluster = directory / "cluster.yaml"
+            api.snapshot(None, resources, cluster)
+            context = directory / "references.yaml"
+            api.referenced_context(cluster, context)
+            shared = directory / "cluster-context.yaml"
+            combine_manifests([cluster, context], shared)
+            try:
+                with tempfile.TemporaryDirectory(prefix="cluster-", dir=directory) as scratch:
+                    report = Path(scratch) / "report.json"
+                    scan_manifest(shared, report, cache, scratch, extra)
+                    publish_report(report, "cluster.resources", data, uploader_config)
+            except Exception as error:
+                failed += 1
+                print(f"Cluster scan failed: {error}; continuing with namespace scans", flush=True)
+            namespaces = (obj["metadata"]["name"] for obj in documents(cluster) if obj["kind"] == "Namespace")
+        else:
+            print("Cluster-scoped collection, scan and namespace context disabled", flush=True)
+            resources = tuple(resource for resource in resources if resource[3])
+            namespaces = api.namespaces(directory)
 
         def process_namespace(namespace):
             try:
@@ -295,10 +342,10 @@ def main(data_dir="/data", artifact_dir="/opt/kubescape/artifacts"):
                     local = scratch / "namespace.yaml"
                     KubernetesAPI().snapshot(namespace, resources, local)
                     manifest = scratch / (namespace + ".manifest.yaml")
-                    count = combine_manifests([local, shared], manifest)
-                    print(f"Scanning namespace {namespace} with cluster context: {count} resources", flush=True)
+                    count = combine_manifests([local, shared] if shared else [local], manifest)
+                    print(f"Scanning namespace {namespace}: {count} resources, cluster context={include_cluster}", flush=True)
                     report = scratch / "report.json"
-                    scan_manifest(manifest, report, cache, scratch, extra)
+                    scan_manifest(manifest, report, cache, scratch, extra, concurrent_scans=concurrency)
                     publish_report(report, namespace, data, uploader_config)
                 print(f"Report ready: {data / (namespace + '.json')}", flush=True)
                 return True
@@ -306,7 +353,6 @@ def main(data_dir="/data", artifact_dir="/opt/kubescape/artifacts"):
                 print(f"Namespace {namespace} failed: {error}; continuing", flush=True)
                 return False
 
-        namespaces = (obj["metadata"]["name"] for obj in documents(cluster) if obj["kind"] == "Namespace")
         completed, namespace_failed = run_namespaces(namespaces, process_namespace, concurrency)
         failed += namespace_failed
         print(f"Namespace scanning finished: {completed} reports, {namespace_failed} failed", flush=True)
