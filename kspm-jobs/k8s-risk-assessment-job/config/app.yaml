@@ -9,6 +9,10 @@ jobs:
   dataType: "KS"
   saveToS3: true
   reportFile: "/data/report.json"
+  uploadTimeout: {{ .Values.global.uploadTimeout | default "10m" | quote }}
+  {{- if and .Values.global.riskAssessment.scanNamespaceDumps .Values.global.riskAssessment.namespaceDumpIncrementalUpload }}
+  reportQueueDir: "/data/report-uploads"
+  {{- end }}
   clusterID: {{ .Values.global.clusterID }}
   printData: false
   insecure: {{ .Values.global.skipTLSVerification }}

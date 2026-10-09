@@ -19,6 +19,11 @@ kiem:
 replicaCount: 1
 
 global:
+  kiem:
+    # Go runtime soft limit. Tune below the container memory limit; "" disables it.
+    goMemLimit: "800MiB"
+    concurrencyPolicy: Forbid
+    printData: false
   job:
     resources:
       requests:

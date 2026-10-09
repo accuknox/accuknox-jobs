@@ -9,6 +9,7 @@ jobs:
   dataType: "KB"
   saveToS3: true
   reportFile: "/data/report.json"
+  uploadTimeout: {{ .Values.global.uploadTimeout | default "10m" | quote }}
   clusterID: {{ .Values.global.clusterID }}
   printData: true
   insecure: {{ .Values.global.skipTLSVerification }}

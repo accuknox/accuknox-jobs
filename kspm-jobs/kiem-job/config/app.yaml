@@ -9,8 +9,9 @@ jobs:
   dataType: "KIEM"
   saveToS3: true
   reportFile: "/data/report.json"
+  uploadTimeout: {{ .Values.global.uploadTimeout | default "10m" | quote }}
   clusterID: {{ .Values.global.clusterID }}
-  printData: true
+  printData: {{ .Values.global.kiem.printData }}
   insecure: {{ .Values.global.skipTLSVerification }}
   {{- if .Values.global.certEnabled }}
   caPath: /certs/tls.crt

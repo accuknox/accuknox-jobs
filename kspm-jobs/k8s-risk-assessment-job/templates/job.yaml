@@ -24,14 +24,46 @@ spec:
       tolerations:
         {{- toYaml .Values.global.tolerations | nindent 8 }}
       {{- end }}
+      {{- if and .Values.global.riskAssessment.scanNamespaceDumps .Values.global.riskAssessment.namespaceDumpIncrementalUpload }}
+      containers:
+      {{- else }}
       initContainers:
-        - name: job-init-container
+      {{- end }}
+        - name: {{ ternary "namespace-scanner" "job-init-container" (and .Values.global.riskAssessment.scanNamespaceDumps .Values.global.riskAssessment.namespaceDumpIncrementalUpload) }}
           imagePullPolicy: IfNotPresent
           resources:
           {{- toYaml .Values.global.job.resources | nindent 12 }}
           image: "{{ include "kubescape.image" . }}"
+          {{- if .Values.global.riskAssessment.scanNamespaceDumps }}
+          command: ["python3", "/usr/local/bin/scan-namespace-dumps.py"]
+          {{- else }}
           command: ["python3", "/usr/local/bin/scan-control-namespaces.py"]
+          {{- end }}
           env:
+            {{- if .Values.global.riskAssessment.scanNamespaceDumps }}
+            {{- if .Values.global.riskAssessment.namespaceDumpIncrementalUpload }}
+            - name: REPORT_UPLOAD_DIR
+              value: "/data/report-uploads"
+            {{- end }}
+            - name: DUMP_SCAN_FRAMEWORKS
+              value: {{ .Values.global.riskAssessment.namespaceDumpFrameworks | default (list "mitre" "nsa") | toJson | quote }}
+            - name: GOMEMLIMIT
+              value: {{ .Values.global.riskAssessment.namespaceDumpGoMemLimit | default "500MiB" | quote }}
+            - name: GOGC
+              value: {{ .Values.global.riskAssessment.namespaceDumpGoGC | default "50" | quote }}
+            - name: DUMP_FULL_SCAN_MAX_RESOURCES
+              value: {{ dig "global" "riskAssessment" "namespaceDumpFullScanMaxResources" 200 .Values.AsMap | int | quote }}
+            - name: DUMP_FULL_SCAN_MAX_BYTES
+              value: {{ dig "global" "riskAssessment" "namespaceDumpFullScanMaxBytes" 2097152 .Values.AsMap | int | quote }}
+            - name: DUMP_BATCH_MAX_CONTROLS
+              value: {{ dig "global" "riskAssessment" "namespaceDumpBatchMaxControls" 0 .Values.AsMap | int | quote }}
+            - name: DUMP_FRAMEWORK_BATCHES
+              value: {{ .Values.global.riskAssessment.namespaceDumpFrameworkBatches | default (dict "mitre" (dict "initialControls" 5 "growthStep" 2) "nsa" (dict "initialControls" 20 "growthStep" 0)) | toJson | quote }}
+            - name: DUMP_BATCH_CONTROLS
+              value: {{ dig "global" "riskAssessment" "namespaceDumpBatchControls" 8 .Values.AsMap | int | quote }}
+            - name: DUMP_MEMORY_CEILING_MIB
+              value: {{ .Values.global.riskAssessment.namespaceDumpMemoryCeilingMiB | default 800 | quote }}
+            {{- end }}
             - name: CLUSTER_NAME
               value: "{{ .Values.global.clusterName }}"
             - name: AIRGAPPED
@@ -39,11 +71,13 @@ spec:
             - name: CONTROLS_CONFIG_URL
               value: {{ .Values.global.kraCustomConfig | default "" | quote }}
             - name: SCAN_NAMESPACES
-              value: {{ .Values.global.scanNamespaces | default (list) | toJson | quote }}
+              value: {{ .Values.global.riskAssessment.scanNamespaces | default (list) | toJson | quote }}
           volumeMounts:
             - name: datapath
               mountPath: /data
+      {{- if not (and .Values.global.riskAssessment.scanNamespaceDumps .Values.global.riskAssessment.namespaceDumpIncrementalUpload) }}
       containers:
+      {{- end }}
         - image: "{{ include "cluster_job.image" . }}"
           name: artifact-api-container
           args: 

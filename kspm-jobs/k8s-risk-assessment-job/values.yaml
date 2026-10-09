@@ -6,20 +6,44 @@ registryName: public.ecr.aws/k9v9d5v2
 
 cluster_job:
   repository: knoxjobs
-  tag: "v0.1.13"
+  tag: "v0.1.14"
   image: ""
 
 kubescape:
   repository: k8s-risk-assessment
-  tag: "v0.3.15"
+  tag: "v0.3.16"
   image: ""
 
 
 replicaCount: 1
 
 global:
-  # Empty: discover all namespaces except openshift-ovn-kubernetes.
-  scanNamespaces: []
+  # global timeout for sending data to SaaS
+  uploadTimeout: "10m"
+  riskAssessment:
+    # Dump resources, then scan each complete framework per namespace.
+    # False preserves the existing control/namespace scan workflow.
+    scanNamespaceDumps: true
+    # Requires a knoxjobs image with reportQueueDir support.
+    namespaceDumpIncrementalUpload: true
+    namespaceDumpFrameworks: [ mitre, nsa]
+    namespaceDumpGoMemLimit: "1024MiB"
+    namespaceDumpGoGC: "100"
+    namespaceDumpMemoryCeilingMiB: 1024
+    # Full framework only when both input thresholds are met (includes cluster context).
+    namespaceDumpFullScanMaxResources: 500
+    namespaceDumpFullScanMaxBytes: 4194304
+    namespaceDumpBatchControls: 40
+    namespaceDumpFrameworkBatches:
+      mitre:
+        initialControls: 8
+        growthStep: 8
+      nsa:
+        initialControls: 32
+        growthStep: 16
+    namespaceDumpBatchMaxControls: 64
+    # Empty: discover all namespaces except openshift-ovn-kubernetes.
+    scanNamespaces: []
   job:
     resources:
       requests:

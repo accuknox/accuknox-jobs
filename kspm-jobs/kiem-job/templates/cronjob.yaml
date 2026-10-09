@@ -4,6 +4,7 @@ metadata:
   name: kiem-job
   namespace: {{ .Release.Namespace }}
 spec:
+  concurrencyPolicy: {{ .Values.global.kiem.concurrencyPolicy | quote }}
   schedule: "{{ .Values.global.cronTab }}"  
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 1
@@ -39,6 +40,12 @@ spec:
               env:
                 - name: CLUSTER_NAME
                   value: "{{ .Values.global.clusterName }}"
+                - name: AWS_AUTH_NAMESPACES
+                  value: {{ .Values.global.kiem.awsAuthNamespaces | quote }}
+                {{- if .Values.global.kiem.goMemLimit }}
+                - name: GOMEMLIMIT
+                  value: {{ .Values.global.kiem.goMemLimit | quote }}
+                {{- end }}
               volumeMounts:
                 - name: datapath
                   mountPath: /data
