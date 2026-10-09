@@ -1,19 +1,62 @@
-# Repositories only; tags/digests come from the bundled chart and its render.
+# Prefer chart references; fallback tags apply only when a repository is absent.
 images:
-  - public.ecr.aws/k9v9d5v2/agents-operator
-  - public.ecr.aws/k9v9d5v2/kube-bench
-  - public.ecr.aws/k9v9d5v2/knoxjobs
-  - public.ecr.aws/k9v9d5v2/k8s-risk-assessment
-  - public.ecr.aws/k9v9d5v2/kiem
-  - docker.io/kubearmor/kubearmor-operator
+  - repository: docker.io/kubearmor/kubearmor-operator
+    fallbackTags: [v1.7.4]
+  - repository: public.ecr.aws/k9v9d5v2/agents-operator
+    fallbackTags: [v0.5.7]
+  - repository: public.ecr.aws/k9v9d5v2/background-controller
+    fallbackTags: [v1.18.1]
+  - repository: public.ecr.aws/k9v9d5v2/cleanup-controller
+    fallbackTags: [v1.18.1]
+  - repository: public.ecr.aws/k9v9d5v2/discovery-engine-sumengine
+    fallbackTags: [v0.3.29, v0.3.31]
+  - repository: public.ecr.aws/k9v9d5v2/feeder-service
+    fallbackTags: [v0.10.11, v0.10.12]
+  - repository: public.ecr.aws/k9v9d5v2/k8s-risk-assessment
+    fallbackTags: [v0.3.12, v0.3.15]
+  - repository: public.ecr.aws/k9v9d5v2/kiem
+    fallbackTags: [latest]
+  - repository: public.ecr.aws/k9v9d5v2/knoxguard
+    fallbackTags: [v0.2.4]
+  - repository: public.ecr.aws/k9v9d5v2/knoxjobs
+    fallbackTags: [v0.1.11, v0.1.13]
+  - repository: public.ecr.aws/k9v9d5v2/kube-bench
+    fallbackTags: [v0.15.5]
+  - repository: public.ecr.aws/k9v9d5v2/kubectl
+    fallbackTags: [latest]
+  - repository: public.ecr.aws/k9v9d5v2/kubesheild
+    fallbackTags: [v0.5.0, v0.5.2]
+  - repository: public.ecr.aws/k9v9d5v2/kyverno-cli
+    fallbackTags: [v1.18.1]
+  - repository: public.ecr.aws/k9v9d5v2/kyverno
+    fallbackTags: [v1.18.1]
+  - repository: public.ecr.aws/k9v9d5v2/kyvernopre
+    fallbackTags: [v1.18.1]
+  - repository: public.ecr.aws/k9v9d5v2/policy-enforcement-agent
+    fallbackTags: [v0.9.11, v0.9.12]
+  - repository: public.ecr.aws/k9v9d5v2/rabbitmq
+    fallbackTags: [3.12.2-management]
+  - repository: public.ecr.aws/k9v9d5v2/readiness-checker
+    fallbackTags: [latest]
+  - repository: public.ecr.aws/k9v9d5v2/reports-controller
+    fallbackTags: [v1.18.1]
+  - repository: public.ecr.aws/k9v9d5v2/shared-informer-agent
+    fallbackTags: [v0.8.17, v0.8.18]
 kubearmor:
+  - repository: docker.io/kubearmor/kubearmor
+    config: kubearmor
+    fallbackTags: [stable]
+  - repository: docker.io/kubearmor/kubearmor-init
+    config: kubearmorInit
+    fallbackTags: [stable]
   - repository: docker.io/kubearmor/kubearmor-controller
     config: kubearmorController
-  - repository: docker.io/kubearmor/kubearmor-init
-    config: kubearmorController
+    fallbackTags: [latest]
   - repository: docker.io/kubearmor/kubearmor-relay-server
     config: kubearmorRelay
+    fallbackTags: [latest]
   - repository: docker.io/kubearmor/kubearmor-snitch
     config: kubearmorSnitch
     # Bundle snitch at the chart release version to match the requested pod inventory.
     useChartVersion: true
+    fallbackTags: [v1.7.4]
