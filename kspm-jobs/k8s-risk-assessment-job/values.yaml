@@ -2,11 +2,12 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-registryName: public.ecr.aws/k9v9d5v2
+registryName: docker.io/seswarrajan
+#registryName: public.ecr.aws/k9v9d5v2
 
 kubescape:
   repository: k8s-risk-assessment
-  tag: "v0.3.15"
+  tag: "v0.3.16"
   image: ""
 
 
