@@ -104,7 +104,7 @@ class KubernetesAPI:
             return json.load(response)
 
     def resources(self):
-        include_cluster = os.environ.get("INCLUDE_CLUSTER_SCOPED", "false").lower() == "true"
+        include_cluster = os.environ.get("INCLUDE_CLUSTER_SCOPED", "true").lower() == "true"
         selected = NAMESPACED | CLUSTER if include_cluster else NAMESPACED
         versions = ["/api/v1"]
         versions.extend("/apis/" + group["preferredVersion"]["groupVersion"]
@@ -312,38 +312,20 @@ def main(data_dir="/data", artifact_dir="/opt/kubescape/artifacts"):
             extra = ["--controls-config", str(controls)]
         api = KubernetesAPI()
         resources = tuple(api.resources())
-        include_cluster = os.environ.get("INCLUDE_CLUSTER_SCOPED", "false").lower() == "true"
-        shared = None
-        if include_cluster:
-            cluster = directory / "cluster.yaml"
-            api.snapshot(None, resources, cluster)
-            context = directory / "references.yaml"
-            api.referenced_context(cluster, context)
-            shared = directory / "cluster-context.yaml"
-            combine_manifests([cluster, context], shared)
-            try:
-                with tempfile.TemporaryDirectory(prefix="cluster-", dir=directory) as scratch:
-                    report = Path(scratch) / "report.json"
-                    scan_manifest(shared, report, cache, scratch, extra)
-                    publish_report(report, "cluster.resources", data, uploader_config)
-            except Exception as error:
-                failed += 1
-                print(f"Cluster scan failed: {error}; continuing with namespace scans", flush=True)
-            namespaces = (obj["metadata"]["name"] for obj in documents(cluster) if obj["kind"] == "Namespace")
-        else:
-            print("Cluster-scoped collection, scan and namespace context disabled", flush=True)
-            resources = tuple(resource for resource in resources if resource[3])
-            namespaces = api.namespaces(directory)
+        include_cluster = os.environ.get("INCLUDE_CLUSTER_SCOPED", "true").lower() == "true"
+        namespace_resources = tuple(resource for resource in resources if resource[3])
+        cluster_resources = tuple(resource for resource in resources if not resource[3])
+        namespaces = api.namespaces(directory)
 
         def process_namespace(namespace):
             try:
                 with tempfile.TemporaryDirectory(prefix="namespace-", dir=directory) as scratch:
                     scratch = Path(scratch)
                     local = scratch / "namespace.yaml"
-                    KubernetesAPI().snapshot(namespace, resources, local)
+                    KubernetesAPI().snapshot(namespace, namespace_resources, local)
                     manifest = scratch / (namespace + ".manifest.yaml")
-                    count = combine_manifests([local, shared] if shared else [local], manifest)
-                    print(f"Scanning namespace {namespace}: {count} resources, cluster context={include_cluster}", flush=True)
+                    count = combine_manifests([local], manifest)
+                    print(f"Scanning namespace {namespace}: {count} resources, namespace-scoped resources only", flush=True)
                     report = scratch / "report.json"
                     scan_manifest(manifest, report, cache, scratch, extra, concurrent_scans=concurrency)
                     publish_report(report, namespace, data, uploader_config)
@@ -356,6 +338,22 @@ def main(data_dir="/data", artifact_dir="/opt/kubescape/artifacts"):
         completed, namespace_failed = run_namespaces(namespaces, process_namespace, concurrency)
         failed += namespace_failed
         print(f"Namespace scanning finished: {completed} reports, {namespace_failed} failed", flush=True)
+        if include_cluster:
+            try:
+                with tempfile.TemporaryDirectory(prefix="cluster-", dir=directory) as scratch:
+                    scratch = Path(scratch)
+                    manifest = scratch / "cluster.manifest.yaml"
+                    print("Collecting cluster-scoped resources after namespace scans", flush=True)
+                    api.snapshot(None, cluster_resources, manifest)
+                    report = scratch / "report.json"
+                    scan_manifest(manifest, report, cache, scratch, extra)
+                    publish_report(report, "cluster.resources", data, uploader_config)
+                print("Cluster-scoped report ready", flush=True)
+            except Exception as error:
+                failed += 1
+                print(f"Cluster scan failed: {error}; completed namespace reports remain available", flush=True)
+        else:
+            print("Cluster-scoped collection and scan disabled", flush=True)
     if failed:
         # Let knoxjobs upload successful reports before signalling partial failure.
         (data / "scan-failures.txt").write_text(f"{failed} scan(s) failed\n")

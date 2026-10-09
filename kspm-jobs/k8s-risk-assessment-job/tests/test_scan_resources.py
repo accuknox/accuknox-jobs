@@ -91,7 +91,7 @@ class ResourceTests(unittest.TestCase):
             self.assertEqual(len(paths),2)
             self.assertEqual({d['kind'] for d in m.documents(context)},{'Service','ServiceAccount'})
 
-    def test_pipeline_writes_namespace_and_cluster_reports_and_keeps_context(self):
+    def test_namespace_scans_finish_before_separate_cluster_scan(self):
         with tempfile.TemporaryDirectory() as temp:
             temp=Path(temp);data=temp/'data';(data/'config').mkdir(parents=True)
             (data/'config/uploader.json').write_text('{"jobs":{"authTokenFile":"/secrets/tokens/AUTH_TOKEN"}}')
@@ -104,10 +104,16 @@ class ResourceTests(unittest.TestCase):
                 manifest(output,[])
             def scan(source,report,cache,scratch,extra,concurrent_scans=1):
                 docs=list(m.documents(source));scans.append(docs)
-                self.assertTrue(any(d['kind']=='ClusterRole' for d in docs))
+                if source.name == 'cluster.manifest.yaml':
+                    self.assertEqual(len(scans),3)
+                    self.assertTrue(any(d['kind']=='ClusterRole' for d in docs))
+                    self.assertTrue(all('namespace' not in d['metadata'] for d in docs))
+                else:
+                    self.assertTrue(all(d['kind']=='RoleBinding' for d in docs))
                 report.write_text(json.dumps({'resources':docs}))
             with patch.dict(os.environ,{'AIRGAPPED':'true','NAMESPACE_CONCURRENCY':'2','INCLUDE_CLUSTER_SCOPED':'true'}),patch.object(m,'KubernetesAPI') as api,patch.object(m,'scan_manifest',side_effect=scan):
-                api.return_value.resources.return_value=[]
+                api.return_value.resources.return_value=[('/api/v1','configmaps','ConfigMap',True),('/api/v1','namespaces','Namespace',False)]
+                api.return_value.namespaces.return_value=iter(['first','second'])
                 api.return_value.snapshot.side_effect=snapshot
                 api.return_value.referenced_context.side_effect=references
                 m.main(data,artifacts)
@@ -116,6 +122,7 @@ class ResourceTests(unittest.TestCase):
                 self.assertTrue((data/(name+'.json')).exists())
                 conf=json.loads((data/'upload-configs'/(name+'.json')).read_text())
                 self.assertEqual(conf['jobs']['reportFile'],str(data/(name+'.json')))
+            api.return_value.referenced_context.assert_not_called()
             self.assertFalse(list(data.glob('resource-scans-*')))
             self.assertFalse((data/'scan-failures.txt').exists())
 
@@ -154,7 +161,8 @@ class ResourceTests(unittest.TestCase):
                     raise RuntimeError('scan failed')
                 report.write_text('{"results":[]}')
             with patch.dict(os.environ,{'AIRGAPPED':'true','NAMESPACE_CONCURRENCY':'1','INCLUDE_CLUSTER_SCOPED':'true'}),patch.object(m,'KubernetesAPI') as api,patch.object(m,'scan_manifest',side_effect=scan):
-                api.return_value.resources.return_value=[]
+                api.return_value.resources.return_value=[('/api/v1','configmaps','ConfigMap',True),('/api/v1','namespaces','Namespace',False)]
+                api.return_value.namespaces.return_value=iter(['first','second'])
                 api.return_value.snapshot.side_effect=snapshot
                 api.return_value.referenced_context.side_effect=lambda cluster,output:manifest(output,[])
                 m.main(data,artifacts)

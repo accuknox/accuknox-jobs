@@ -16,13 +16,10 @@ all available reports have been attempted. Pod restart is disabled to avoid
 restarting scans inside the same pod; Kubernetes Job retries can still create
 another pod.
 
-Cluster-scoped collection and scanning are currently disabled by default with
-`includeClusterScoped: false` (ConfigMap key `INCLUDE_CLUSTER_SCOPED`). Namespace
-listing still discovers which namespaces to scan, but Namespace objects and other
-cluster objects are not added to scan inputs. No cluster report is produced.
-ClusterRole targets and other cluster references cannot be fully evaluated in this
-mode. Set `includeClusterScoped: true` to restore the cluster-context behavior
-outlined below.
+Namespace scans run first, using only resources from each namespace. After all
+namespace workers finish, a separate cluster-scoped scan runs with only cluster
+resources. `includeClusterScoped: true` enables that second phase by default
+(ConfigMap key `INCLUDE_CLUSTER_SCOPED`); set it to `false` to skip the phase.
 
 ## Resource selection and reports
 
@@ -44,24 +41,17 @@ not raw manifests. Raw manifests remain in temporary directories under `/data`
 and are deleted when scanning finishes. Report names preserve namespace identity;
 each is uploaded as a separate artifact.
 
-Each namespace scan includes the cluster snapshot in the same input manifest.
-Original names, namespaces, UIDs, labels, ownerReferences, roleRef, subjects and
-webhook references are preserved. Namespaced ServiceAccounts referenced by
-ClusterRoleBindings and Services referenced by admission webhooks are fetched as
-shared reference context, including targets in other namespaces. Duplicate objects
-are removed using a disk-backed index before scanning. Missing targets are logged
-as dangling references rather than invented. Authorization and API failures abort
-collection of the shared context.
-
-Cluster resources can appear in multiple reports because they are scan context.
-These snapshots preserve links among the selected objects; they do not provide
-host data or resources excluded above, and live API collection is not a single
-atomic point-in-time snapshot.
+Namespace and cluster manifests/reports are never merged. Original names,
+namespaces, UIDs, ownerReferences, roleRef, subjects and webhook references remain
+in their respective objects. Cross-scope targets are absent from each isolated
+scan, so controls requiring both scopes cannot be fully evaluated. No additional
+ServiceAccounts or Services are fetched for the cluster scan.
 
 ## Configuration
 
 ```yaml
 namespaceConcurrency: 1
+includeClusterScoped: true
 kubescape:
   tag: v0.3.16
   pullPolicy: Always
@@ -87,7 +77,7 @@ only to the selected resource types and API discovery.
 integers are accepted. ConfigMap changes apply to new pods. Policy artifacts are
 shared as input; writable caches and temporary files are isolated per worker.
 Increasing concurrency increases peak memory and disk consumption. One resource
-object is parsed at a time, but Kubescape loads the namespace plus cluster context.
+object is parsed at a time, but Kubescape loads the namespace manifest or separate cluster manifest.
 Reports for all namespaces accumulate on disk before the uploader starts, so size
 `/data` storage accordingly.
 
@@ -119,4 +109,4 @@ CPU cost. Each scan logs its manifest size and runtime budget.
 These settings reduce GC-related peaks; they do not enforce a hard process limit
 or shrink live resource/policy data. Large manifests or expensive controls can
 still exceed the Kubernetes limit. Keep concurrency at `1` while diagnosing a
-cluster-scan OOM; namespace concurrency does not affect the initial cluster scan.
+cluster-scan OOM; namespace concurrency does not affect the separate cluster scan.
