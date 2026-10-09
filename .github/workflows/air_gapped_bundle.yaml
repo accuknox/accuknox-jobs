@@ -88,42 +88,10 @@ jobs:
       - name: Extract unique image references
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          from pathlib import Path
-          import yaml
-
-          images = set()
-
-          def collect(node):
-              if isinstance(node, dict):
-                  for key, value in node.items():
-                      if key == "image" or str(key).endswith("Image"):
-                          if isinstance(value, str) and value.strip():
-                              images.add(value.strip())
-                      collect(value)
-                  # Operators can create workloads using images configured in env.
-                  name = str(node.get("name", ""))
-                  value = node.get("value")
-                  if name.endswith("_IMAGE") and isinstance(value, str) and value.strip():
-                      images.add(value.strip())
-              elif isinstance(node, list):
-                  for item in node:
-                      collect(item)
-
-          with Path("bundle/kspm-runtime-all.yaml").open() as manifest:
-              for document in yaml.safe_load_all(manifest):
-                  if isinstance(document, dict) and document.get("kind") != "CustomResourceDefinition":
-                      collect(document)
-
-          if not images:
-              raise SystemExit("No container images found in the rendered manifests")
-          for image in images:
-              if any(character.isspace() for character in image):
-                  raise SystemExit(f"Invalid image reference: {image!r}")
-          Path("bundle/images.txt").write_text("\n".join(sorted(images)) + "\n")
-          print(f"Found {len(images)} unique images:")
-          print(Path("bundle/images.txt").read_text())
-          PY
+          grep -oE '(public\.ecr\.aws/k9v9d5v2|docker\.io/kubearmor)/[[:alnum:]_.:/@+-]+' \
+            bundle/kspm-runtime-all.yaml | sort -u > bundle/images.txt
+          echo "Found $(wc -l < bundle/images.txt) unique images:"
+          cat bundle/images.txt
 
       - name: Set up AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
