@@ -1,0 +1,17 @@
+# Repositories only; tags/digests come from the bundled chart and its render.
+images:
+  - public.ecr.aws/k9v9d5v2/agents-operator
+  - public.ecr.aws/k9v9d5v2/kube-bench
+  - public.ecr.aws/k9v9d5v2/knoxjobs
+  - public.ecr.aws/k9v9d5v2/k8s-risk-assessment
+  - public.ecr.aws/k9v9d5v2/kiem
+  - docker.io/kubearmor/kubearmor-operator
+kubearmor:
+  - repository: docker.io/kubearmor/kubearmor-controller
+    config: kubearmorController
+  - repository: docker.io/kubearmor/kubearmor-relay-server
+    config: kubearmorRelay
+  - repository: docker.io/kubearmor/kubearmor-snitch
+    config: kubearmorSnitch
+    # Bundle snitch at the chart release version to match the requested pod inventory.
+    useChartVersion: true

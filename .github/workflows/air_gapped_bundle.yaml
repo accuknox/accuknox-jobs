@@ -85,13 +85,65 @@ jobs:
             --set global.inClusterScan.enabled=true \
             --include-crds > ../../bundle/kspm-runtime-all.yaml
 
-      - name: Extract unique image references
+      - name: Prepare container and database lists
         run: |
           set -euo pipefail
-          grep -oE '(public\.ecr\.aws/k9v9d5v2|docker\.io/kubearmor)/[[:alnum:]_.:/@+-]+' \
-            bundle/kspm-runtime-all.yaml | sort -u > bundle/images.txt
-          echo "Found $(wc -l < bundle/images.txt) unique images:"
-          cat bundle/images.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          import subprocess
+          import yaml
+
+          bundle = Path("bundle")
+          selection = yaml.safe_load(Path(".github/workflows/air_gapped_images.txt").read_text())
+          manifest = (bundle / "kspm-runtime-all.yaml").read_text()
+          references = set(re.findall(r'(?:public\.ecr\.aws/k9v9d5v2|docker\.io/kubearmor)/[\w.:/@+-]+', manifest))
+          images = set()
+          for repository in selection["images"]:
+              matches = {ref for ref in references if ref.startswith((repository + ":", repository + "@"))}
+              if not matches:
+                  raise SystemExit(f"Selected image not found in chart render: {repository}")
+              images.update(matches)
+
+          chart = Path("rendered-chart/kspm-runtime")
+          operator = chart / "charts/kubearmor-operator"
+          if not operator.is_dir():
+              operator = next((chart / "charts").glob("kubearmor-operator-*.tgz"))
+          metadata = yaml.safe_load(subprocess.check_output(["helm", "show", "chart", str(operator)]))
+          values = yaml.safe_load(subprocess.check_output(["helm", "show", "values", str(operator)]))
+          overrides = yaml.safe_load((chart / "values.yaml").read_text())["kubearmor-operator"]
+          for item in selection["kubearmor"]:
+              key = item["config"]
+              config = dict(values["kubearmor"]["images"][key])
+              config.update(overrides.get("kubearmor", {}).get("images", {}).get(key, {}))
+              tag = metadata["version"] if item.get("useChartVersion") and not overrides.get("imagePinning", values["imagePinning"]) else config["tag"]
+              images.add(f'{item["repository"]}:{tag}')
+
+          databases = set()
+          def collect(node):
+              if isinstance(node, dict):
+                  if node.get("name") in ("TRIVY_DB_REPOSITORY", "TRIVY_JAVA_DB_REPOSITORY"):
+                      databases.update(ref.strip() for ref in node.get("value", "").split(",") if ref.strip())
+                  for value in node.values():
+                      collect(value)
+              elif isinstance(node, list):
+                  for value in node:
+                      collect(value)
+          for document in yaml.safe_load_all(manifest):
+              if isinstance(document, dict) and document.get("kind") != "CustomResourceDefinition":
+                  collect(document)
+          if not databases:
+              raise SystemExit("No Trivy database repositories found in chart render")
+          (bundle / "images.txt").write_text("\n".join(sorted(images)) + "\n")
+          (bundle / "trivy-db-references.txt").write_text("\n".join(sorted(databases)) + "\n")
+          print("Container images:\n" + (bundle / "images.txt").read_text())
+          print("Database artifacts:\n" + (bundle / "trivy-db-references.txt").read_text())
+          PY
+
+      - name: Install ORAS for database artifacts
+        uses: oras-project/setup-oras@v1
+        with:
+          version: 1.3.1
 
       - name: Set up AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -130,10 +182,23 @@ jobs:
           docker save --output bundle/images.tar "${images[@]}"
           printf '%s\n' "$IMAGE_PLATFORM" > bundle/platform.txt
 
+      - name: Save Trivy databases as OCI layouts
+        run: |
+          set -euo pipefail
+          mkdir -p bundle/trivy-databases
+          : > bundle/trivy-db-layouts.tsv
+          index=0
+          while IFS= read -r reference; do
+            layout="trivy-databases/db-${index}"
+            oras cp --to-oci-layout "$reference" "bundle/${layout}:database"
+            printf '%s\t%s\n' "$reference" "$layout" >> bundle/trivy-db-layouts.tsv
+            index=$((index + 1))
+          done < bundle/trivy-db-references.txt
+
       - name: Create bundle and checksums
         run: |
           set -euo pipefail
-          (cd bundle && sha256sum kspm-runtime-all.yaml images.txt images.tar image-metadata.json platform.txt chart-metadata.yaml kspm-runtime-*.tgz > SHA256SUMS)
+          (cd bundle && sha256sum kspm-runtime-all.yaml images.txt images.tar image-metadata.json platform.txt chart-metadata.yaml kspm-runtime-*.tgz trivy-db-references.txt trivy-db-layouts.tsv > SHA256SUMS && find trivy-databases -type f -exec sha256sum {} + | sort >> SHA256SUMS)
           chart_version=$(python3 -c 'import yaml; print(yaml.safe_load(open("bundle/chart-metadata.yaml"))["version"])')
           if [[ ! "$chart_version" =~ ^[A-Za-z0-9_][A-Za-z0-9_.+-]*$ ]]; then
             echo "::error::Invalid chart version for bundle filename"
