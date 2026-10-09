@@ -77,7 +77,7 @@ cspm.{{ $url }}
 {{- define "risk-assessment.container" -}}
 - name: k8s-risk-assessment
   image: {{ include "kubescape.image" . | quote }}
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: {{ .Values.kubescape.pullPolicy | default "Always" }}
   command: ["python3", "/usr/local/bin/scan-and-upload.py"]
   resources:
     {{- toYaml .Values.global.job.resources | nindent 4 }}

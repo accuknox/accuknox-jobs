@@ -300,6 +300,7 @@ class KubernetesAPI:
 
 
 def main(data_dir="/data", artifact_dir="/opt/kubescape/artifacts"):
+    print("Namespace manifest scanner: typemeta-v2", flush=True)
     url = os.environ.get("ARTIFACT_URL", "")
     parsed = urllib.parse.urlsplit(url)
     if parsed.scheme not in ("https", "http") or not parsed.hostname:

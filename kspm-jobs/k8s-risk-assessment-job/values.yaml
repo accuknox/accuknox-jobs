@@ -9,6 +9,7 @@ kubescape:
   repository: k8s-risk-assessment
   tag: "v0.3.16"
   image: ""
+  pullPolicy: Always
 
 
 replicaCount: 1
