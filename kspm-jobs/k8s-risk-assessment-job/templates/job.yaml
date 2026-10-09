@@ -24,9 +24,13 @@ spec:
       tolerations:
         {{- toYaml .Values.global.tolerations | nindent 8 }}
       {{- end }}
-      containers:
+      securityContext:
+        fsGroup: 1000
+      initContainers:
         {{- include "risk-assessment.container" . | nindent 8 }}
+      containers:
+        {{- include "risk-assessment.uploader" . | nindent 8 }}
       volumes:
         {{- include "risk-assessment.volumes" . | nindent 8 }}
-      restartPolicy: OnFailure
+      restartPolicy: Never
       serviceAccount: k8s-risk-assessment-job-service-account

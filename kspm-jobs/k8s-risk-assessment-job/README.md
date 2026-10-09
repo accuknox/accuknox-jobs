@@ -1,124 +1,99 @@
-# AccuKnox k8s-risk-assessment Job
+# AccuKnox Kubernetes risk assessment Job
 
-A job for scanning cluster misconfiguration through kubescape
+Job and CronJob use two containers:
 
-Both Job and CronJob use one `k8s-risk-assessment` container. Its image-bundled
-`scripts/scan-and-upload.py` processes all namespaces with configurable concurrency:
+- Init container `k8s-risk-assessment` downloads manifests and runs Kubescape.
+- Container `artifact-api-container` runs knoxjobs once per completed report,
+  uploading artifacts with the `AUTH_TOKEN` from the existing secret.
 
-1. Discover every listable namespaced Kubernetes resource type, including Secrets,
-   Roles, RoleBindings, workloads and custom resources. Download one namespace
-   into a multi-document manifest on disk, with API pagination and streaming JSON.
-2. Run `kubescape scan framework allcontrols,clusterscan,nsa,mitre <manifest.yaml>`
-   against that file, producing `report.json` for that namespace.
-3. Add generation time, deduplicated control definitions and `accuknox_metadata`
-   containing the cluster identity, label and namespace.
-4. Upload the completed report once to the SaaS artifact API as a multipart
-   `file` containing `report.json.tar.gz`, using `Authorization: Bearer AUTH_TOKEN`
-   and `Tenant-Id`. HTTP 200 confirms acceptance; failed uploads retry three times.
-5. Delete the namespace manifest, report, SQLite metadata database, archive and
-   multipart body before moving to the next namespace, including after failures.
+The implementation references `/home/eswar/WORK/knoxjobs`. Set `knoxjobs.image`
+to an image built from that repository, including its streaming KS publisher.
+`knoxjobs.binaryPath` defaults to `/home/jobs/job`, matching its Dockerfile.
+The uploader uses HTTP, with SPIRE disabled, and continues after failed uploads.
+A failed upload retains its report; a successful upload deletes its report and
+per-report configuration. A partial scan/upload failure makes the job fail after
+all available reports have been attempted. Pod restart is disabled to avoid
+restarting scans inside the same pod; Kubernetes Job retries can still create
+another pod.
 
-Failures during collection, scanning or upload are logged, and remaining
-namespaces are attempted. Incomplete snapshots are never uploaded. The job exits
-unsuccessfully after processing all namespaces if any failed. A pod restart starts
-again; this loop does not persist progress checkpoints.
+## Resource selection and reports
 
-The service account has read access to all resources and API discovery so new
-namespaced CRDs are included. Cluster-scoped resources (such as ClusterRoles,
-ClusterRoleBindings and Nodes) are outside namespace snapshots. Consequently,
-controls requiring cluster or host context cannot be fully assessed from these
-manifests. Every namespace is included, including `openshift-ovn-kubernetes`.
+For each namespace, collect only:
 
-No knoxjobs container is needed. Supply an `AUTH_TOKEN` key in
-`global.secretName` (default `jobs-token`), read from `authTokenPath`. Set
-`global.tenantId`, `global.label`, `global.clusterName` and `global.clusterID`.
-The token's `tenant-id` claim overrides the configured tenant header as in knoxjobs.
-Set `global.artifactURL` to the full endpoint including required query parameters,
-or configure the existing SaaS host settings. Custom CA certificates and
-`global.skipTLSVerification` remain supported for the artifact API; Kubernetes
-API connections always use the service-account CA and token.
+- Pods without owner references.
+- Deployments, StatefulSets, DaemonSets.
+- Jobs not owned by CronJobs, and CronJobs themselves.
+- Services, Ingresses, NetworkPolicies, ServiceAccounts.
+- Roles, RoleBindings and ConfigMaps.
 
-Temporary files stay in private directories on the disk-backed `/data` volume.
-Reports and request bodies are streamed rather than loaded entirely into Python
-memory. Kubescape still needs RAM for one namespace's manifest; a large namespace
-can exceed the configured limit. Policy artifacts are cached on disk across
-namespaces. Secrets are included in snapshots and may appear in uploaded results;
-manifest contents and complete reports are not printed by this script.
+Secrets, ReplicaSets and controller-owned Pods are excluded. Cluster collection
+includes ClusterRoles, ClusterRoleBindings, Namespaces, ValidatingWebhookConfigurations
+and MutatingWebhookConfigurations.
 
-Online mode downloads policy artifacts and the requested `clusterscan` definition.
-Airgapped mode uses image-bundled artifacts. Rebuild and publish the scanner image,
-then update `kubescape.tag` or `kubescape.image` before deploying. Artifact API
-acceptance is verified locally by tests; SaaS retention and display of separate
-namespace artifacts require validation in your environment.
+The scanner writes `/data/<namespace>.json` for each namespace and
+`/data/cluster.resources.json` for the cluster scan. These are Kubescape reports,
+not raw manifests. Raw manifests remain in temporary directories under `/data`
+and are deleted when scanning finishes. Report names preserve namespace identity;
+each is uploaded as a separate artifact.
 
-## Helm install
+Each namespace scan includes the cluster snapshot in the same input manifest.
+Original names, namespaces, UIDs, labels, ownerReferences, roleRef, subjects and
+webhook references are preserved. Namespaced ServiceAccounts referenced by
+ClusterRoleBindings and Services referenced by admission webhooks are fetched as
+shared reference context, including targets in other namespaces. Duplicate objects
+are removed using a disk-backed index before scanning. Missing targets are logged
+as dangling references rather than invented. Authorization and API failures abort
+collection of the shared context.
 
-### Local
+Cluster resources can appear in multiple reports because they are scan context.
+These snapshots preserve links among the selected objects; they do not provide
+host data or resources excluded above, and live API collection is not a single
+atomic point-in-time snapshot.
 
-```
-cd k8s-risk-assessment-job
-helm upgrade --install k8s-risk-assessment-job . \
--n k8s-risk-assessment --create-namespace \
---set accuknox.authToken="$TOKEN" \
---set accuknox.tenantId="$TENANT_ID" \
---set accuknox.clusterName="$CLUSTER_NAME" \
---set accuknox.URL="cspm.dev.accuknox.com"
-```
+## Configuration
 
-### Published
-
-```
-helm upgrade --install k8s-risk-assessment-job oci://public.ecr.aws/k9v9d5v2/k8s-risk-assessment-job \
--n k8s-risk-assessment --create-namespace \
---set accuknox.authToken="$TOKEN" \
---set accuknox.tenantId="$TENANT_ID" \
---set accuknox.clusterName="$CLUSTER_NAME" \
---set accuknox.URL="cspm.dev.accuknox.com" \
---version="v0.4.0"
+```yaml
+namespaceConcurrency: 1
+kubescape:
+  tag: v0.3.16
+  pullPolicy: Always
+knoxjobs:
+  image: docker.io/seswarrajan/knoxjobs:v0.1.11 # replace with your rebuilt image
+  binaryPath: /home/jobs/job
+global:
+  artifactURL: "https://your-host/api/v1/artifact/?tenant_id=1&data_type=KS&label_id=your-label&save_to_s3=true"
+  tenantId: "1"
+  clusterName: your-cluster
+  clusterID: 0
+  label: your-label
+  secretName: jobs-token
 ```
 
-Where `version` can be taken from the [releases](https://github.com/accuknox/accuknox-jobs/releases) page
+The existing Secret must contain `AUTH_TOKEN`. Set the correct artifact endpoint
+or configure the existing SaaS host settings. Custom CA and TLS verification
+settings are passed to knoxjobs. The scanner's service account has read access
+only to the selected resource types and API discovery.
 
-### Configuration
+`namespaceConcurrency` controls simultaneous namespace scans via ConfigMap
+`<release-name>-namespace-scan-config`, key `NAMESPACE_CONCURRENCY`. Only positive
+integers are accepted. ConfigMap changes apply to new pods. Policy artifacts are
+shared as input; writable caches and temporary files are isolated per worker.
+Increasing concurrency increases peak memory and disk consumption. One resource
+object is parsed at a time, but Kubescape loads the namespace plus cluster context.
+Reports for all namespaces accumulate on disk before the uploader starts, so size
+`/data` storage accordingly.
 
-| Helm key | Default Value | Description | Required |
-|----------|---------------|-------------| -------- |
-| accuknox.authToken | "NO-TOKEN-SET" | Auth token from AccuKnox SaaS | YES (auto-populated by SaaS) |
-| accuknox.URL | "cspm.demo.accuknox.com" | URL of the environment | YES (auto-populated by SaaS) |
-| accuknox.clusterName | "" | name of the cluster | YES (auto-populated by SaaS) |
-| accuknox.tenantId | "" | ID of AccuKnox tenant | YES (auto-populated by SaaS) |
-| accuknox.clusterID | 0 | ID of the cluster | TBD |
-| accuknox.cronTab | "30 9 * * *" | cron tab for the job - timezone: UTC | NO |
-| accunkox.label | "" | label of the cluster | NO |
-| kubescape.image.repository | "quay.io/kubescape/kubescape-cli" | kubescape image repo | NO |
-| kubescape.image.tag | v3.0.8 | kubescape version - taken from appVersion by default | NO |
+Both containers share disk-backed `/data`; ConfigMap content mounts only at
+`/data/config`. The scanner script is copied into its image by the Dockerfile.
+Online mode downloads policy artifacts including `clusterscan`; airgapped mode
+uses image-bundled artifacts. Rebuild the scanner image and point `kubescape.tag`
+or `kubescape.image` to it before deploying; rebuild knoxjobs if its published
+image does not include the local publisher implementation.
 
----
-
-## Manual Procedure
-
-```bash
-export URL=cspm.demo.accuknox.com
-export TENANT_ID=3730
-export LABEL_NAME=STAGEENV
-export AUTH_TOKEN=XXXXXXXXXXXXXXXXXXXXX # Get the Token from AccuKnox Management Console
-export CLUSTER_NAME=docluster
-export CLUSTER_ID=0
-
-curl -s https://raw.githubusercontent.com/accuknox/tools/main/ks/k8srisk.sh | bash
+```sh
+helm upgrade --install k8s-risk-assessment-job . -n agents -f your-values.yaml
 ```
 
-## Namespace concurrency
-
-Set `namespaceConcurrency: 3` in Helm values to process up to three namespaces
-at once. The chart writes this setting to ConfigMap
-`<release-name>-namespace-scan-config`, key `NAMESPACE_CONCURRENCY`; both Job and
-CronJob read it through their environment. The default is `1`. Only positive
-integers are accepted. ConfigMap changes apply to newly created pods; recreate
-the Job to use a new setting immediately. Helm upgrades restore the Helm value.
-
-Each worker independently downloads, scans, uploads and deletes its namespace
-files. Workers use separate temporary directories and writable Kubescape caches;
-downloaded policy artifacts are shared as input. Only `n` namespace tasks are
-queued at a time. Higher concurrency runs multiple Kubescape processes and
-increases peak RAM and disk use; size container limits accordingly.
+Tests cover workload selection, paginated exports, missing TypeMeta, cluster
+references, deduplication, report handoff and continuation after scan/upload failures.
+SaaS retention and display of separate artifacts require validation in your environment.

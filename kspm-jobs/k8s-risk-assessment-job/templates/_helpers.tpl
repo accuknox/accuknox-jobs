@@ -73,12 +73,12 @@ cspm.{{ $url }}
 
 
 
-{{/* One scanner container performs the combined scan and direct HTTP upload. */}}
+{{/* Scanner init container, followed by the knoxjobs artifact container. */}}
 {{- define "risk-assessment.container" -}}
 - name: k8s-risk-assessment
   image: {{ include "kubescape.image" . | quote }}
   imagePullPolicy: {{ .Values.kubescape.pullPolicy | default "Always" }}
-  command: ["python3", "/usr/local/bin/scan-and-upload.py"]
+  command: ["python3", "/usr/local/bin/scan-resources.py"]
   resources:
     {{- toYaml .Values.global.job.resources | nindent 4 }}
   env:
@@ -87,22 +87,8 @@ cspm.{{ $url }}
         configMapKeyRef:
           name: {{ .Release.Name }}-namespace-scan-config
           key: NAMESPACE_CONCURRENCY
-    - name: ARTIFACT_URL
-      {{- if .Values.global.artifactURL }}
-      value: {{ .Values.global.artifactURL | quote }}
-      {{- else }}
-      value: {{ printf "https://%s/api/v1/artifact/?tenant_id=%s&data_type=KS&label_id=%s&save_to_s3=true" (include "global.jobURL" .) (printf "%v" .Values.global.tenantId | urlquery) (printf "%v" .Values.global.label | urlquery) | quote }}
-      {{- end }}
-    - name: AUTH_TOKEN_PATH
-      value: {{ .Values.authTokenPath | quote }}
-    - name: TENANT_ID
-      value: {{ .Values.global.tenantId | toString | quote }}
     - name: CLUSTER_NAME
       value: {{ .Values.global.clusterName | quote }}
-    - name: CLUSTER_ID
-      value: {{ .Values.global.clusterID | toString | quote }}
-    - name: LABEL_NAME
-      value: {{ .Values.global.label | toString | quote }}
     - name: AIRGAPPED
       value: {{ .Values.global.airgapped | quote }}
     - name: CONTROLS_CONFIG_URL
@@ -112,12 +98,36 @@ cspm.{{ $url }}
     {{- if .Values.global.certEnabled }}
     - name: CA_PATH
       value: /certs/tls.crt
-    - name: CA_URL
-      value: {{ .Values.global.certURL | default "" | quote }}
     {{- end }}
   volumeMounts:
     - name: datapath
       mountPath: /data
+    - name: scanner-config
+      mountPath: /data/config
+      readOnly: true
+    {{- if .Values.global.certEnabled }}
+    - name: certs
+      mountPath: /certs
+      readOnly: true
+    {{- end }}
+{{- end -}}
+
+{{- define "risk-assessment.uploader" -}}
+- name: artifact-api-container
+  image: {{ .Values.knoxjobs.image | quote }}
+  imagePullPolicy: {{ .Values.knoxjobs.pullPolicy | quote }}
+  command: ["/bin/sh", "/data/config/upload-reports.sh"]
+  env:
+    - name: KNOXJOBS_BINARY
+      value: {{ .Values.knoxjobs.binaryPath | quote }}
+  resources:
+    {{- toYaml .Values.knoxjobs.resources | nindent 4 }}
+  volumeMounts:
+    - name: datapath
+      mountPath: /data
+    - name: scanner-config
+      mountPath: /data/config
+      readOnly: true
     - name: secret-volume
       mountPath: /secrets/tokens
       readOnly: true
@@ -131,6 +141,9 @@ cspm.{{ $url }}
 {{- define "risk-assessment.volumes" -}}
 - name: datapath
   emptyDir: {}
+- name: scanner-config
+  configMap:
+    name: {{ .Release.Name }}-namespace-scan-config
 - name: secret-volume
   secret:
     secretName: {{ .Values.global.secretName | default "jobs-token" }}

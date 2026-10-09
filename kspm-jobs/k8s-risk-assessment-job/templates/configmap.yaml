@@ -9,3 +9,13 @@ metadata:
   namespace: {{ .Release.Namespace }}
 data:
   NAMESPACE_CONCURRENCY: {{ $concurrency | quote }}
+  uploader.json: |
+    {{- $url := .Values.global.artifactURL | default (printf "https://%s/api/v1/artifact/?tenant_id=%s&data_type=KS&label_id=%s&save_to_s3=true" (include "global.jobURL" .) (printf "%v" .Values.global.tenantId | urlquery) (printf "%v" .Values.global.label | urlquery)) -}}
+    {{- $jobs := dict "url" $url "authTokenFile" .Values.authTokenPath "tenantID" .Values.global.tenantId "clusterName" .Values.global.clusterName "clusterID" .Values.global.clusterID "labelName" .Values.global.label "dataType" "KS" "saveToS3" true "useSpire" false "printData" false "insecure" .Values.global.skipTLSVerification -}}
+    {{- if .Values.global.certEnabled -}}
+    {{- $_ := set $jobs "caPath" "/certs/tls.crt" -}}
+    {{- $_ := set $jobs "caUrl" (.Values.global.certURL | default "") -}}
+    {{- end -}}
+    {{- dict "jobs" $jobs "spire" (dict "enabled" false) "configPaths" (list "/data/kubescape-cache/allcontrols.json" "/data/kubescape-cache/clusterscan.json" "/data/kubescape-cache/nsa.json" "/data/kubescape-cache/mitre.json") | toJson | nindent 4 }}
+  upload-reports.sh: |
+    {{- .Files.Get "scripts/upload-reports.sh" | nindent 4 }}

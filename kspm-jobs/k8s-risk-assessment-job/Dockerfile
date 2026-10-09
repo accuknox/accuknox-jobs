@@ -16,6 +16,6 @@ RUN mkdir -p /opt/kubescape/artifacts && \
     kubescape download framework clusterscan --output /opt/kubescape/artifacts/clusterscan.json
 RUN adduser --disabled-password --no-create-home kubescape
 RUN mkdir -p /data && chown kubescape:kubescape /data
-COPY scripts/scan-and-upload.py /usr/local/bin/scan-and-upload.py
+COPY scripts/scan-resources.py /usr/local/bin/scan-resources.py
 USER kubescape
 #ENTRYPOINT ["/usr/local/bin/kubescape"]

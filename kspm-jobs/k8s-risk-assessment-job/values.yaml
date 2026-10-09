@@ -12,6 +12,16 @@ kubescape:
   pullPolicy: Always
 
 
+knoxjobs:
+  image: docker.io/seswarrajan/knoxjobs:v0.1.11
+  pullPolicy: Always
+  binaryPath: /home/jobs/job
+  resources:
+    requests:
+      memory: 500Mi
+    limits:
+      memory: 1Gi
+
 namespaceConcurrency: 1
 
 replicaCount: 1
