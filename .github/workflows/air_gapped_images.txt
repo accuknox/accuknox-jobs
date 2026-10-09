@@ -9,6 +9,8 @@ images:
 kubearmor:
   - repository: docker.io/kubearmor/kubearmor-controller
     config: kubearmorController
+  - repository: docker.io/kubearmor/kubearmor-init
+    config: kubearmorController
   - repository: docker.io/kubearmor/kubearmor-relay-server
     config: kubearmorRelay
   - repository: docker.io/kubearmor/kubearmor-snitch
