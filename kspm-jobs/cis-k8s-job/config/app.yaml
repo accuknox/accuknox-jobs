@@ -1,4 +1,5 @@
 jobs:
+  flushTimeout: {{ get (.Values.global.cis | default dict) "flushTimeout" | default (get (.Values.global.jobs | default dict) "flushTimeout") | default "10m" | quote }}
   {{- if .Values.global.authToken }}
   authTokenFile: {{ .Values.authTokenPath }}
   {{- end }}
@@ -10,7 +11,7 @@ jobs:
   saveToS3: true
   reportFile: "/data/report.json"
   clusterID: {{ .Values.global.clusterID }}
-  printData: true
+  printData: false
   insecure: {{ .Values.global.skipTLSVerification }}
   {{- if .Values.global.certEnabled }}
   caPath: /certs/tls.crt

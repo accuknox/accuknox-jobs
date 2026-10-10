@@ -19,6 +19,12 @@ kiem:
 replicaCount: 1
 
 global:
+  kiem:
+    # Empty inherits global.jobs.flushTimeout.
+    flushTimeout: ""
+  jobs:
+    # Per-report SaaS upload timeout; job-specific flushTimeout takes precedence.
+    flushTimeout: "10m"
   job:
     resources:
       requests:

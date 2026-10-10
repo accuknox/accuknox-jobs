@@ -17,6 +17,9 @@ kubeBench:
 
 
 global:
+  jobs:
+    # Per-report SaaS upload timeout; job-specific flushTimeout takes precedence.
+    flushTimeout: "10m"
   job:
     resources:
       requests:
@@ -36,6 +39,8 @@ global:
   talosEnv: false
 
   cis:
+    # Empty inherits global.jobs.flushTimeout.
+    flushTimeout: ""
     toolConfig:
       platform: ""
       nodeType: ""

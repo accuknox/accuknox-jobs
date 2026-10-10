@@ -1,38 +1,26 @@
+{{- $pageSize := toString .Values.global.riskAssessment.kubernetesPageSize -}}
+{{- if not (regexMatch "^[1-9][0-9]*$" $pageSize) -}}
+{{- fail "global.riskAssessment.kubernetesPageSize must be a positive integer" -}}
+{{- end -}}
+{{- $concurrency := toString .Values.global.riskAssessment.namespaceConcurrency -}}
+{{- if not (regexMatch "^[1-9][0-9]*$" $concurrency) -}}
+{{- fail "global.riskAssessment.namespaceConcurrency must be a positive integer" -}}
+{{- end }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: k8s-risk-assessment-job-script-configmap
+  name: {{ .Release.Name }}-namespace-scan-config
   namespace: {{ .Release.Namespace }}
 data:
-  augment-and-push-results.sh: |
-    #! /bin/sh
+  OUTPUT_PATH: {{ .Values.global.riskAssessment.outputPath | default "/data" | quote }}
+  COMPLETED_REPORTS_PATH: {{ .Values.global.riskAssessment.completedReportsPath | default (printf "%s/completed" (.Values.global.riskAssessment.outputPath | default "/data" | trimSuffix "/")) | quote }}
+  NAMESPACE_RESOURCES: {{ .Values.global.riskAssessment.namespaceResources | default "" | quote }}
+  CLUSTER_RESOURCES: {{ .Values.global.riskAssessment.clusterResources | default "" | quote }}
+  NAMESPACE_CONCURRENCY: {{ $concurrency | quote }}
+  INCLUDE_CLUSTER_CONTEXT: {{ .Values.global.riskAssessment.includeClusterContext | default false | toString | quote }}
+  KUBERNETES_PAGE_SIZE: {{ $pageSize | quote }}
+  COLLECT_ALL_RESOURCES: {{ .Values.global.riskAssessment.collectAllResources | default false | toString | quote }}
 
-    # get all controls
-    jq -s 'map(.controls[]) | unique_by(.controlID) | .[]' /data/kubescape-cache/allcontrols.json \
-      /data/kubescape-cache/mitre.json /data/kubescape-cache/nsa.json > /data/controllist.json
-
-    export GENERATION_TIME=`date --utc -Isecond`
-
-    # augment result
-    jq ". +=
-      {
-        "generationTime": "'$ENV.GENERATION_TIME'",
-        "summary": {
-          "controls": "'$controllist'"
-        },
-        "accuknox_metadata": {
-          "cluster_name": "'$ENV.CLUSTER_NAME'",
-          "cluster_id": "'$ENV.CLUSTER_ID'",
-          "label_name": "'$ENV.LABEL_NAME'"
-        }
-      }" /data/report.json --slurpfile controllist /data/controllist.json > /data/report_tmp.json
-
-    mv /data/report_tmp.json /data/report.json
-
-    cat /data/report.json
-
-    # push
-    /curl_command.sh
 ---
 apiVersion: v1
 kind: ConfigMap
