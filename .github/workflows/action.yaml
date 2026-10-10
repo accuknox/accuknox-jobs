@@ -80,6 +80,29 @@ jobs:
         run: |
           sed -i "s/^version:.*$/version: ${{ github.ref_name }}/" kspm-runtime/Chart.yaml
           sed -i "s/^appVersion:.*$/appVersion: ${{ github.ref_name }}/" kspm-runtime/Chart.yaml
+      
+      - name: Sync image tag from version file
+        if: ( github.event_name != 'pull_request' && github.event_name != 'pull_request_target' )
+        env:
+          CHART_DIR: kspm-jobs/k8s-risk-assessment-job
+        run: |
+          VERSION=""
+          if [ -f "$CHART_DIR/risk-assessment-version.txt" ]; then
+            VERSION=$(tr -d '[:space:]' < "$CHART_DIR/risk-assessment-version.txt")
+          fi
+
+          if [ -n "$VERSION" ]; then
+            TAG="$VERSION"
+          elif [ "$GITHUB_REF" = "refs/heads/main" ]; then
+            TAG="latest"
+          else
+            TAG="${GITHUB_REF_NAME//\//-}"
+          fi
+
+          sed -i "/^kubescape:/,/^[^[:space:]#]/ s|^\([[:space:]]*newTag:\).*|\1 \"${TAG}\"|" "$CHART_DIR/values.yaml"
+
+          grep -A5 '^kubescape:' "$CHART_DIR/values.yaml" | grep -q "newTag: \"${TAG}\"" \
+            || { echo "tag replacement failed"; exit 1; }
 
       - name: Package and Push Helm Chart
         run: |

@@ -30,13 +30,26 @@ spec:
           tolerations:
             {{- toYaml .Values.global.tolerations | nindent 12 }}
           {{- end }}
+          {{- if .Values.global.riskAssessment.largeCluster }}
+          securityContext:
+            fsGroup: 1000
+          containers:
+          {{- else }}
           initContainers:
+          {{- end }}
             - name: job-init-container
               imagePullPolicy: IfNotPresent
               resources:
               {{- toYaml .Values.global.job.resources | nindent 16 }}
               image: "{{ include "kubescape.image" . }}"
+              {{- if .Values.global.riskAssessment.largeCluster }}
+              command: ["python3", "/usr/local/bin/scan-resources.py"]
+              envFrom:
+                - configMapRef:
+                    name: {{ .Release.Name }}-namespace-scan-config
+              {{- else }}
               command: ["python3", "/usr/local/bin/scan-control-namespaces.py"]
+              {{- end }}
               env:
                 - name: CLUSTER_NAME
                   value: "{{ .Values.global.clusterName }}"
@@ -49,7 +62,9 @@ spec:
               volumeMounts:
                 - name: datapath
                   mountPath: /data
+          {{- if not .Values.global.riskAssessment.largeCluster }}
           containers:
+          {{- end }}
             - image: "{{ include "cluster_job.image" . }}"
               name: artifact-api-container
               args: 
@@ -61,9 +76,6 @@ spec:
               volumeMounts:
                 - mountPath: /data
                   name: datapath
-                - mountPath: /data/augment-and-push-results.sh
-                  name: scriptpath
-                  subPath: augment-and-push-results.sh
                 - name: secret-volume
                   mountPath: /secrets/tokens
                   readOnly: true
@@ -85,9 +97,6 @@ spec:
           volumes:
             - name: datapath
               emptyDir: {}
-            - name: scriptpath
-              configMap:
-                name: k8s-risk-assessment-job-script-configmap
             - name: secret-volume
               secret:
                 secretName: {{ .Values.global.secretName | default "jobs-token" }}

@@ -49,7 +49,11 @@
 {{- end -}}
 
 {{- define "kubescape.image" -}}
-  {{ include "image-name" (dict "url" .Values.global.registry.url "owner" .Values.registryName "repoName" .Values.kubescape.repository "tag" .Values.kubescape.tag "preserve" .Values.global.registry.preserveUpstream "image" .Values.kubescape.image ) }}
+  {{- $tag := .Values.kubescape.tag -}}
+  {{- if .Values.global.riskAssessment.largeCluster -}}
+    {{- $tag = .Values.kubescape.newTag -}}
+  {{- end -}}
+  {{ include "image-name" (dict "url" .Values.global.registry.url "owner" .Values.registryName "repoName" .Values.kubescape.repository "tag" $tag "preserve" .Values.global.registry.preserveUpstream "image" .Values.kubescape.image ) }}
 {{- end -}}
 
 

@@ -11,15 +11,45 @@ cluster_job:
 
 kubescape:
   repository: k8s-risk-assessment
-  tag: "v0.3.15"
+  tag: "v0.3.11"
   image: ""
+  # Scanner image tag used when global.riskAssessment.largeCluster=true.
+  newTag: "v0.3.17"
 
 
 replicaCount: 1
 
 global:
-  # Empty: discover all namespaces except openshift-ovn-kubernetes.
-  scanNamespaces: []
+  jobs:
+    # Per-report SaaS upload timeout; job-specific flushTimeout takes precedence.
+    flushTimeout: "10m"
+  riskAssessment:
+    # Run the scanner as a regular container using kubescape.newTag.
+    largeCluster: false
+    # Empty inherits global.jobs.flushTimeout. Set e.g. "5m" to override.
+    flushTimeout: ""
+    # Directory for scan reports, consolidated results and temporary scan inputs.
+    outputPath: /data
+    # Empty defaults to <outputPath>/completed; all *-report.json here are merged.
+    completedReportsPath: ""
+
+    # Comma-separated types; empty uses the existing baseline lists.
+    # collectAllResources=true overrides both lists. Custom types support resource.group.
+    namespaceResources: ""
+    clusterResources: ""
+
+    # Experimental: discover all listable namespaced and cluster resource types, including CRDs.
+    collectAllResources: false
+
+    # Maximum namespaces scanned concurrently; each worker performs one combined namespace scan.
+    namespaceConcurrency: 5
+
+    # Include cluster snapshots in namespace scans for relationship checks.
+    includeClusterContext: true
+
+    # Positive number of items requested per Kubernetes list page.
+    kubernetesPageSize: 250
+
   job:
     resources:
       requests:

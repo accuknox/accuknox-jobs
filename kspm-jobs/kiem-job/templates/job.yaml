@@ -30,6 +30,8 @@ spec:
           resources:
           {{- toYaml .Values.global.job.resources | nindent 12 }}
           image: "{{ include "kiem.image" . }}"
+          # use --k8s-page-size 250, for controlling the page limit used to 
+          # retrieve data from Kubernetes API 
           args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
           env:
             - name: CLUSTER_NAME
