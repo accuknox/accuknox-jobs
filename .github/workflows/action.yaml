@@ -70,17 +70,6 @@ jobs:
         run: |
           aws ecr-public get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin ${{ secrets.REPO }}
 
-      - name: Update Helm Dependencies
-        run: |
-          cd kspm-runtime
-          helm dependency update
-
-      - name: Chart versioning
-        if: ( github.event_name != 'pull_request' && github.event_name != 'pull_request_target' )
-        run: |
-          sed -i "s/^version:.*$/version: ${{ github.ref_name }}/" kspm-runtime/Chart.yaml
-          sed -i "s/^appVersion:.*$/appVersion: ${{ github.ref_name }}/" kspm-runtime/Chart.yaml
-      
       - name: Sync image tag from version file
         if: ( github.event_name != 'pull_request' && github.event_name != 'pull_request_target' )
         env:
@@ -103,6 +92,17 @@ jobs:
 
           grep -A5 '^kubescape:' "$CHART_DIR/values.yaml" | grep -q "newTag: \"${TAG}\"" \
             || { echo "tag replacement failed"; exit 1; }
+
+      - name: Update Helm Dependencies
+        run: |
+          cd kspm-runtime
+          helm dependency update
+
+      - name: Chart versioning
+        if: ( github.event_name != 'pull_request' && github.event_name != 'pull_request_target' )
+        run: |
+          sed -i "s/^version:.*$/version: ${{ github.ref_name }}/" kspm-runtime/Chart.yaml
+          sed -i "s/^appVersion:.*$/appVersion: ${{ github.ref_name }}/" kspm-runtime/Chart.yaml
 
       - name: Package and Push Helm Chart
         run: |
