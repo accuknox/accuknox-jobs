@@ -31,7 +31,7 @@ spec:
       {{- else }}
       initContainers:
       {{- end }}
-        - name: job-init-container
+        - name: risk-scanner
           imagePullPolicy: IfNotPresent
           resources:
           {{- toYaml .Values.global.job.resources | nindent 12 }}
@@ -60,7 +60,7 @@ spec:
       containers:
       {{- end }}
         - image: "{{ include "cluster_job.image" . }}"
-          name: artifact-api-container
+          name: risk-uploader
           args: 
           - -config 
           - /jobs/conf/app.yaml

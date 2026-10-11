@@ -25,7 +25,7 @@ spec:
         {{- toYaml .Values.global.tolerations | nindent 8 }}
       {{- end }}
       initContainers:
-        - name: kiem-init
+        - name: kiem-scanner
           imagePullPolicy: IfNotPresent
           resources:
           {{- toYaml .Values.global.job.resources | nindent 12 }}
@@ -47,7 +47,7 @@ spec:
           imagePullPolicy: IfNotPresent
           resources:
           {{- toYaml .Values.global.job.resources | nindent 12 }}
-          name: accuknox-kiem-job
+          name: kiem-uploader
           volumeMounts:
             - mountPath: /data
               name: datapath  

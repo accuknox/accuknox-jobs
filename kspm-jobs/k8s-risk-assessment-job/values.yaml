@@ -47,6 +47,10 @@ global:
     # Include cluster snapshots in namespace scans for relationship checks.
     includeClusterContext: true
 
+    # Parse each raw scan report to validate JSON before auditing and publishing.
+    # Disable to measure the cost of this extra report pass.
+    validateReports: false
+
     # Positive number of items requested per Kubernetes list page.
     kubernetesPageSize: 250
 

@@ -680,9 +680,10 @@ class KubernetesAPI:
                    "--cluster-name", os.environ.get("CLUSTER_NAME", "")] + list(extra)
         print(f"Scanning {destination}: {Path(manifest).stat().st_size} manifest bytes", flush=True)
         run_command(command, check=True)
-        with report.open("rb") as source:
-            for _ in ijson.parse(source):
-                pass
+        if os.environ.get("VALIDATE_REPORTS", "true").lower() == "true":
+            with report.open("rb") as source:
+                for _ in ijson.parse(source):
+                    pass
         namespace = None if Path(destination).parent.name == "clusterscoped" else Path(destination).parent.name
         audit = audit_scan(manifest, report, scratch, namespace)
         add_report_field(report, "collectionAudit", audit)

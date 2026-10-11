@@ -18,6 +18,7 @@ data:
   CLUSTER_RESOURCES: {{ .Values.global.riskAssessment.clusterResources | default "" | quote }}
   NAMESPACE_CONCURRENCY: {{ $concurrency | quote }}
   INCLUDE_CLUSTER_CONTEXT: {{ .Values.global.riskAssessment.includeClusterContext | default false | toString | quote }}
+  VALIDATE_REPORTS: {{ dig "validateReports" true .Values.global.riskAssessment | toString | quote }}
   KUBERNETES_PAGE_SIZE: {{ $pageSize | quote }}
   COLLECT_ALL_RESOURCES: {{ .Values.global.riskAssessment.collectAllResources | default false | toString | quote }}
 

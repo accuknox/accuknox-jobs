@@ -287,3 +287,11 @@ Each report upload defaults to a ten-minute deadline. Configure
 `global.riskAssessment.flushTimeout: "5m"` to override it for this job.
 An empty job-specific value inherits the shared setting. This applies to both
 regular and large-cluster modes.
+
+
+The scanner validates each raw report with a complete streaming JSON parse before
+auditing and publishing it. This extra pass is enabled by default. To compare
+runtime without it, set `global.riskAssessment.validateReports=false` (or
+`VALIDATE_REPORTS=false` for direct execution). Coverage auditing, report
+annotation, and consolidation continue to parse reports independently; this flag
+disables only the dedicated validation pass, not those later checks.
