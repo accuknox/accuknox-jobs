@@ -16,6 +16,11 @@ on:
         required: true
         type: string
         default: v0.9.59
+      vm_version:
+        description: VM agent release version (for example v0.12.7)
+        required: true
+        type: string
+        default: v0.12.7
 
 permissions:
   contents: read
@@ -30,14 +35,17 @@ jobs:
     env:
       KNOXCTL_VERSION: ${{ inputs.knoxctl_version }}
       TARGET_ARCH: ${{ inputs.arch == 'arm' && 'arm64' || 'amd64' }}
-      # VM agent release is separate from the CLI version. Keep two dispatch inputs.
-      VM_VERSION: v0.12.7
+      VM_VERSION: ${{ inputs.vm_version }}
     steps:
-      - name: Validate version and prepare directories
+      - name: Validate versions and prepare directories
         run: |
           set -euo pipefail
           if [[ ! "$KNOXCTL_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo '::error::knoxctl_version must be a full version such as v0.9.59'
+            exit 1
+          fi
+          if [[ ! "$VM_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo '::error::vm_version must be a full version such as v0.12.7'
             exit 1
           fi
           mkdir -p bundle/bin downloads
@@ -143,7 +151,7 @@ jobs:
       - name: Upload air-gapped bundle
         uses: actions/upload-artifact@v4
         with:
-          name: knoxctl-${{ inputs.knoxctl_version }}-${{ env.TARGET_ARCH }}-air-gapped
+          name: knoxctl-${{ inputs.knoxctl_version }}-vm-${{ inputs.vm_version }}-${{ env.TARGET_ARCH }}-air-gapped
           path: |
             ${{ env.BUNDLE_FILE }}
             ${{ env.BUNDLE_FILE }}.sha256
