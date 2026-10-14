@@ -1,0 +1,152 @@
+name: Knoxctl VM Air-Gapped Bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: Target Linux architecture
+        required: true
+        type: choice
+        options:
+          - amd
+          - arm
+        default: amd
+      knoxctl_version:
+        description: Knoxctl CLI version (for example v0.9.59)
+        required: true
+        type: string
+        default: v0.9.59
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ${{ inputs.arch == 'arm' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    env:
+      KNOXCTL_VERSION: ${{ inputs.knoxctl_version }}
+      TARGET_ARCH: ${{ inputs.arch == 'arm' && 'arm64' || 'amd64' }}
+      # VM agent release is separate from the CLI version. Keep two dispatch inputs.
+      VM_VERSION: v0.12.7
+    steps:
+      - name: Validate version and prepare directories
+        run: |
+          set -euo pipefail
+          if [[ ! "$KNOXCTL_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo '::error::knoxctl_version must be a full version such as v0.9.59'
+            exit 1
+          fi
+          mkdir -p bundle/bin downloads
+          docker info
+
+      - name: Download knoxctl using the official installer
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 \
+            https://knoxctl-cli.s3.us-east-2.amazonaws.com/install.sh \
+            -o "$RUNNER_TEMP/knoxctl-install.sh"
+          # The native runner ensures the installer selects the target Linux binary.
+          sh "$RUNNER_TEMP/knoxctl-install.sh" -b "$PWD/bundle/bin" "$KNOXCTL_VERSION"
+          test -x bundle/bin/knoxctl
+
+      - name: Pre-download VM images and systemd binaries
+        working-directory: downloads
+        run: |
+          set -euo pipefail
+          ../bundle/bin/knoxctl vm pre-download -v "$VM_VERSION" --arch "$TARGET_ARCH"
+          test -d "accuknox/$VM_VERSION/docker/$TARGET_ARCH"
+          test -d "accuknox/$VM_VERSION/systemd/$TARGET_ARCH"
+
+      - name: Combine downloaded Docker images into one importable tar
+        run: |
+          set -euo pipefail
+          # Read tags from the downloaded Docker archives, preserving their original names.
+          # Load only these archives, then save their images together with shared layers.
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+          import subprocess
+          import tarfile
+
+          arch = os.environ['TARGET_ARCH']
+          root = Path('downloads/accuknox') / os.environ['VM_VERSION'] / 'docker' / arch
+          images = set()
+          archives = 0
+          for path in sorted(root.rglob('*')):
+              if not path.is_file():
+                  continue
+              try:
+                  archive = tarfile.open(path, 'r:*')
+              except tarfile.ReadError:
+                  raise SystemExit(f'Unexpected non-archive file in Docker download directory: {path}')
+              with archive:
+                  manifest = next((m for m in archive.getmembers() if m.name.lstrip('./') == 'manifest.json'), None)
+                  if manifest is None:
+                      raise SystemExit(f'Expected a Docker image archive with manifest.json: {path}')
+                  entries = json.load(archive.extractfile(manifest))
+                  tags = {tag for entry in entries for tag in (entry.get('RepoTags') or [])}
+                  if not tags:
+                      raise SystemExit(f'No image tags found in {path}')
+              subprocess.run(['docker', 'load', '--input', str(path)], check=True)
+              images.update(tags)
+              archives += 1
+          if not images:
+              raise SystemExit('No Docker images were downloaded')
+          images = sorted(images)
+          metadata = json.loads(subprocess.check_output(['docker', 'image', 'inspect', *images]))
+          for image in metadata:
+              if image['Os'] != 'linux' or image['Architecture'] != arch:
+                  raise SystemExit(f'Wrong platform for {image.get("RepoTags")}: {image["Os"]}/{image["Architecture"]}')
+          Path('bundle/images.txt').write_text('\n'.join(images) + '\n')
+          Path('bundle/image-metadata.json').write_text(json.dumps(metadata, indent=2) + '\n')
+          subprocess.run(['docker', 'save', '--output', 'bundle/images.tar', *images], check=True)
+          print(f'Combined {archives} downloaded archives and {len(images)} image tags into images.tar')
+          PY
+
+      - name: Package offline bundle and instructions
+        run: |
+          set -euo pipefail
+          # Preserve systemd assets in the exact layout produced by knoxctl.
+          mkdir -p "bundle/accuknox/$VM_VERSION/systemd"
+          cp -a "downloads/accuknox/$VM_VERSION/systemd/$TARGET_ARCH" \
+            "bundle/accuknox/$VM_VERSION/systemd/"
+          cat > bundle/README.txt <<EOF
+          Knoxctl air-gapped bundle
+          Target: linux/$TARGET_ARCH
+          Knoxctl CLI: $KNOXCTL_VERSION
+          VM agents: $VM_VERSION
+
+          Extract this bundle on the offline Linux host, then run from its directory:
+            sha256sum -c SHA256SUMS
+            sudo install -m 0755 bin/knoxctl /usr/local/bin/knoxctl
+            sudo docker load --input images.tar
+
+          The Docker command imports all bundled images, preserving their image tags.
+          images.txt lists the images; image-metadata.json records their platform and IDs.
+          Systemd files are included at accuknox/$VM_VERSION/systemd/$TARGET_ARCH.
+          These files and the CLI require no network access to install/import.
+          Use your deployment-specific configuration and credentials for VM onboarding.
+          EOF
+          (cd bundle && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          bundle_file="knoxctl-${KNOXCTL_VERSION}-vm-${VM_VERSION}-linux-${TARGET_ARCH}-air-gapped.tar.gz"
+          tar -czf "$bundle_file" -C bundle .
+          sha256sum "$bundle_file" > "$bundle_file.sha256"
+          printf 'BUNDLE_FILE=%s\n' "$bundle_file" >> "$GITHUB_ENV"
+          printf 'Bundle: `%s`\n\nImport all images offline: `sudo docker load --input images.tar`\n' \
+            "$bundle_file" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload air-gapped bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: knoxctl-${{ inputs.knoxctl_version }}-${{ env.TARGET_ARCH }}-air-gapped
+          path: |
+            ${{ env.BUNDLE_FILE }}
+            ${{ env.BUNDLE_FILE }}.sha256
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
