@@ -150,3 +150,24 @@ jobs:
           compression-level: 0
           if-no-files-found: error
           retention-days: 7
+
+      - name: Upload bundle to Hetzner Object Storage
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.HETZNER_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HETZNER_SECRET_KEY }}
+          AWS_SESSION_TOKEN: ''
+          AWS_DEFAULT_REGION: eu-central
+          AWS_EC2_METADATA_DISABLED: 'true'
+        run: |
+          set -euo pipefail
+          : "${AWS_ACCESS_KEY_ID:?Missing HETZNER_ACCESS_KEY secret}"
+          : "${AWS_SECRET_ACCESS_KEY:?Missing HETZNER_SECRET_KEY secret}"
+          ENDPOINT="https://nbg1.your-objectstorage.com"
+          BUCKET="accuknox-onprem-artifacts"
+          destination="s3://${BUCKET}/kspm-runtime/airgapped-bundle"
+          aws --endpoint-url "$ENDPOINT" s3 cp \
+            "$BUNDLE_FILE" \
+            "$destination/$BUNDLE_FILE" --only-show-errors
+          aws --endpoint-url "$ENDPOINT" s3 cp \
+            "$BUNDLE_FILE.sha256" \
+            "$destination/$BUNDLE_FILE.sha256" --only-show-errors
