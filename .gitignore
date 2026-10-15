@@ -1,4 +1,3 @@
 SQ-*
-# Dependency downloads are generated; retain the requested upstream OpenCost chart.
+# Dependency archives are generated from Chart.yaml.
 kspm-runtime/charts/*.tgz
-!kspm-runtime/charts/opencost-2.5.33.tgz

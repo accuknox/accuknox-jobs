@@ -161,60 +161,64 @@ kubeshield-chart:
       useTrivyAsPkg: true
 
 # Upstream OpenCost chart overrides. Installed only by global.costManager.enabled.
-opencost:
+costmanager:
+  # Preserve existing resource names and selectors when aliasing the dependency.
+  nameOverride: opencost
   # Avoid overlapping pods attaching the ReadWriteOnce volume during upgrades.
   updateStrategy:
     type: RollingUpdate
     rollingUpdate:
       maxSurge: 0
       maxUnavailable: 1
-  opencost:
-    exporter:
-      replicas: 1
-      # Unset when pricing is disabled; force the custom provider when enabled.
-      env:
-        - name: USE_CUSTOM_PROVIDER
-          valueFrom:
-            configMapKeyRef:
-              name: accuknox-opencost-custom-pricing
-              key: CustomPricesEnabled
-              optional: true
-      collectorDataSource:
-        enabled: true
-      persistence:
-        enabled: true
-        mountPath: /mnt/export
-        accessMode: ReadWriteOnce
-        storageClass: "" # Use the cluster's default StorageClass.
-        size: 10Gi
-    prometheus:
-      internal:
-        enabled: false
-      external:
-        enabled: false
-      amp:
-        enabled: false
-      thanos:
-        enabled: false
-    metrics:
-      serviceMonitor:
-        enabled: false
-    customPricing:
-      # Enable to replace provider pricing with the rates below.
+  exporter:
+    replicas: 1
+    # Unset when pricing is disabled; force the custom provider when enabled.
+    env:
+      - name: USE_CUSTOM_PROVIDER
+        valueFrom:
+          configMapKeyRef:
+            name: accuknox-opencost-custom-pricing
+            key: CustomPricesEnabled
+            optional: true
+    collectorDataSource:
+      enabled: true
+    persistence:
+      enabled: true
+      mountPath: /mnt/export
+      accessMode: ReadWriteOnce
+      storageClass: "" # Use the cluster's default StorageClass.
+      size: 10Gi
+  prometheus:
+    internal:
       enabled: false
-      configmapName: accuknox-opencost-custom-pricing
-      createConfigmap: true
-      provider: custom
-      costModel:
-        CustomPricesEnabled: "true"
-        description: Custom pricing configuration for AccuKnox cost manager.
-        # Upstream example rates; replace with your actual rates before enabling.
-        # CPU: per core-hour; RAM/storage: per GiB-hour; GPU: per GPU-hour.
-        CPU: "1.25"
-        RAM: "0.50"
-        GPU: "0.95"
-        storage: "0.25"
-        # Network prices per GiB, classified by destination.
-        zoneNetworkEgress: "0.01"
-        regionNetworkEgress: "0.01"
-        internetNetworkEgress: "0.12"
+    external:
+      enabled: false
+    amp:
+      enabled: false
+    thanos:
+      enabled: false
+  metrics:
+    serviceMonitor:
+      enabled: false
+  customPricing:
+    # Enable to replace provider pricing with the rates below.
+    enabled: false
+    configmapName: accuknox-opencost-custom-pricing
+    createConfigmap: true
+    provider: custom
+    costModel:
+      CustomPricesEnabled: "true"
+      # ISO 4217 currency code. All custom rates must be supplied in this currency.
+      # This sets the currency; it does not convert prices using exchange rates.
+      currencyCode: USD
+      description: Custom pricing configuration for AccuKnox cost manager.
+      # Upstream example rates; replace with your actual rates before enabling.
+      # CPU: per core-hour; RAM/storage: per GiB-hour; GPU: per GPU-hour.
+      CPU: "1.25"
+      RAM: "0.50"
+      GPU: "0.95"
+      storage: "0.25"
+      # Network prices per GiB, classified by destination.
+      zoneNetworkEgress: "0.01"
+      regionNetworkEgress: "0.01"
+      internetNetworkEgress: "0.12"

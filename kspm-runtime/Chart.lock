@@ -1,7 +1,7 @@
 dependencies:
 - name: opencost
-  repository: https://opencost.github.io/opencost-helm-chart
-  version: 2.5.33
+  repository: file://../helm-charts/opencost
+  version: 2.5.33-accuknox.1
 - name: agents-chart
   repository: oci://public.ecr.aws/k9v9d5v2
   version: v0.13.1
@@ -26,5 +26,5 @@ dependencies:
 - name: kubeshield-chart
   repository: oci://public.ecr.aws/k9v9d5v2
   version: v0.5.1
-digest: sha256:d17c109c87c392514ae7367e82408f42a109a7e54cf1134375cddd78d90aaaf5
-generated: "2026-10-15T13:52:09.437411+05:30"
+digest: sha256:58f0f702b2c6d177c78ac094117e85c22ebd7348bc80a51fb74f5c0d6c458ef7
+generated: "2026-10-15T16:17:27.815147+05:30"
