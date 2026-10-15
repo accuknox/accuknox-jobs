@@ -34,7 +34,7 @@ spec:
             args: 
             - -config 
             - /jobs/conf/app.yaml
-            name: cis-k8s-cronjob
+            name: cis-uploader
             imagePullPolicy: IfNotPresent
             resources:
             {{- toYaml .Values.global.job.resources | nindent 14 }}
@@ -63,7 +63,7 @@ spec:
           - image: "{{ include "kubeBench.image" . }}"
             command:
             {{- include "cmd" .Values.global.cis.toolConfig | trim | nindent 13 }}
-            name: kube-bench
+            name: cis-scanner
             imagePullPolicy: IfNotPresent
             resources:
             {{- toYaml .Values.global.job.resources | nindent 14 }}
