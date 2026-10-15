@@ -117,6 +117,9 @@ helm upgrade --install agents kspm-runtime \
 
 ### OpenCost cost manager
 
+For the complete change history, implementation details, validation, and future
+maintenance instructions, see [OPENCOST-IMPLEMENTATION.md](../OPENCOST-IMPLEMENTATION.md).
+
 #### Cloud clusters with custom pricing disabled
 
 With `global.costManager.enabled=true` and

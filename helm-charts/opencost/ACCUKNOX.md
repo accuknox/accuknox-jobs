@@ -1,5 +1,8 @@
 # AccuKnox costmanager values interface
 
+Full implementation and maintenance reference:
+[OPENCOST-IMPLEMENTATION.md](../../OPENCOST-IMPLEMENTATION.md).
+
 This chart was extracted from the official OpenCost 2.5.33 release, not authored
 from scratch. The original archive is retained in `../upstream` and its checksum
 is recorded in `../../kspm-runtime/README.md`.
