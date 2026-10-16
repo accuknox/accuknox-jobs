@@ -80,49 +80,6 @@ jobs:
           ../bundle/bin/knoxctl vm pre-download -v "$VM_VERSION" --arch "$TARGET_ARCH"
           test -d "accuknox/$VM_VERSION/docker/$TARGET_ARCH"
           test -d "accuknox/$VM_VERSION/systemd/$TARGET_ARCH"
-          # Local onboarding reads source metadata from the version directory.
-          python3 - <<'PYMETA'
-          import json
-          import os
-          from pathlib import Path
-
-          version = os.environ['VM_VERSION']
-          path = Path('accuknox') / version / 'release.json'
-          metadata = json.loads(path.read_text())
-          if metadata.get('version') != version:
-              raise SystemExit(f'Unexpected source version in {path}: {metadata.get("version")}')
-          PYMETA
-
-      - name: Add RabbitMQ image tar for offline systemd onboarding
-        run: |
-          set -euo pipefail
-          python3 - <<'PYRMQ'
-          import json
-          import os
-          import tarfile
-          import shutil
-          from pathlib import Path
-
-          root = Path('downloads/accuknox') / os.environ['VM_VERSION'] / 'docker' / os.environ['TARGET_ARCH']
-          matches = []
-          for path in sorted(root.rglob('*')):
-              if not path.is_file():
-                  continue
-              try:
-                  with tarfile.open(path, 'r:*') as archive:
-                      manifest = next((m for m in archive.getmembers() if m.name.lstrip('./') == 'manifest.json'), None)
-                      if manifest is None:
-                          continue
-                      entries = json.load(archive.extractfile(manifest))
-                      tags = [tag for entry in entries for tag in (entry.get('RepoTags') or [])]
-                      if 'rabbitmq:3.12.2-management' in tags:
-                          matches.append(path)
-              except tarfile.ReadError:
-                  continue
-          if len(matches) != 1:
-              raise SystemExit(f'Expected one pre-downloaded rabbitmq:3.12.2-management archive, found {len(matches)}')
-          shutil.copyfile(matches[0], 'bundle/rabbitmq.tar')
-          PYRMQ
 
       - name: Package offline bundle and instructions
         run: |
@@ -143,20 +100,8 @@ jobs:
             Docker archives: accuknox/$VM_VERSION/docker/$TARGET_ARCH
             Systemd archives: accuknox/$VM_VERSION/systemd/$TARGET_ARCH
 
-          Source metadata is included at accuknox/$VM_VERSION/release.json.
-          Run VM onboarding with --version=$VM_VERSION, --from-source=<absolute-path-to-extraction>/accuknox/$VM_VERSION,
-          and --vm-mode=docker or --vm-mode=systemd.
-          For Docker, use --image-pull-policy=never; knoxctl imports the local image archives.
-          Omit --no-download so knoxctl processes the local Docker or systemd archives.
-          Systemd control-plane onboarding requires an already-running RabbitMQ server.
-          Its Docker image is included at rabbitmq.tar.
-          To import it offline, run from this extraction directory:
-            sudo docker load --input rabbitmq.tar
-          Start it with your chosen credentials (replace USER and PASSWORD):
-            sudo docker run -d --name knoxctl-rabbitmq --pull=never --restart=unless-stopped -p 5672:5672 -v knoxctl-rabbitmq-data:/var/lib/rabbitmq -e RABBITMQ_DEFAULT_USER=USER -e RABBITMQ_DEFAULT_PASS=PASSWORD rabbitmq:3.12.2-management
-          Wait for readiness with: sudo docker exec knoxctl-rabbitmq rabbitmqctl await_startup
-          Then use --rmq-address=<reachable-rabbitmq-host>:5672 --auth=<base64-of-USER:PASSWORD>
-          and --deploy-rmq=false on systemd control-plane onboarding.
+          Run VM onboarding from this extraction directory with --version=$VM_VERSION
+          and --vm-mode=docker or --vm-mode=systemd, using the local pre-download assets.
           Do not use a different agent release version with this bundle.
           Use your deployment-specific configuration and credentials for VM onboarding.
           The control plane must be able to reach your AccuKnox backend endpoints.
