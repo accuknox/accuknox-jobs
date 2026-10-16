@@ -1,1 +1,3 @@
 SQ-*
+# Dependency archives are generated from Chart.yaml.
+kspm-runtime/charts/*.tgz
