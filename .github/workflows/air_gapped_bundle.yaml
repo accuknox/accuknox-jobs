@@ -3,7 +3,7 @@ name: KSPM Runtime Air-Gapped Bundle
 on:
   workflow_run:
     workflows:
-      - KSPM-Runtime Workflow
+      - KSPM-Runtime Workflow Differ
     types:
       - completed
   workflow_dispatch:

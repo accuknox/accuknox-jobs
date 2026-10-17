@@ -1,0 +1,202 @@
+name: Knoxctl VM Air-Gapped Bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: Target Linux architecture
+        required: true
+        type: choice
+        options:
+          - amd
+          - arm
+        default: amd
+      knoxctl_version:
+        description: Knoxctl CLI version (for example v0.9.59)
+        required: true
+        type: string
+        default: v0.9.59
+      vm_version:
+        description: VM agent release version (for example v0.12.7)
+        required: true
+        type: string
+        default: v0.12.7
+
+permissions:
+  contents: read
+
+jobs:
+  bundle:
+    runs-on: ${{ inputs.arch == 'arm' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
+    env:
+      KNOXCTL_VERSION: ${{ inputs.knoxctl_version }}
+      TARGET_ARCH: ${{ inputs.arch == 'arm' && 'arm64' || 'amd64' }}
+      VM_VERSION: ${{ inputs.vm_version }}
+    steps:
+      - name: Validate versions and prepare directories
+        run: |
+          set -euo pipefail
+          if [[ ! "$KNOXCTL_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo '::error::knoxctl_version must be a full version such as v0.9.59'
+            exit 1
+          fi
+          if [[ ! "$VM_VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo '::error::vm_version must be a full version such as v0.12.7'
+            exit 1
+          fi
+          mkdir -p bundle/bin downloads
+          docker info
+      - name: Set up AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to AWS Public ECR
+        run: |
+          set -euo pipefail
+          aws ecr-public get-login-password --region us-east-1 \
+            | docker login --username AWS --password-stdin public.ecr.aws
+
+      - name: Download knoxctl using the official installer
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 \
+            https://knoxctl-cli.s3.us-east-2.amazonaws.com/install.sh \
+            -o "$RUNNER_TEMP/knoxctl-install.sh"
+          # The native runner ensures the installer selects the target Linux binary.
+          sh "$RUNNER_TEMP/knoxctl-install.sh" -b "$PWD/bundle/bin" "$KNOXCTL_VERSION"
+          test -x bundle/bin/knoxctl
+
+      - name: Pre-download VM images and systemd binaries
+        working-directory: downloads
+        run: |
+          set -euo pipefail
+          ../bundle/bin/knoxctl vm pre-download -v "$VM_VERSION" --arch "$TARGET_ARCH"
+          test -d "accuknox/$VM_VERSION/docker/$TARGET_ARCH"
+          test -d "accuknox/$VM_VERSION/systemd/$TARGET_ARCH"
+          # Local onboarding reads source metadata from the version directory.
+          python3 - <<'PYMETA'
+          import json
+          import os
+          from pathlib import Path
+
+          version = os.environ['VM_VERSION']
+          path = Path('accuknox') / version / 'release.json'
+          metadata = json.loads(path.read_text())
+          if metadata.get('version') != version:
+              raise SystemExit(f'Unexpected source version in {path}: {metadata.get("version")}')
+          PYMETA
+
+      - name: Add RabbitMQ image tar for offline systemd onboarding
+        run: |
+          set -euo pipefail
+          python3 - <<'PYRMQ'
+          import json
+          import os
+          import tarfile
+          import shutil
+          from pathlib import Path
+
+          root = Path('downloads/accuknox') / os.environ['VM_VERSION'] / 'docker' / os.environ['TARGET_ARCH']
+          matches = []
+          for path in sorted(root.rglob('*')):
+              if not path.is_file():
+                  continue
+              try:
+                  with tarfile.open(path, 'r:*') as archive:
+                      manifest = next((m for m in archive.getmembers() if m.name.lstrip('./') == 'manifest.json'), None)
+                      if manifest is None:
+                          continue
+                      entries = json.load(archive.extractfile(manifest))
+                      tags = [tag for entry in entries for tag in (entry.get('RepoTags') or [])]
+                      if 'rabbitmq:3.12.2-management' in tags:
+                          matches.append(path)
+              except tarfile.ReadError:
+                  continue
+          if len(matches) != 1:
+              raise SystemExit(f'Expected one pre-downloaded rabbitmq:3.12.2-management archive, found {len(matches)}')
+          shutil.copyfile(matches[0], 'bundle/rabbitmq.tar')
+          PYRMQ
+
+      - name: Package offline bundle and instructions
+        run: |
+          set -euo pipefail
+          # Preserve all pre-download output, including original Docker and systemd archives.
+          cp -a downloads/. bundle/
+          cat > bundle/README.txt <<EOF
+          Knoxctl air-gapped bundle
+          Target: linux/$TARGET_ARCH
+          Knoxctl CLI: $KNOXCTL_VERSION
+          VM agents: $VM_VERSION
+
+          Extract this bundle on the offline Linux host, then run from its directory:
+            sha256sum -c SHA256SUMS
+            sudo install -m 0755 bin/knoxctl /usr/local/bin/knoxctl
+
+          Original knoxctl pre-download output is preserved without repackaging images:
+            Docker archives: accuknox/$VM_VERSION/docker/$TARGET_ARCH
+            Systemd archives: accuknox/$VM_VERSION/systemd/$TARGET_ARCH
+
+          Source metadata is included at accuknox/$VM_VERSION/release.json.
+          Run VM onboarding with --version=$VM_VERSION, --from-source=<absolute-path-to-extraction>/accuknox/$VM_VERSION,
+          and --vm-mode=docker or --vm-mode=systemd.
+          For Docker, use --image-pull-policy=never; knoxctl imports the local image archives.
+          Omit --no-download so knoxctl processes the local Docker or systemd archives.
+          Systemd control-plane onboarding requires an already-running RabbitMQ server.
+          Its Docker image is included at rabbitmq.tar.
+          To import it offline, run from this extraction directory:
+            sudo docker load --input rabbitmq.tar
+          Start it with your chosen credentials (replace USER and PASSWORD):
+            sudo docker run -d --name knoxctl-rabbitmq --pull=never --restart=unless-stopped -p 5672:5672 -v knoxctl-rabbitmq-data:/var/lib/rabbitmq -e RABBITMQ_DEFAULT_USER=USER -e RABBITMQ_DEFAULT_PASS=PASSWORD rabbitmq:3.12.2-management
+          Wait for readiness with: sudo docker exec knoxctl-rabbitmq rabbitmqctl await_startup
+          Then use --rmq-address=<reachable-rabbitmq-host>:5672 --auth=<base64-of-USER:PASSWORD>
+          and --deploy-rmq=false on systemd control-plane onboarding.
+          Do not use a different agent release version with this bundle.
+          Use your deployment-specific configuration and credentials for VM onboarding.
+          The control plane must be able to reach your AccuKnox backend endpoints.
+          EOF
+          (cd bundle && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          bundle_file="knoxctl-${KNOXCTL_VERSION}-vm-${VM_VERSION}-linux-${TARGET_ARCH}-air-gapped.tar.gz"
+          tar -czf "$bundle_file" -C bundle .
+          sha256sum "$bundle_file" > "$bundle_file.sha256"
+          printf 'BUNDLE_FILE=%s\n' "$bundle_file" >> "$GITHUB_ENV"
+          printf 'Bundle: `%s`\n\nOriginal Docker and systemd pre-download archives are preserved under `accuknox/%s/`.\n' \
+            "$bundle_file" "$VM_VERSION" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload air-gapped bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: knoxctl-${{ inputs.knoxctl_version }}-vm-${{ inputs.vm_version }}-${{ env.TARGET_ARCH }}-air-gapped
+          path: |
+            ${{ env.BUNDLE_FILE }}
+            ${{ env.BUNDLE_FILE }}.sha256
+          compression-level: 0
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Upload bundle to Hetzner Object Storage
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.HETZNER_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.HETZNER_SECRET_KEY }}
+          AWS_SESSION_TOKEN: ''
+          AWS_DEFAULT_REGION: eu-central
+          AWS_EC2_METADATA_DISABLED: 'true'
+        run: |
+          set -euo pipefail
+          : "${AWS_ACCESS_KEY_ID:?Missing HETZNER_ACCESS_KEY secret}"
+          : "${AWS_SECRET_ACCESS_KEY:?Missing HETZNER_SECRET_KEY secret}"
+          ENDPOINT="https://nbg1.your-objectstorage.com"
+          BUCKET="accuknox-onprem-artifacts"
+          destination="s3://${BUCKET}/kspm-runtime/airgapped-bundle"
+          aws --endpoint-url "$ENDPOINT" s3 cp \
+            "$BUNDLE_FILE" \
+            "$destination/$BUNDLE_FILE" --only-show-errors
+          aws --endpoint-url "$ENDPOINT" s3 cp \
+            "$BUNDLE_FILE.sha256" \
+            "$destination/$BUNDLE_FILE.sha256" --only-show-errors
