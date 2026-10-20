@@ -32,6 +32,10 @@ spec:
           image: "{{ include "kubescape.image" . }}"
           command: ["python3", "/usr/local/bin/scan-control-namespaces.py"]
           env:
+            {{- range $key, $value := (default .Values.extraEnv (.Values.global).extraEnv) }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
             - name: CLUSTER_NAME
               value: "{{ .Values.global.clusterName }}"
             - name: AIRGAPPED
@@ -46,6 +50,13 @@ spec:
       containers:
         - image: "{{ include "cluster_job.image" . }}"
           name: artifact-api-container
+          {{- if (default .Values.extraEnv (.Values.global).extraEnv) }}
+          env:
+          {{- range $key, $value := (default .Values.extraEnv (.Values.global).extraEnv) }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+          {{- end }}
+          {{- end }}
           args: 
           - -config 
           - /jobs/conf/app.yaml

@@ -72,3 +72,7 @@ configPaths:
 - "/data/kubescape-cache/allcontrols.json"
 - "/data/kubescape-cache/mitre.json"
 - "/data/kubescape-cache/nsa.json"
+
+# -- Extra environment variables (map of NAME: value) added to this chart's workloads.
+# Used only when global.extraEnv is empty; global.extraEnv takes precedence.
+extraEnv: {}

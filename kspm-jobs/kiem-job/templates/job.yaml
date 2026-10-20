@@ -32,6 +32,10 @@ spec:
           image: "{{ include "kiem.image" . }}"
           args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
           env:
+            {{- range $key, $value := (default .Values.extraEnv (.Values.global).extraEnv) }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
             - name: CLUSTER_NAME
               value: "{{ .Values.global.clusterName }}"
           volumeMounts:
@@ -46,6 +50,13 @@ spec:
           resources:
           {{- toYaml .Values.global.job.resources | nindent 12 }}
           name: accuknox-kiem-job
+          {{- if (default .Values.extraEnv (.Values.global).extraEnv) }}
+          env:
+          {{- range $key, $value := (default .Values.extraEnv (.Values.global).extraEnv) }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+          {{- end }}
+          {{- end }}
           volumeMounts:
             - mountPath: /data
               name: datapath  
