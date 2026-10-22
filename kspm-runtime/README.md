@@ -16,6 +16,7 @@ The **kspm-runtime** Helm chart consolidates multiple AccuKnox and third-party c
 | knoxguard-chart | v0.2.3 | `admissionController.enabled` |
 | kyverno | 1.16.2 | `kyverno.enabled` |
 | kubeshield-chart | v0.3.5 | `global.inClusterScan.enabled` |
+| opencost | 2.5.33 | `global.costManager.enabled` |
 
 ---
 
@@ -32,6 +33,8 @@ The **kspm-runtime** Helm chart consolidates multiple AccuKnox and third-party c
 | `admissionController.enabled` | Enable KnoxGuard admission controller |
 | `kyverno.enabled` | Enable Kyverno |
 | `global.inClusterScan.enabled` | Enable kubeshield-chart |
+| `global.costManager.enabled` | Install OpenCost for cost management (default: false) |
+| `opencost.opencost.customPricing.enabled` | Override provider pricing with custom rates (default: false) |
 
 ## Global Configuration Parameters
 ### AccuKnox Connectivity
@@ -111,6 +114,74 @@ helm upgrade --install agents kspm-runtime \
 ---
 
 ## Notes
+
+### OpenCost cost manager
+
+The upstream [OpenCost Helm chart](https://github.com/opencost/opencost-helm-chart)
+is included unchanged as `charts/opencost-2.5.33.tgz` (OpenCost 1.121.3).
+It was downloaded from the official release; SHA-256:
+`b5f9599dd8952fd0421632a035a3e2d8f01ea9583140043760eaeeaabe5f610f`.
+The parent `values.yaml` configures its native collector data source and a 10Gi
+ReadWriteOnce PVC mounted at `/mnt/export`. Prometheus sources and ServiceMonitor
+are disabled; no Prometheus installation is required. A default StorageClass or
+an explicit `opencost.opencost.exporter.persistence.storageClass` is required.
+The deployment uses one replica and an update strategy with zero surge pods
+for PVC attachment.
+
+```bash
+helm dependency build kspm-runtime
+helm upgrade --install agents ./kspm-runtime \
+  -n agents --create-namespace \
+  --set global.costManager.enabled=true
+```
+
+Add `--set opencost.opencost.customPricing.enabled=true` and pass your actual
+rates in a values file to override pricing. The included rates are upstream
+examples, not a pricing recommendation. All custom rates use the same currency.
+
+| Rate under `opencost.opencost.customPricing.costModel` | Unit |
+|---|---|
+| `CPU` / `spotCPU` | Per CPU core-hour |
+| `RAM` / `spotRAM` | Per GiB-hour |
+| `GPU` | Per GPU-hour |
+| `storage` | Per GiB-hour |
+| `zoneNetworkEgress` | Per GiB of cross-zone egress |
+| `regionNetworkEgress` | Per GiB of cross-region egress |
+| `internetNetworkEgress` | Per GiB of internet egress |
+
+OpenCost represents network pricing with these three egress rates; it has no
+single `Network` pricing key. Configuring rates does not install a network
+traffic collector; network cost reporting requires compatible network metrics.
+Custom pricing creates an upstream ConfigMap and selects the custom provider
+through `USE_CUSTOM_PROVIDER`, including on cloud-managed clusters. Keep
+`customPricing.configmapName` and the exporter environment ConfigMap reference
+in sync if you rename it. Leave `CustomPricesEnabled: "true"` in the custom model.
+For multiple releases in the same namespace, give each pricing ConfigMap a
+unique name and update its environment reference.
+
+```yaml
+global:
+  costManager:
+    enabled: true
+opencost:
+  opencost:
+    customPricing:
+      enabled: true
+      costModel:
+        CPU: "0.031611"
+        RAM: "0.004237"
+        GPU: "0.95"
+        storage: "0.00005479452"
+        zoneNetworkEgress: "0.01"
+        regionNetworkEgress: "0.01"
+        internetNetworkEgress: "0.12"
+```
+
+Install with `helm upgrade --install agents ./kspm-runtime -n agents
+--create-namespace -f your-cost-values.yaml`. Rates should be quoted strings.
+Disabling cost management removes the subchart resources, including its PVC;
+volume retention follows your StorageClass reclaim policy. Back up required
+history before disabling it or uninstalling the release.
 
 - Run ```helm dependency update``` before install/upgrade.
 - Enable/disable sub-charts via boolean flags.
