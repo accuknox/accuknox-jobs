@@ -36,6 +36,10 @@ jobs:
           chmod 700 get_helm.sh
           ./get_helm.sh
 
+      - name: Login to AWS ECR
+        run: |
+          aws ecr-public get-login-password --region us-east-1 | helm registry login --username AWS --password-stdin ${{ secrets.REPO }}
+
       - name: Update Helm Dependencies
         run: |
           cd kspm-runtime
