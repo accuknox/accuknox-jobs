@@ -25,11 +25,13 @@ spec:
         {{- toYaml .Values.global.tolerations | nindent 8 }}
       {{- end }}
       initContainers:
-        - name: kiem-init
+        - name: kiem-scanner
           imagePullPolicy: IfNotPresent
           resources:
           {{- toYaml .Values.global.job.resources | nindent 12 }}
           image: "{{ include "kiem.image" . }}"
+          # use --k8s-page-size 250, for controlling the page limit used to 
+          # retrieve data from Kubernetes API 
           args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
           env:
             - name: CLUSTER_NAME
@@ -45,7 +47,7 @@ spec:
           imagePullPolicy: IfNotPresent
           resources:
           {{- toYaml .Values.global.job.resources | nindent 12 }}
-          name: accuknox-kiem-job
+          name: kiem-uploader
           volumeMounts:
             - mountPath: /data
               name: datapath  
