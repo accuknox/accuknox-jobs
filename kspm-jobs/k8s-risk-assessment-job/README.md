@@ -6,7 +6,11 @@ the completed reports and the final consolidated report using the configured
 SaaS credentials.
 Set `global.riskAssessment.largeCluster=true` to run `scan-resources.py` as a
 regular container using `kubescape.newTag` in both the Job and CronJob. When false,
-the scanner remains an init container using `kubescape.tag` and the legacy script.
+the scanner runs as an init container using `kubescape.tag` and a shell command
+that invokes Kubescape directly, without Python. It scans the `allcontrols`,
+`clusterscan`, `mitre`, and `nsa` frameworks into `/data/report.json`; when
+`global.kraCustomConfig` is set, it downloads and passes that controls configuration.
+Airgapped mode uses the image-bundled artifacts.
 Rebuild both the scanner and knoxjobs images, then set `kubescape.newTag` and
 `cluster_job.tag` before deploying large-cluster mode.
 An explicit `kubescape.image` overrides tag selection in either mode.
