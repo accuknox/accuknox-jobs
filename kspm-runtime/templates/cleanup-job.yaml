@@ -197,6 +197,7 @@ spec:
                 kyverno-ttl-validating-webhook-cfg || true
 
               kubectl delete mutatingwebhookconfiguration --ignore-not-found=true \
+                kubearmor-controller-mutating-webhook-configuration \
                 kyverno-policy-mutating-webhook-cfg \
                 kyverno-resource-mutating-webhook-cfg \
                 kyverno-verify-mutating-webhook-cfg || true
