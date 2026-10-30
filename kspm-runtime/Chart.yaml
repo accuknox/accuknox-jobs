@@ -8,6 +8,11 @@ version: 0.1.0
 appVersion: "0.1.0"
 
 dependencies:
+  - name: opencost
+    alias: costmanager
+    version: "2.5.33-accuknox.1"
+    repository: file://../helm-charts/opencost
+    condition: global.costManager.enabled
   - name: agents-chart
     version: "v0.13.3"
     repository: oci://public.ecr.aws/k9v9d5v2
