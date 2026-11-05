@@ -11,7 +11,12 @@ RUN set -eux; \
         *) echo "unsupported arch: $(uname -m)"; exit 1 ;; \
       esac; \
     fi; \
-    curl -fsSL \
+    echo "Downloading Kubescape v${KUBESCAPE_VERSION} for linux/${ARCH}"; \
+    curl --fail --show-error --location \
+      --connect-timeout 30 --max-time 900 \
+      --speed-limit 1 --speed-time 120 \
+      --retry 3 --retry-delay 5 \
+      --write-out '\nKubescape download result: HTTP %{http_code}, %{size_download} bytes, %{time_total}s\n' \
       "https://github.com/kubescape/kubescape/releases/download/v${KUBESCAPE_VERSION}/kubescape_${KUBESCAPE_VERSION}_linux_${ARCH}" \
       -o /usr/local/bin/kubescape; \
     chmod +x /usr/local/bin/kubescape
