@@ -1,0 +1,20 @@
+{{- if .Values.exporter.persistence.enabled }}
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: {{ include "opencost.fullname" . }}-pvc
+  namespace: {{ include "opencost.namespace" . }}
+  labels: {{- include "opencost.labels" . | nindent 4 }}
+  {{- with .Values.exporter.persistence.annotations  }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  accessModes:
+    - {{ .Values.exporter.persistence.accessMode | quote }}
+  {{- if .Values.exporter.persistence.storageClass }}
+  storageClassName: {{ .Values.exporter.persistence.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.exporter.persistence.size | quote }}
+{{- end }}
