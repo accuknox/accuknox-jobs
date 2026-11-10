@@ -1,10 +1,23 @@
+{{- $resources := .Values.global.job.resources | default dict -}}
+{{- $limits := $resources.limits | default dict -}}
 {{- $pageSize := toString .Values.global.riskAssessment.kubernetesPageSize -}}
 {{- if not (regexMatch "^[1-9][0-9]*$" $pageSize) -}}
 {{- fail "global.riskAssessment.kubernetesPageSize must be a positive integer" -}}
 {{- end -}}
+{{- $batchSize := toString (dig "controlBatchSize" 0 .Values.global.riskAssessment) -}}
+{{- if not (regexMatch "^(0|[1-9][0-9]*)$" $batchSize) -}}
+{{- fail "global.riskAssessment.controlBatchSize must be a nonnegative integer" -}}
+{{- end -}}
 {{- $concurrency := toString .Values.global.riskAssessment.namespaceConcurrency -}}
 {{- if not (regexMatch "^[1-9][0-9]*$" $concurrency) -}}
 {{- fail "global.riskAssessment.namespaceConcurrency must be a positive integer" -}}
+{{- end -}}
+{{- $maximum := toString (dig "maxNamespaceConcurrency" (max 5 (int $concurrency)) .Values.global.riskAssessment) -}}
+{{- if not (regexMatch "^[1-9][0-9]*$" $maximum) -}}
+{{- fail "global.riskAssessment.maxNamespaceConcurrency must be a positive integer" -}}
+{{- end -}}
+{{- if and (dig "autoNamespaceConcurrency" true .Values.global.riskAssessment) (lt (int $maximum) (int $concurrency)) -}}
+{{- fail "global.riskAssessment.maxNamespaceConcurrency must be >= namespaceConcurrency" -}}
 {{- end }}
 apiVersion: v1
 kind: ConfigMap
@@ -17,6 +30,13 @@ data:
   NAMESPACE_RESOURCES: {{ .Values.global.riskAssessment.namespaceResources | default "" | quote }}
   CLUSTER_RESOURCES: {{ .Values.global.riskAssessment.clusterResources | default "" | quote }}
   NAMESPACE_CONCURRENCY: {{ $concurrency | quote }}
+  AUTO_NAMESPACE_CONCURRENCY: {{ dig "autoNamespaceConcurrency" true .Values.global.riskAssessment | toString | quote }}
+  MAX_NAMESPACE_CONCURRENCY: {{ $maximum | quote }}
+  CONTROL_BATCH_SIZE: {{ $batchSize | quote }}
+  GOMEMLIMIT: {{ .Values.global.riskAssessment.goMemLimit | default "auto" | quote }}
+  GOGC: {{ .Values.global.riskAssessment.goGC | default "50" | quote }}
+  AUTO_GROW_MEMORY: {{ dig "autoGrowMemory" true .Values.global.riskAssessment | toString | quote }}
+  INITIAL_MEMORY_BUDGET: {{ $limits.memory | default "1Gi" | quote }}
   INCLUDE_CLUSTER_CONTEXT: {{ .Values.global.riskAssessment.includeClusterContext | default false | toString | quote }}
   VALIDATE_REPORTS: {{ dig "validateReports" true .Values.global.riskAssessment | toString | quote }}
   KUBERNETES_PAGE_SIZE: {{ $pageSize | quote }}
@@ -31,7 +51,7 @@ metadata:
 data:
   app.yaml : |
     {{ tpl ( .Files.Get "config/app.yaml" ) . | nindent 4 }}
-  {{- if eq (include "spire.enabled" . ) "true" }}  
+  {{- if eq (include "spire.enabled" . ) "true" }}
   agent.conf: |
     {{ tpl ( .Files.Get "config/agent.conf" ) . | nindent 4 }}
-  {{- end }}  
+  {{- end }}
