@@ -41,8 +41,26 @@ global:
     # Experimental: discover all listable namespaced and cluster resource types, including CRDs.
     collectAllResources: false
 
-    # Maximum namespaces scanned concurrently; each worker performs one combined namespace scan.
-    namespaceConcurrency: 5
+    # Initial namespace worker allowance; scan processes themselves start at 1.
+    namespaceConcurrency: 1
+    # Allow an initial allowance of 1 to grow as the memory scheduler permits.
+    autoNamespaceConcurrency: true
+    maxNamespaceConcurrency: 5
+
+    # Default 0 evaluates frameworks together, avoiding per-control startup overhead.
+    # Memory failures automatically halve control batches down to one control.
+    # Each batch retains the complete namespace manifest and selected cluster context.
+    controlBatchSize: 0
+    # Auto uses 80% of the memory budget divided by scan concurrency.
+    # Set a Go memory size (e.g. "600MiB") to apply a lower per-process cap.
+    goMemLimit: "auto"
+    # GC heap-growth percentage; independent of the container memory size.
+    goGC: "50"
+
+    # Grow the scanner's software budget within global.job.resources.limits.memory.
+    # The Kubernetes container limit itself is never changed automatically.
+    autoGrowMemory: true
+    # Initial memory budget uses global.job.resources.limits.memory, or 1Gi if unset.
 
     # Include cluster snapshots in namespace scans for relationship checks.
     includeClusterContext: true
