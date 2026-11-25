@@ -30,11 +30,13 @@ spec:
             {{- toYaml .Values.global.tolerations | nindent 12 }}
           {{- end }}
           initContainers:
-            - name: kiem-init
+            - name: kiem-scanner
               imagePullPolicy: IfNotPresent
               resources:
               {{- toYaml .Values.global.job.resources | nindent 16 }}
               image: "{{ include "kiem.image" . }}"
+              # use --k8s-page-size 250, for controlling the page limit used to 
+              # retrieve data from Kubernetes API 
               args: ["./kiem", "run", "--mode", "k8s", "--output", "/data/report.json"]
               env:
                 {{- range $key, $value := (default .Values.extraEnv (.Values.global).extraEnv) }}

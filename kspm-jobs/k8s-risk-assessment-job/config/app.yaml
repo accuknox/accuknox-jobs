@@ -8,7 +8,10 @@ jobs:
   labelName: {{ .Values.global.label }}
   dataType: "KS"
   saveToS3: true
-  reportFile: "/data/report.json"
+  flushTimeout: {{ .Values.global.riskAssessment.flushTimeout | default (get (.Values.global.jobs | default dict) "flushTimeout") | default "10m" | quote }}
+  largeCluster: {{ .Values.global.riskAssessment.largeCluster | default false }}
+  reportsPath: {{ .Values.global.riskAssessment.completedReportsPath | default (printf "%s/completed" (.Values.global.riskAssessment.outputPath | default "/data" | trimSuffix "/")) | quote }}
+  reportFile: {{ printf "%s/report.json" (.Values.global.riskAssessment.outputPath | default "/data" | trimSuffix "/") | quote }}
   clusterID: {{ .Values.global.clusterID }}
   printData: false
   insecure: {{ .Values.global.skipTLSVerification }}

@@ -17,7 +17,7 @@ wget -O /tmp/controls.json {{ .Values.global.kraCustomConfig | quote }}
 {{- end }}
 for framework in allcontrols clusterscan mitre nsa; do
   echo "Scanning framework: $framework"
-  set -- scan framework "$framework" --enable-streaming \
+  set -- scan framework "$framework" --keep-local --use-default --enable-streaming \
     --exclude-namespaces openshift-ovn-kubernetes \
     --format json --format-version v2 \
     --cache-dir /data/kubescape-cache \

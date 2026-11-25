@@ -11,7 +11,7 @@ import ijson
 
 
 def encode(value):
-    return json.dumps(value, separators=(",", ":"), ensure_ascii=False)
+    return json.dumps(value, default=lambda number: int(number) if number == int(number) else float(number), separators=(",", ":"), ensure_ascii=False)
 
 
 def value_from(events, first):
@@ -100,7 +100,7 @@ def ingest_result(db, result):
 
 def ingest(db, path):
     with open(path, "rb") as source:
-        events = iter(ijson.parse(source, use_float=True))
+        events = iter(ijson.parse(source))
         if next(events)[1] != "start_map":
             raise ValueError("Expected a Kubescape v2 JSON object")
         has_summary = False
@@ -109,7 +109,9 @@ def ingest(db, path):
                 break
             if event != "map_key":
                 raise ValueError("Invalid report object")
-            if key == "summaryDetails":
+            if key == "collectionAudit":
+                store(db, "collection_audit", str(path), value_from(events, next(events)))
+            elif key == "summaryDetails":
                 has_summary = True
                 ingest_summary(db, events)
             elif key in ("results", "resources", "attributes"):
@@ -146,7 +148,9 @@ def write_report(db, out):
     out.write("{")
     for key, data in records(db, "metadata"):
         out.write(encode(key) + ":" + data + ",")
-    out.write('"summaryDetails":{')
+    out.write('"collectionAudits":')
+    write_array(out, (data for _, data in records(db, "collection_audit")))
+    out.write(',"summaryDetails":{')
     for key, data in records(db, "summary"):
         out.write(encode(key) + ":" + data + ",")
     out.write('"controls":{')
@@ -181,7 +185,7 @@ def merge(paths, output):
             db.execute("CREATE TABLE records(kind TEXT, key TEXT, data TEXT, UNIQUE(kind,key))")
             db.execute("CREATE TABLE controls(resource_id TEXT, control_id TEXT, data TEXT, PRIMARY KEY(resource_id,control_id))")
             for path in paths:
-                print(f"Merging framework report: {path}", flush=True)
+                print(f"Merging scan report: {path}", flush=True)
                 ingest(db, path)
             merged = Path(temp) / "report.json"
             with merged.open("w", encoding="utf-8") as out:

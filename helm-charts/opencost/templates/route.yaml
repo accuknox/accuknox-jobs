@@ -1,0 +1,32 @@
+{{- if and (.Capabilities.APIVersions.Has "route.openshift.io/v1/Route") .Values.ui.enabled .Values.ui.route.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "opencost.fullname" . }}-route
+  namespace: {{ include "opencost.namespace" . }}
+  labels: {{- include "opencost.labels" . | nindent 4 }}
+  {{- with .Values.ui.route.annotations }}
+  annotations: {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  host: {{ .Values.ui.route.host | quote }}
+  {{- if .Values.ui.route.path }}
+  path: {{ .Values.ui.route.path }}
+  {{- end }}
+  port:
+    targetPort: {{ .Values.ui.route.targetPort }}
+  to:
+    kind: Service
+    name: {{ include "opencost.fullname" . }}
+    weight: 100
+  wildcardPolicy: None
+  {{- if .Values.ui.route.tls }}
+  tls:
+    {{- if .Values.ui.route.tls.insecureEdgeTerminationPolicy }}
+    insecureEdgeTerminationPolicy: {{ .Values.ui.route.tls.insecureEdgeTerminationPolicy }}
+    {{- end }}
+    {{- if .Values.ui.route.tls.termination }}
+    termination: {{ .Values.ui.route.tls.termination }}
+    {{- end }}
+  {{- end }}
+{{- end }}
