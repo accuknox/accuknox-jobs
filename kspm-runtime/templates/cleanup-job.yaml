@@ -153,6 +153,13 @@ spec:
       containers:
         - name: cleanup
           image: {{ default .Values.registryName .Values.global.registry.url }}/kubectl:latest
+          {{- if (default .Values.extraEnv (.Values.global).extraEnv) }}
+          env:
+          {{- range $key, $value := (default .Values.extraEnv (.Values.global).extraEnv) }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+          {{- end }}
+          {{- end }}
           imagePullPolicy: IfNotPresent
 
           command:

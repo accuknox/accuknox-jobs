@@ -15,6 +15,12 @@ global:
   url: ""
   airgapped: false
 
+  # Extra environment variables injected into every workload (deployments, jobs, cronjobs)
+  # e.g. --set global.extraEnv.HTTP_PROXY=http://proxy:3128
+  extraEnv: {}
+  #  HTTP_PROXY: "http://proxy:3128"
+  #  NO_PROXY: "localhost,10.0.0.0/8"
+
   talosEnv: false
   cis:
     toolConfig:

@@ -34,7 +34,14 @@ spec:
             args: 
             - -config 
             - /jobs/conf/app.yaml
-            name: cis-uploader
+            name: cis-k8s-cronjob
+            {{- if (default .Values.extraEnv (.Values.global).extraEnv) }}
+            env:
+            {{- range $key, $value := (default .Values.extraEnv (.Values.global).extraEnv) }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
             imagePullPolicy: IfNotPresent
             resources:
             {{- toYaml .Values.global.job.resources | nindent 14 }}
@@ -63,7 +70,14 @@ spec:
           - image: "{{ include "kubeBench.image" . }}"
             command:
             {{- include "cmd" .Values.global.cis.toolConfig | trim | nindent 13 }}
-            name: cis-scanner
+            name: kube-bench
+            {{- if (default .Values.extraEnv (.Values.global).extraEnv) }}
+            env:
+            {{- range $key, $value := (default .Values.extraEnv (.Values.global).extraEnv) }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- end }}
             imagePullPolicy: IfNotPresent
             resources:
             {{- toYaml .Values.global.job.resources | nindent 14 }}
