@@ -262,6 +262,10 @@ spec:
             {{- if  .Values.exporter.persistence.enabled }}
             - name: PV_MOUNT_PATH
               value: {{ (.Values.exporter.persistence.mountPath | default "mnt/export") | quote }}
+            # Collector storage uses CONFIG_PATH; without it OpenCost defaults to
+            # /var/configs and can fall back to retaining WAL files in memory.
+            - name: CONFIG_PATH
+              value: {{ (.Values.exporter.persistence.mountPath | default "mnt/export") | quote }}
             {{- end }}
             {{- if .Values.exporter.csv_path }}
             - name: EXPORT_CSV_FILE
@@ -303,8 +307,10 @@ spec:
             {{- end }}
             {{- end }}
             {{- if .Values.customPricing.enabled }}
+            {{- if not .Values.exporter.persistence.enabled }}
             - name: CONFIG_PATH
               value: {{ .Values.customPricing.configPath | quote }}
+            {{- end }}
             - name: PRICING_CONFIGMAP_NAME
               value: {{ .Values.customPricing.configmapName | quote }}
             {{- end }}
@@ -400,7 +406,7 @@ spec:
               name: opencost-export
               readOnly: false
             {{- end }}
-            {{- if or .Values.customPricing.enabled .Values.metrics.config.enabled }}
+            {{- if and (or .Values.customPricing.enabled .Values.metrics.config.enabled) (not .Values.exporter.persistence.enabled) }}
             - mountPath: {{ .Values.customPricing.configPath }}
               name: custom-configs
             {{- end }}
@@ -532,7 +538,7 @@ spec:
           secret:
             secretName: {{ include "opencost.pluginsConfigSecretName" . }}
         {{- end }}
-        {{- if or .Values.customPricing.enabled .Values.metrics.config.enabled }}
+        {{- if and (or .Values.customPricing.enabled .Values.metrics.config.enabled) (not .Values.exporter.persistence.enabled) }}
         - name: custom-configs
           emptyDir: {}
         {{- end }}

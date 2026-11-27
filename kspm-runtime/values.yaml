@@ -170,6 +170,10 @@ kubeshield-chart:
 costmanager:
   # Preserve existing resource names and selectors when aliasing the dependency.
   nameOverride: opencost
+  # SIA requests hourly allocation data, so keep only a small amount of
+  # precomputed hourly/daily pipeline history.
+  retention1h: 4
+  retention1d: 1
   # Avoid overlapping pods attaching the ReadWriteOnce volume during upgrades.
   updateStrategy:
     type: RollingUpdate
@@ -186,8 +190,29 @@ costmanager:
             name: accuknox-opencost-custom-pricing
             key: CustomPricesEnabled
             optional: true
+    extraEnv:
+      # Leave headroom below the container limit for stacks, mappings and
+      # other memory that is not managed by the Go heap.
+      GOMEMLIMIT: 1400MiB
+      # Bound expensive allocation calculations even if multiple clients
+      # query OpenCost concurrently.
+      MAX_CONCURRENT_ALLOCATION_REQUESTS: "2"
+    resources:
+      requests:
+        cpu: 250m
+        memory: 512Mi
+      limits:
+        cpu: "2"
+        memory: 2Gi
     collectorDataSource:
       enabled: true
+      # Hourly cost collection does not require a 30-second scrape cadence.
+      scrapeInterval: 60s
+      # Exact one-hour queries use the hourly collector store. Keep one bucket
+      # for unused resolutions and four hourly buckets for retries/restarts.
+      retention10m: 1
+      retention1h: 4
+      retention1d: 1
     persistence:
       enabled: true
       mountPath: /mnt/export

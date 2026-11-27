@@ -116,9 +116,11 @@ priorityClassName: ~
 # --  Enable automounting of service account token at the pod level
 podAutomountServiceAccountToken: true
 
-# -- Holds pod-level security attributes and common container settings
-podSecurityContext: {}
-  # fsGroup: 2000
+# -- Holds pod-level security attributes and common container settings.
+# OpenCost runs as UID 1001, so grant it group write access to persistent volumes.
+podSecurityContext:
+  fsGroup: 1001
+  fsGroupChangePolicy: OnRootMismatch
 
 service:
   enabled: true
@@ -529,7 +531,9 @@ customPricing:
   enabled: false
   # -- Customize the configmap name used for custom pricing
   configmapName: custom-pricing-model
-  # -- Path for the pricing configuration.
+  # -- Path for the pricing configuration when persistence is disabled.
+  # When persistence is enabled, its mountPath is used as the shared CONFIG_PATH
+  # for pricing configuration and collector storage.
   configPath: /tmp/custom-config
   # -- Configures the pricing model provided in the values file.
   createConfigmap: true
