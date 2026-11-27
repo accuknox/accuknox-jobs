@@ -18,6 +18,11 @@ jobs:
   caUrl: {{ .Values.global.certURL | quote }}
   {{- end }}
 
+{{- if .Values.global.SingleEndpointDeployment }}
+kgw-sep-server-name: "knox-gw.sep.accuknox.com"
+{{- end }}
+
+
 spire:
   enabled: {{ include "spire.enabled" . }}
   server: {{ include "jobs.spireHost" . }}
@@ -26,9 +31,6 @@ spire:
   joinTokenFile: {{ .Values.joinTokenPath }}
   namespace: "{{ .Release.Namespace }}"
   gatewayServer: {{ include "jobs.knoxGatewayHost" . }}
-  {{- if .Values.global.SingleEndpointDeployment }}
-  kgw-sep-server-name: "knox-gw.sep.accuknox.com"
-  {{- end }}
   directory: ""
   configFile: {{ .Values.spireConfigFile }}
   clusterName: {{ include "jobs.clusterName" . | quote }}
